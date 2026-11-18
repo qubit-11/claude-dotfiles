@@ -397,7 +397,7 @@ changes they apply to, then the companion artifacts, then Style.
 The table decides; the fix-reach test (does the fix stay inside the change or
 reach code it did not write) only decides what the table does not name. A second
 mechanism stays Architecture. Orphans: a permanent break of an interface or
-wire format across a deploy boundary (our other servers included) is
+wire format across a deploy boundary (the system's other servers included) is
 Architecture, a break only during rollout is Ops; dependency placement (peer or dependency) is Architecture, version or
 presence of a dependency is Ops; a build failure is Functionality, a lint
 failure takes the category of the broken rule. A misleading or invented name is

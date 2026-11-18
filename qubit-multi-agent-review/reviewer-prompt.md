@@ -123,8 +123,8 @@ change, and try to break it.
   imports: every transitive caller and reader of each changed function,
   model, schema, component or export. Second, across deploy boundaries,
   search by name: route paths, collection and field names, Redis keys, event
-  and message types, env keys, used by our other servers, frontend bundles,
-  replicas, partners and pages that embed our scripts. Search the neighbour
+  and message types, env keys, used by the system's other servers, frontend bundles,
+  replicas, partners and pages that embed its scripts. Search the neighbour
   repositories listed in inputs/neighbours.md the same way: each entry
   says how it calls or is called by this repository. For each, does it
   still work with the new behaviour and shape? Name the consumer and what it
@@ -351,7 +351,7 @@ deep adds (what one only sees from outside the diff, one lens each):
   limiting, CORS, cookies, token lifetimes, encryption and key handling.
 - Consumers: transitive callers and readers, and everything across a deploy
   boundary that uses a changed name (wire and storage formats, partner
-  servers, old clients, our other servers).
+  servers, old clients, the system's other servers).
 - Production: deploy order, migrations, rollback, old data, config as
   deployed, failures, retries, parallel runs.
 

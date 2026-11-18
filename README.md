@@ -1,8 +1,8 @@
 # Claude skills
 
 Personal [Claude Code skills](https://docs.claude.com/en/docs/claude-code/skills) for the craft
-of software work: how I want to write a ticket, a merge request description, a review and an
-explanation, wherever I work.
+of software work: writing a ticket, a merge request description, a review and an explanation
+in one personal style, independent of the company or the repository.
 
 | Skill | What it does |
 | --- | --- |
@@ -16,8 +16,8 @@ explanation, wherever I work.
 - **General, not tied to a company.** A rule here must hold in any team. The values and
   procedures of one environment (URLs, ticket keys, secret files, repository commands) live in
   a local profile, never in a skill: see [_profiles/README.md](_profiles/README.md).
-- **Absorb good practice.** When I see something better (in a colleague's work, a standard,
-  a tool), it goes into the skill in its general form, under the name it is known by.
+- **Absorb good practice.** A better practice seen elsewhere (in a colleague's work, a
+  standard, a tool) goes into the skill in its general form, under the name it is known by.
 - **Change on evidence.** Each round of changes rests on a real run, a replay or a cited
   standard.
 

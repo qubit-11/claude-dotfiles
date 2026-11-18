@@ -5,8 +5,8 @@ contain: URLs, project keys, secret files, neighbour repositories, user roles, a
 commands and procedures of its repositories. The skills stay general; a profile makes
 them fit one place.
 
-Only `example/` is in the repository. It is the template: copy it to a folder of your
-own (`_profiles/<name>/`), fill in the values, and remove what you do not need. Every
+Only `example/` is in the repository. It is the template; a profile is a copy of it in a new
+folder (`_profiles/<name>/`), with the values filled in and the unused parts removed. Every
 other folder here is ignored by git and stays on this machine.
 
 ## How a skill finds its profile
