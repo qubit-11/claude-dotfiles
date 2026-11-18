@@ -1,6 +1,6 @@
 ---
 name: qubit-merge-request
-description: Use when opening, updating or rewriting a merge request or pull request, or its description, and when a reviewer says an MR description does not tell the goal, the design or why the change exists.
+description: "Writes a layered merge request or pull request description (the change, its design, where to look, how to try it) and opens or updates the merge request on GitLab or GitHub; the branch is rebased onto its target. Use when the user wants a merge request or pull request opened, updated or its description rewritten, or when a reviewer says a description does not explain the goal, the design or why the change exists."
 ---
 
 # Merge request

@@ -1,6 +1,6 @@
 ---
 name: qubit-jira-ticket
-description: Use when creating or drafting a Jira ticket (story, bug, epic, initiative) in a Jira project, when turning an investigation or a found bug into a ticket, or when a ticket is wrong, too long, drifts from the code, or prescribes the implementation.
+description: "Drafts Jira tickets (story, bug, epic, initiative) that state the problem and the required outcome without prescribing the implementation, and creates them in Jira after approval. Use when the user wants a ticket created or drafted, when an investigation or a found bug should become a ticket, or when an existing ticket is wrong, too long, out of date with the code, or prescribes the implementation."
 ---
 
 # Ticket

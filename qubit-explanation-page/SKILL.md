@@ -1,6 +1,6 @@
 ---
 name: qubit-explanation-page
-description: "Use when asked to explain, document, teach, visualize or hand over a topic, concept, technology, system or code change as a page with diagrams, readable at a glance with details to open per paragraph, for onboarding, studying, a review write-up or a decision, in German and English. Not for a quick answer in chat, a README or ADR in the repository, or a plain summary."
+description: "Writes and publishes a bilingual explanation page (English and German) with diagrams: short paragraphs readable at a glance, each with details to open on a click. Use when the user wants a topic, concept, technology, system or code change explained, taught, documented, visualized or handed over as a page, for onboarding, studying, a review write-up or a decision. Not for a quick answer in chat, documentation that belongs in the repository (README, Architecture Decision Record (ADR), JSDoc), or a plain summary."
 ---
 
 # Explanation page
