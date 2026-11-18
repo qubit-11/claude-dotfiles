@@ -1,0 +1,7 @@
+synced/
+__pycache__/
+*.pyc
+.DS_Store
+# profiles hold the values of one environment and stay local; only the template is tracked
+_profiles/*/
+!_profiles/example/

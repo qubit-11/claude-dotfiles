@@ -1,0 +1,461 @@
+<meta charset="utf-8">
+<title>Topic Name</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column with a sticky top bar that carries the expand-all button and the language
+   switch; diagrams and tables may run wider inside their own scroll containers.
+   Skeleton for the qubit-explanation-page skill. Replace the placeholder content; keep the tokens, both themes,
+   the gutter, the language switch, the expand-all button, the paragraph disclosures (details.pt) and the SVG classes.
+   A paragraph with details is a details.pt: its summary is the visible paragraph with a small arrow at its end, its
+   .more-body the details. Language visibility is driven by data-lang on <html>, so every element keeps its native
+   display (inline, table-row, block) and content inserted after load obeys the switch. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --surface-2: #eaeef3; --fg: #1b2430; --muted: #5a6778; --line: #d6dde6;
+  --accent: #23579f; --accent-soft: #e3ecf8; --accent-fg: #ffffff; --new: #0d8a78; --new-soft: #dff3ee; --warn: #b4261f;
+  --font-display: "IBM Plex Serif", Georgia, serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10161d; --surface: #182029; --surface-2: #212b36; --fg: #e5eaf0; --muted: #9aa6b4; --line: #2b3745;
+    --accent: #85adf0; --accent-soft: #1d2d45; --accent-fg: #10161d; --new: #43c2ad; --new-soft: #153b36; --warn: #ff7b72; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10161d; --surface: #182029; --surface-2: #212b36; --fg: #e5eaf0; --muted: #9aa6b4; --line: #2b3745;
+  --accent: #85adf0; --accent-soft: #1d2d45; --accent-fg: #10161d; --new: #43c2ad; --new-soft: #153b36; --warn: #ff7b72; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 84px; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line);
+  padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.topbar-inner { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.brand { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface-2); }
+.seg button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: .85rem; font-weight: 500; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switches { display: flex; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+.wrap { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); } .toc { display: none; } }
+.toc { position: sticky; top: 76px; align-self: start; font-size: .88rem;
+  max-height: calc(100vh - 100px); max-height: calc(100dvh - 100px); overflow-y: auto; overscroll-behavior: contain; }
+.toc ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; counter-reset: toc; }
+.toc li { counter-increment: toc; }
+.toc a { color: var(--muted); text-decoration: none; display: block; padding: 4px 8px; border-left: 2px solid transparent; }
+.toc a::before { content: counter(toc) ". "; }
+.toc .toc-sub { margin-top: 4px; counter-reset: tocsub; }
+.toc .toc-sub li { counter-increment: tocsub; }
+.toc .toc-sub a { padding-left: 22px; font-size: .84rem; }
+.toc .toc-sub a::before { content: counter(toc) "." counter(tocsub) " "; }
+/* group headings dark and a little apart; hover is a passing hint (darker text, grey bar);
+   only the current section carries the blue bar and the accent */
+.toc > ol > li > a { color: var(--fg); font-weight: 500; }
+.toc > ol > li + li { margin-top: 6px; }
+.toc a:hover { color: var(--fg); border-left-color: var(--line); }
+.toc a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+/* an unnumbered first entry (class toc-top), e.g. the top of the page */
+.toc li.toc-top { counter-increment: none; }
+.toc li.toc-top > a::before { content: none; }
+/* the subsections of a section fold away; the arrow is added by the script, so the page reads without it */
+.toc > ol > li { position: relative; }
+.toc > ol > li > a { padding-right: 30px; }
+.toc-fold { position: absolute; right: 0; top: 2px; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; }
+.toc-fold::before { content: '\25B8'; display: inline-block; font-size: .75rem; transition: transform .15s; }
+.toc li:not(.toc-closed) > .toc-fold::before { transform: rotate(90deg); }
+.toc-fold:hover { color: var(--fg); background: var(--surface-2); }
+.toc-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.toc li.toc-closed > .toc-sub { display: none; }
+main { min-width: 0; counter-reset: sec; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.8rem, 3.2vw, 2.5rem); line-height: 1.15; margin: 0 0 8px; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem; line-height: 1.2; margin: 56px 0 14px; text-wrap: balance; }
+section > h2::before { counter-increment: sec; content: counter(sec) ". "; }
+h3 { font-size: 1.1rem; font-weight: 600; margin: 28px 0 8px; }
+/* Subsections number as 2.1, 2.2; a hidden subsection does not count, so a level-only one goes last. */
+main > section { counter-reset: sub; }
+.subsec { margin-top: 36px; }
+.subsec > h3 { font-family: var(--font-display); font-size: 1.22rem; }
+.subsec > h3::before { counter-increment: sub; content: counter(sec) "." counter(sub) " "; }
+p, li { max-width: 72ch; }
+p { margin: 0 0 12px; }
+code { font-family: var(--font-mono); font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre { font-family: var(--font-mono); font-size: .82rem; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; max-width: 100%; }
+.note { color: var(--muted); font-size: .9rem; }
+:root[data-lang="de"] [data-lang]:not([data-lang="de"]),
+:root[data-lang="en"] [data-lang]:not([data-lang="en"]),
+:root:not([data-lang]) [data-lang]:not([data-lang="en"]) { display: none; }
+/* a paragraph with details: the paragraph is the summary, a small arrow at its end; one level, never nested */
+details.pt { margin: 0 0 12px; max-width: 72ch; }
+details.pt > summary { list-style: none; cursor: pointer; border-radius: 6px; margin: 0 -6px; padding: 2px 6px; }
+details.pt > summary::-webkit-details-marker { display: none; }
+details.pt > summary:hover { background: var(--surface-2); }
+details.pt > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+details.pt > summary > .ptxt { max-width: 72ch; }
+details.pt > summary .chev::after { content: '\25B8'; display: inline-block; margin-left: 6px; color: var(--accent); font-size: .8em; transition: transform .15s; }
+details.pt[open] > summary .chev::after { transform: rotate(90deg); }
+/* the one point of a subsection the reader must not miss; at most one per subsection */
+.callout { margin: 14px 0; padding: 10px 14px; max-width: 72ch; border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; background: var(--accent-soft); }
+.callout > :last-child { margin-bottom: 0; }
+.more-body { margin: 6px 0 4px; padding: 2px 0 4px 14px; border-left: 2px solid var(--line); font-size: .95rem; }
+.more-body > :last-child { margin-bottom: 0; }
+.steps li > details.pt, .steps li > p { margin-bottom: 0; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; font-size: .85rem; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cards { display: grid; gap: 10px; margin: 14px 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.card h4 { margin: 0 0 4px; }
+.card p { margin: 0; font-size: .93rem; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.tbl { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+.steps { counter-reset: s; list-style: none; padding: 0; }
+.steps li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 8px; }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: .8rem; display: inline-flex; align-items: center; justify-content: center; }
+figure { margin: 22px 0; max-width: 100%; }
+figure .fig-scroll { overflow-x: auto; max-width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+figure svg { display: block; max-width: 100%; height: auto; font-family: var(--font-body); min-width: 480px; }
+figcaption { font-size: .86rem; color: var(--muted); margin-top: 8px; max-width: 72ch; }
+.svg-box { fill: var(--surface-2); stroke: currentColor; stroke-width: 1; }
+.svg-box-new { fill: var(--new-soft); stroke: var(--new); stroke-width: 1.2; }
+.svg-box-ext { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+.svg-t { font-size: 12px; fill: currentColor; }
+.svg-ts { font-size: 10.5px; fill: var(--muted); }
+.svg-tn { font-size: 10.5px; fill: var(--new); }
+.svg-line { stroke: currentColor; stroke-width: 1.2; fill: none; }
+.svg-line-new { stroke: var(--new); stroke-width: 1.4; fill: none; }
+.svg-line-dash { stroke: currentColor; stroke-width: 1.1; fill: none; stroke-dasharray: 4 3; }
+.svg-lane { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
+.gl dt { font-weight: 600; margin-top: 10px; }
+.gl dd { margin: 2px 0 0; max-width: 72ch; }
+footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .84rem; }
+/* the language switch and the expand-all button keep the reader's place themselves; the browser's own anchoring would undo it */
+html, body { overflow-anchor: none; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } details.pt > summary .chev::after, .toc-fold::before { transition: none; } }
+/* Print shows the language selected and the details open on screen: "Expand all details" first. */
+@media print { .topbar { position: static; } .toc { display: none; } figure, .card { break-inside: avoid; } }
+</style>
+
+<script>
+(function () {
+  /* Runs before the content so the stored choice applies on first paint. KEY must match the one in the main script. */
+  var root = document.documentElement;
+  var KEY = 'topic-name';
+  try {
+    var g = localStorage.getItem(KEY + '-lang'); root.dataset.lang = (g === 'de') ? 'de' : 'en';
+  } catch (e) { root.dataset.lang = 'en'; }
+  root.lang = root.dataset.lang;
+})();
+</script>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span data-lang="en">Topic Name</span><span data-lang="de">Thema</span></div>
+    <div class="switches">
+      <button type="button" class="btn" id="toggle-all" aria-pressed="false"><span data-lang="en">Expand all details</span><span data-lang="de">Alle Details aufklappen</span></button>
+      <div class="seg" role="group" aria-label="Language / Sprache" id="lang-group">
+        <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-set-lang="de" aria-pressed="false">DE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+<div class="wrap">
+<nav class="toc" aria-label="Contents / Inhalt">
+  <ol>
+    <li><a href="#background"><span data-lang="en">Background</span><span data-lang="de">Hintergrund</span></a>
+      <ol class="toc-sub">
+        <li><a href="#today"><span data-lang="en">How it works today</span><span data-lang="de">Wie es heute funktioniert</span></a></li>
+        <li><a href="#basics-x"><span data-lang="en">&lt;prerequisite&gt;</span><span data-lang="de">&lt;Grundlage&gt;</span></a></li>
+      </ol>
+    </li>
+    <li><a href="#subject"><span data-lang="en">The topic</span><span data-lang="de">Das Thema</span></a>
+      <ol class="toc-sub">
+        <li><a href="#goal"><span data-lang="en">Why it exists</span><span data-lang="de">Wozu es da ist</span></a></li>
+        <li><a href="#approach"><span data-lang="en">Approach</span><span data-lang="de">Ansatz</span></a></li>
+        <li><a href="#flow"><span data-lang="en">Flow</span><span data-lang="de">Ablauf</span></a></li>
+        <li><a href="#concept-x"><span data-lang="en">&lt;concept&gt;</span><span data-lang="de">&lt;Konzept&gt;</span></a></li>
+      </ol>
+    </li>
+    <!-- caller sections go here, before the glossary -->
+    <li><a href="#glossary"><span data-lang="en">Glossary</span><span data-lang="de">Glossar</span></a></li>
+  </ol>
+</nav>
+
+<main>
+  <h1><span data-lang="en">Page title</span><span data-lang="de">Titel der Seite</span></h1>
+  <p class="note"><span data-lang="en">Each paragraph is the explanation, exact and readable. A paragraph with an arrow at its end opens its details on a click: the reasons, the order of events, edge cases and the central places in the code. "Expand all details" opens all of them, for searching and printing.</span><span data-lang="de">Jeder Absatz ist die Erklärung, exakt und gut lesbar. Ein Absatz mit einem Pfeil am Ende öffnet per Klick seine Details: die Gründe, die Reihenfolge, Sonderfälle und die zentralen Stellen im Code. „Alle Details aufklappen“ öffnet alle, zum Suchen und Drucken.</span></p>
+  <!-- header slot: a caller that owns the page puts its own header parts here -->
+
+  <!-- Top-level sections are fixed: never skip one, never add one. Variable parts are subsections after the fixed ones.
+       Section 1 holds what exists without the subject, section 2 what the subject is or brings. -->
+  <section id="background">
+    <h2><span data-lang="en">Background</span><span data-lang="de">Hintergrund</span></h2>
+    <!-- 1.1, on every page: how it works before the subject (a change: the parts of the area before it; a document or files: the system they describe; a general topic: how the problem it solves is handled without it) -->
+    <div id="today" class="subsec">
+      <h3><span data-lang="en">How it works today</span><span data-lang="de">Wie es heute funktioniert</span></h3>
+      <!-- Figures stand in the visible text, never inside a summary or the details. Marker ids are unique per figure (ar-<figure>, -de on a German copy). -->
+      <figure>
+        <div class="fig-scroll">
+        <svg viewBox="0 0 520 90" role="img" aria-label="Architecture: client, service, store.">
+          <defs><marker id="ar-today" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+          <rect x="10" y="20" width="140" height="48" rx="6" class="svg-box"/><text x="80" y="48" text-anchor="middle" class="svg-t">client</text>
+          <rect x="190" y="20" width="140" height="48" rx="6" class="svg-box"/><text x="260" y="48" text-anchor="middle" class="svg-t">service</text>
+          <rect x="370" y="20" width="140" height="48" rx="6" class="svg-box-ext"/><text x="440" y="48" text-anchor="middle" class="svg-t">store</text>
+          <line x1="150" y1="44" x2="188" y2="44" class="svg-line" marker-end="url(#ar-today)"/>
+          <line x1="330" y1="44" x2="368" y2="44" class="svg-line" marker-end="url(#ar-today)"/>
+        </svg>
+        </div>
+        <figcaption><span data-lang="en">Figure 1. The parts and how they talk, in one sentence.</span><span data-lang="de">Abbildung 1. Die Teile und wie sie miteinander reden, in einem Satz.</span></figcaption>
+      </figure>
+      <!-- a paragraph without details -->
+      <p data-lang="en">What the area is and who uses it, in two or three sentences.</p><p data-lang="de">Was der Bereich ist und wer ihn nutzt, in zwei oder drei Sätzen.</p>
+      <!-- a paragraph with details: the summary is the visible paragraph, the details hold the depth of this paragraph only -->
+      <details class="pt"><summary><span data-lang="en" class="ptxt">The existing parts, what each one is responsible for and how they talk, with component and protocol names, in sentences that state how they relate.</span><span data-lang="de" class="ptxt">Die bestehenden Teile, wofür jeder zuständig ist und wie sie miteinander reden, mit Komponenten- und Protokollnamen, in Sätzen, die ihre Beziehungen sagen.</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">The depth of this paragraph: why the parts are split this way, what happens in which order, on errors and in edge cases, the values that matter. The central places only, in the sentence, for example <code>path/file.ts:12</code>.</p><p data-lang="de">Die Tiefe dieses Absatzes: warum die Teile so aufgeteilt sind, was in welcher Reihenfolge passiert, bei Fehlern und in Sonderfällen, die Werte, auf die es ankommt. Nur die zentralen Stellen, im Satz, zum Beispiel <code>path/file.ts:12</code>.</p></div></details>
+      <!-- A table in the visible text wherever the reader compares along rows and columns (before and after, parts and roles,
+           options, values); language per row (or per cell); rows keep their native display. -->
+      <div class="tbl"><table>
+        <thead><tr><th><span data-lang="en">Part</span><span data-lang="de">Teil</span></th><th><span data-lang="en">Responsible for</span><span data-lang="de">Zuständig für</span></th><th><span data-lang="en">Talks to</span><span data-lang="de">Redet mit</span></th></tr></thead>
+        <tbody>
+          <tr data-lang="en"><td><code>client</code></td><td>What the part does.</td><td><code>service</code></td></tr>
+          <tr data-lang="de"><td><code>client</code></td><td>Was der Teil tut.</td><td><code>service</code></td></tr>
+        </tbody>
+      </table></div>
+      <p data-lang="en">One or two sentences on what the table shows and what follows from it.</p><p data-lang="de">Ein oder zwei Sätze dazu, was die Tabelle zeigt und was daraus folgt.</p>
+    </div>
+    <!-- one per general concept the page relies on; only when the argument depends on how it works, else a glossary entry -->
+    <div id="basics-x" class="subsec">
+      <h3><span data-lang="en">&lt;prerequisite&gt;</span><span data-lang="de">&lt;Grundlage&gt;</span></h3>
+      <details class="pt"><summary><span data-lang="en" class="ptxt">…</span><span data-lang="de" class="ptxt">…</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">… <code>path/file.ts:12</code></p><p data-lang="de">… <code>path/file.ts:12</code></p></div></details>
+    </div>
+  </section>
+
+  <!-- heading: a general topic "The topic" / "Das Thema"; a GitLab MR or branch "The MR" / "Der MR"; a GitHub PR "The PR" / "Der PR"; a patch or files "The change" / "Die Änderung"; a document "The document" / "Das Dokument" -->
+  <section id="subject">
+    <h2><span data-lang="en">The topic</span><span data-lang="de">Das Thema</span></h2>
+    <!-- for a code change, and on a caller's page always: "Goal" / "Ziel" -->
+    <div id="goal" class="subsec">
+      <h3><span data-lang="en">Why it exists</span><span data-lang="de">Wozu es da ist</span></h3>
+      <!-- the one point of the subsection the reader must not miss; at most one per subsection -->
+      <div class="callout"><p data-lang="en">The one thing to remember, in one sentence.</p><p data-lang="de">Das eine, was hängen bleiben soll, in einem Satz.</p></div>
+      <p data-lang="en">Which problem it solves and what changes for people.</p><p data-lang="de">Welches Problem es löst und was sich für Menschen ändert.</p>
+      <details class="pt"><summary><span data-lang="en" class="ptxt">What changes technically; what is deliberately left out.</span><span data-lang="de" class="ptxt">Was technisch anders wird; was bewusst nicht dazugehört.</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">The ticket and its acceptance criteria, and why the scope ends where it does: <cite>PROJ-1234</cite>.</p><p data-lang="de">Das Ticket und seine Akzeptanzkriterien, und warum der Umfang dort endet: <cite>PROJ-1234</cite>.</p></div></details>
+    </div>
+    <!-- 2.2: how the subject is built: its building blocks (arc42 building block view), what each one is responsible for, how they depend on each other and on existing parts, the main decision; for a small change where it sits and why there -->
+    <div id="approach" class="subsec">
+      <h3><span data-lang="en">Approach</span><span data-lang="de">Ansatz</span></h3>
+      <figure>
+        <div class="fig-scroll">
+        <svg viewBox="0 0 520 90" role="img" aria-label="Building blocks: an existing part, the new module, an external part.">
+          <defs><marker id="ar-approach" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+          <rect x="10" y="20" width="140" height="48" rx="6" class="svg-box"/><text x="80" y="48" text-anchor="middle" class="svg-t">existing</text>
+          <rect x="190" y="20" width="140" height="48" rx="6" class="svg-box-new"/><text x="260" y="48" text-anchor="middle" class="svg-t">new module</text>
+          <rect x="370" y="20" width="140" height="48" rx="6" class="svg-box-ext"/><text x="440" y="48" text-anchor="middle" class="svg-t">external</text>
+          <line x1="150" y1="44" x2="188" y2="44" class="svg-line" marker-end="url(#ar-approach)"/>
+          <line x1="330" y1="44" x2="368" y2="44" class="svg-line" marker-end="url(#ar-approach)"/>
+        </svg>
+        </div>
+        <figcaption><span data-lang="en">Figure 2. The building blocks and the direction of their dependencies.</span><span data-lang="de">Abbildung 2. Die Bausteine und die Richtung ihrer Abhängigkeiten.</span></figcaption>
+      </figure>
+      <details class="pt"><summary><span data-lang="en" class="ptxt">…</span><span data-lang="de" class="ptxt">…</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">… <code>path/file.ts:12</code></p><p data-lang="de">… <code>path/file.ts:12</code></p></div></details>
+    </div>
+    <!-- 2.3: one request, login or job through the building blocks of 2.2 (arc42 runtime view); a step is a list item, with or without details -->
+    <div id="flow" class="subsec">
+      <h3><span data-lang="en">Flow</span><span data-lang="de">Ablauf</span></h3>
+      <figure>
+        <div class="fig-scroll">
+        <svg viewBox="0 0 520 90" role="img" aria-label="Flow: request, the new step, result.">
+          <defs><marker id="ar-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+          <rect x="10" y="20" width="140" height="48" rx="6" class="svg-box"/><text x="80" y="48" text-anchor="middle" class="svg-t">1 request</text>
+          <rect x="190" y="20" width="140" height="48" rx="6" class="svg-box-new"/><text x="260" y="48" text-anchor="middle" class="svg-t">2 new step</text>
+          <rect x="370" y="20" width="140" height="48" rx="6" class="svg-box-ext"/><text x="440" y="48" text-anchor="middle" class="svg-t">3 result</text>
+          <line x1="150" y1="44" x2="188" y2="44" class="svg-line" marker-end="url(#ar-flow)"/>
+          <line x1="330" y1="44" x2="368" y2="44" class="svg-line" marker-end="url(#ar-flow)"/>
+        </svg>
+        </div>
+        <figcaption><span data-lang="en">Figure 3. One request through the parts, in the order of the steps.</span><span data-lang="de">Abbildung 3. Eine Anfrage durch die Teile, in der Reihenfolge der Schritte.</span></figcaption>
+      </figure>
+      <ol class="steps">
+        <li><p data-lang="en">…</p><p data-lang="de">…</p></li>
+        <li>
+        <details class="pt"><summary><span data-lang="en" class="ptxt">…</span><span data-lang="de" class="ptxt">…</span><span class="chev" aria-hidden="true"></span></summary>
+          <div class="more-body"><p data-lang="en">… <code>path/file.ts:12</code></p><p data-lang="de">… <code>path/file.ts:12</code></p></div></details>
+        </li>
+      </ol>
+    </div>
+    <div id="concept-x" class="subsec">
+      <h3><span data-lang="en">&lt;concept&gt;</span><span data-lang="de">&lt;Konzept&gt;</span></h3>
+      <details class="pt"><summary><span data-lang="en" class="ptxt">…</span><span data-lang="de" class="ptxt">…</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">… <code>path/file.ts:12</code></p><p data-lang="de">… <code>path/file.ts:12</code></p></div></details>
+    </div>
+  </section>
+
+  <!-- caller slot: sections a calling skill adds (level-independent, language-switched), before the glossary -->
+
+  <section id="glossary">
+    <h2><span data-lang="en">Glossary</span><span data-lang="de">Glossar</span></h2>
+    <div data-lang="en"><dl class="gl"><dt>Term</dt><dd>One or two sentences.</dd></dl></div>
+    <div data-lang="de"><dl class="gl"><dt>Begriff</dt><dd>Ein oder zwei Sätze.</dd></dl></div>
+  </section>
+
+  <footer><span data-lang="en">Sources and date.</span><span data-lang="de">Quellen und Stand.</span></footer>
+</main>
+</div>
+</div>
+
+<script>
+(function () {
+  var KEY = 'topic-name';
+  var root = document.documentElement;
+  /* in-page jumps land below the sticky bar, which wraps to more rows on a narrow screen */
+  function padForBar() { var bar = document.querySelector('.topbar'); if (bar) { root.style.scrollPaddingTop = (bar.offsetHeight + 12) + 'px'; } }
+  padForBar();
+  window.addEventListener('resize', padForBar, { passive: true });
+  var langButtons = Array.prototype.slice.call(document.querySelectorAll('[data-set-lang]'));
+  function setLang(lang) {
+    root.dataset.lang = lang;
+    root.lang = lang;
+    langButtons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.setLang === lang)); });
+    try { localStorage.setItem(KEY + '-lang', lang); } catch (e) { /* storage unavailable */ }
+  }
+  /* The language switch and the expand-all button keep the reader's place. The most visible marks are the heads: a finding card's title line with its
+     severity pill, a subsection's or a section's heading. The first head on screen below the sticky bar keeps its
+     distance from the bar. With no head on screen (deep inside a long subsection), the innermost card, subsection or
+     section the reading line is in keeps the line at the same share of its height. Own logic, since browsers differ in
+     their scroll anchoring (Safari has none). */
+  var HEADS = '.card[id] > summary, .subsec[id] > h3, section[id] > h2';
+  var BLOCKS = '.card[id], .subsec[id], section[id]';
+  function visibleAll(sel) {
+    return Array.prototype.filter.call(document.querySelectorAll(sel), function (e) { return e.getClientRects().length > 0; });
+  }
+  function keyOf(e) { return e.id || e.parentElement.id + ':head'; }
+  function readingLine() { var bar = document.querySelector('.topbar'); return bar ? bar.getBoundingClientRect().bottom : 0; }
+  function notePlace() {
+    var line = readingLine(), head = null, inside = [];
+    /* a head counts while any of it shows below the bar, so a title the bar half covers still wins */
+    visibleAll(HEADS).forEach(function (e) {
+      var b = e.getBoundingClientRect();
+      if (b.bottom > line && b.top < window.innerHeight && (!head || b.top - line < head.gap)) { head = { key: keyOf(e), gap: b.top - line }; }
+    });
+    visibleAll(BLOCKS).forEach(function (e) {
+      var b = e.getBoundingClientRect();
+      if (b.top <= line && b.bottom > line) { inside.push({ key: keyOf(e), share: (line - b.top) / b.height, height: b.height }); }
+    });
+    inside.sort(function (a, c) { return a.height - c.height; });
+    return { head: head, inside: inside };
+  }
+  function restorePlace(place) {
+    var line = readingLine(), delta = null;
+    function find(sel, key) { return visibleAll(sel).filter(function (e) { return keyOf(e) === key; })[0]; }
+    var e = place.head ? find(HEADS, place.head.key) : null;
+    if (e) { delta = e.getBoundingClientRect().top - line - place.head.gap; }
+    for (var i = 0; delta === null && i < place.inside.length; i += 1) {
+      e = find(BLOCKS, place.inside[i].key);
+      if (e) { var b = e.getBoundingClientRect(); delta = b.top + place.inside[i].share * b.height - line; }
+    }
+    if (delta) { window.scrollTo(0, window.scrollY + delta); }
+  }
+  function keepingPlace(fn) { return function () { var place = notePlace(); fn(); restorePlace(place); }; }
+  langButtons.forEach(function (b) { b.addEventListener('click', keepingPlace(function () { setLang(b.dataset.setLang); })); });
+  setLang(root.dataset.lang || 'en');
+
+  /* Expand all details opens every paragraph disclosure at once, for search and print; a second click closes them.
+     The button shows the state of all disclosures, also after the reader opens or closes one by hand. */
+  var toggleAll = document.getElementById('toggle-all');
+  /* the paragraph disclosures, and the finding cards where a page has them (they start folded) */
+  function disclosures() { return Array.prototype.slice.call(document.querySelectorAll('details.pt, details.card')); }
+  function allOpen() { var d = disclosures(); return d.length > 0 && d.every(function (x) { return x.open; }); }
+  function syncToggle() {
+    if (!toggleAll) { return; }
+    toggleAll.setAttribute('aria-pressed', String(allOpen()));
+    toggleAll.innerHTML = allOpen() ? '<span data-lang="en">Collapse all details</span><span data-lang="de">Alle Details zuklappen</span>'
+                                    : '<span data-lang="en">Expand all details</span><span data-lang="de">Alle Details aufklappen</span>';
+  }
+  if (toggleAll) {
+    toggleAll.addEventListener('click', keepingPlace(function () {
+      var open = !allOpen();
+      disclosures().forEach(function (x) { x.open = open; });
+      syncToggle();
+    }));
+  }
+  disclosures().forEach(function (x) { x.addEventListener('toggle', syncToggle); });
+  syncToggle();
+
+  /* Scroll spy: the active entry is the last visible target whose top has passed the reading line under the
+     sticky bar. A clicked entry stays active until the page moves away from where its jump ended: a short
+     section near the end of the page never reaches the line. Hidden targets are skipped. */
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var toc = document.querySelector('.toc');
+  var pinned = null, pinY = null, settle = 0, lastActive = null;
+  /* The table of contents starts with every section's subsections shown; a section the reader folds by its arrow
+     stays folded, and one the reader opens again stays open. */
+  function setFold(li, open) {
+    li.classList.toggle('toc-closed', !open);
+    var b = li.querySelector(':scope > .toc-fold');
+    if (b) { b.setAttribute('aria-expanded', String(open)); }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.toc > ol > li'), function (li) {
+    if (!li.querySelector(':scope > .toc-sub')) { return; }
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'toc-fold';
+    b.setAttribute('aria-label', 'Subsections / Unterabschnitte');
+    b.addEventListener('click', function () { li.dataset.manual = '1'; setFold(li, li.classList.contains('toc-closed')); });
+    li.insertBefore(b, li.firstChild);
+    setFold(li, true);
+  });
+  /* Once the table of contents is taller than the screen it scrolls in its own box: keep the active entry inside
+     that box, or a section that opens unfolds out of sight. Only the box scrolls, never the page, and only when the
+     active entry changes, so a reader scrolling the box by hand is left alone. */
+  function keepInToc(link, li) {
+    if (!toc || toc.scrollHeight <= toc.clientHeight + 1) { return; }
+    var el = link.getClientRects().length ? link : li && li.querySelector(':scope > a');
+    if (!el) { return; }
+    var t = toc.getBoundingClientRect(), r = el.getBoundingClientRect();
+    if (r.top < t.top + 8 || r.bottom > t.bottom - 8) { toc.scrollTop += r.top - t.top - toc.clientHeight / 3; }
+  }
+  function markActive(link) {
+    links.forEach(function (a) { a.classList.toggle('active', a === link); });
+    var li = link ? link.closest('.toc > ol > li') : null;
+    if (li && !li.dataset.manual && li.classList.contains('toc-closed')) { setFold(li, true); }
+    if (link && link !== lastActive) { lastActive = link; keepInToc(link, li); }
+  }
+  function spy() {
+    if (pinned) { markActive(pinned); return; }
+    var line = (parseFloat(getComputedStyle(root).scrollPaddingTop) || 0) + 24;
+    var current = links[0];
+    links.forEach(function (a) {
+      var t = document.getElementById(a.getAttribute('href').slice(1));
+      if (t && t.getClientRects().length && t.getBoundingClientRect().top <= line) { current = a; }
+    });
+    markActive(current);
+  }
+  /* the jump of a click has ended when the page has not moved for 150 ms; any move after that releases the pin,
+     whatever moved it (wheel, keys, the scrollbar, find in page) */
+  function settleLater() { clearTimeout(settle); settle = setTimeout(function () { if (pinned && pinY === null) { pinY = window.scrollY; } }, 150); }
+  var spyQueued = false;
+  window.addEventListener('scroll', function () {
+    if (pinned && pinY !== null && Math.abs(window.scrollY - pinY) > 4) { pinned = null; pinY = null; }
+    if (pinned && pinY === null) { settleLater(); }
+    if (spyQueued) { return; }
+    spyQueued = true;
+    requestAnimationFrame(function () { spyQueued = false; spy(); });
+  }, { passive: true });
+  links.forEach(function (a) { a.addEventListener('click', function () { pinned = a; pinY = null; markActive(a); settleLater(); }); });
+  ['wheel', 'touchmove', 'keydown'].forEach(function (ev) { window.addEventListener(ev, function () { pinned = null; }, { passive: true }); });
+  if (toggleAll) { toggleAll.addEventListener('click', function () { pinned = null; spy(); }); }
+  spy();
+})();
+</script>

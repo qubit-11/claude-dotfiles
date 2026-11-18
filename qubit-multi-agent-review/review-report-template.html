@@ -1,0 +1,1084 @@
+<meta charset="utf-8">
+<title>{{titleLine}}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Review report template for the qubit-multi-agent-review skill. It embeds the qubit-explanation-page skeleton (tokens, both
+   themes, gutter, the language switch and the expand-all button, the paragraph disclosures (details.pt), root-attribute
+   visibility, counters, print rules) and
+   adds the review components: verdict box, stats row, method table, filter chips, finding cards rendered
+   from a data array (foldable, with a per-browser done mark), result pills. Replace placeholder content; keep everything else. */
+:root {
+  --bg: #f4f6f8; --surface: #ffffff; --surface-2: #eaeef3; --fg: #1b2430; --muted: #5a6778; --line: #d6dde6;
+  --accent: #23579f; --accent-soft: #e3ecf8; --accent-fg: #ffffff; --new: #0d8a78; --new-soft: #dff3ee;
+  --warn: #b4261f; --warn-soft: #fbe5e3; --mid: #9a5b00; --mid-soft: #fff1d6; --info: #6d3fb0;
+  --font-display: "IBM Plex Serif", Georgia, serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10161d; --surface: #182029; --surface-2: #212b36; --fg: #e5eaf0; --muted: #9aa6b4; --line: #2b3745;
+    --accent: #85adf0; --accent-soft: #1d2d45; --accent-fg: #10161d; --new: #43c2ad; --new-soft: #153b36;
+    --warn: #ff7b72; --warn-soft: #3d1f1d; --mid: #f0b35a; --mid-soft: #3b2d14; --info: #c4a5f5; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10161d; --surface: #182029; --surface-2: #212b36; --fg: #e5eaf0; --muted: #9aa6b4; --line: #2b3745;
+  --accent: #85adf0; --accent-soft: #1d2d45; --accent-fg: #10161d; --new: #43c2ad; --new-soft: #153b36;
+  --warn: #ff7b72; --warn-soft: #3d1f1d; --mid: #f0b35a; --mid-soft: #3b2d14; --info: #c4a5f5; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 84px; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line);
+  padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.topbar-inner { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.brand { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface-2); }
+.seg button { border: 0; background: transparent; color: var(--muted); font: inherit; font-size: .85rem; font-weight: 500; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.switches { display: flex; gap: 10px; margin-left: auto; flex-wrap: wrap; }
+.page { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; }
+.wrap { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: minmax(0, 1fr); } .toc { display: none; } }
+.toc { position: sticky; top: 76px; align-self: start; font-size: .88rem;
+  max-height: calc(100vh - 100px); max-height: calc(100dvh - 100px); overflow-y: auto; overscroll-behavior: contain; }
+.toc ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; counter-reset: toc; }
+.toc li { counter-increment: toc; }
+.toc a { color: var(--muted); text-decoration: none; display: block; padding: 4px 8px; border-left: 2px solid transparent; }
+.toc a::before { content: counter(toc) ". "; }
+.toc .toc-sub { margin-top: 4px; counter-reset: tocsub; }
+.toc .toc-sub li { counter-increment: tocsub; }
+.toc .toc-sub a { padding-left: 22px; font-size: .84rem; }
+.toc .toc-sub a::before { content: counter(toc) "." counter(tocsub) " "; }
+/* group headings dark and a little apart; hover is a passing hint (darker text, grey bar);
+   only the current section carries the blue bar and the accent */
+.toc > ol > li > a { color: var(--fg); font-weight: 500; }
+.toc > ol > li + li { margin-top: 6px; }
+.toc a:hover { color: var(--fg); border-left-color: var(--line); }
+.toc a.active { color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+/* the unnumbered first entry: the top of the page (header, verdict, stats) */
+.toc li.toc-top { counter-increment: none; }
+.toc li.toc-top > a::before { content: none; }
+/* the subsections of a section fold away; the arrow is added by the script, so the page reads without it */
+.toc > ol > li { position: relative; }
+.toc > ol > li > a { padding-right: 30px; }
+.toc-fold { position: absolute; right: 0; top: 2px; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; }
+.toc-fold::before { content: '\25B8'; display: inline-block; font-size: .75rem; transition: transform .15s; }
+.toc li:not(.toc-closed) > .toc-fold::before { transform: rotate(90deg); }
+.toc-fold:hover { color: var(--fg); background: var(--surface-2); }
+.toc-fold:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.toc li.toc-closed > .toc-sub { display: none; }
+main { min-width: 0; counter-reset: sec; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.8rem, 3.2vw, 2.5rem); line-height: 1.15; margin: 0 0 8px; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem; line-height: 1.2; margin: 56px 0 14px; text-wrap: balance; }
+section > h2::before { counter-increment: sec; content: counter(sec) ". "; }
+h3 { font-size: 1.1rem; font-weight: 600; margin: 28px 0 8px; }
+/* Subsections number as 3.1, 3.2. */
+main > section { counter-reset: sub; }
+.subsec > h3 { font-family: var(--font-display); font-size: 1.22rem; }
+.subsec > h3::before { counter-increment: sub; content: counter(sec) "." counter(sub) " "; }
+h4 { margin: 0 0 4px; font-size: 1rem; }
+p, li { max-width: 72ch; }
+p { margin: 0 0 12px; }
+a { color: var(--accent); }
+code { font-family: var(--font-mono); font-size: .86em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre { font-family: var(--font-mono); font-size: .82rem; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; max-width: 100%; }
+.note { color: var(--muted); font-size: .9rem; }
+.eyebrow { color: var(--muted); font-size: .76rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 4px; }
+.moved { display: block; color: var(--warn); font-weight: 600; }
+:root[data-lang="de"] [data-lang]:not([data-lang="de"]),
+:root[data-lang="en"] [data-lang]:not([data-lang="en"]),
+:root:not([data-lang]) [data-lang]:not([data-lang="en"]) { display: none; }
+/* a paragraph with details: the paragraph is the summary, a small arrow at its end; one level, never nested */
+details.pt { margin: 0 0 12px; max-width: 72ch; }
+details.pt > summary { list-style: none; cursor: pointer; border-radius: 6px; margin: 0 -6px; padding: 2px 6px; }
+details.pt > summary::-webkit-details-marker { display: none; }
+details.pt > summary:hover { background: var(--surface-2); }
+details.pt > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+details.pt > summary > .ptxt { max-width: 72ch; }
+details.pt > summary .chev::after { content: '\25B8'; display: inline-block; margin-left: 6px; color: var(--accent); font-size: .8em; transition: transform .15s; }
+details.pt[open] > summary .chev::after { transform: rotate(90deg); }
+/* the one point of a subsection the reader must not miss; at most one per subsection */
+.callout { margin: 14px 0; padding: 10px 14px; max-width: 72ch; border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; background: var(--accent-soft); }
+.callout > :last-child { margin-bottom: 0; }
+.more-body { margin: 6px 0 4px; padding: 2px 0 4px 14px; border-left: 2px solid var(--line); font-size: .95rem; }
+.more-body > :last-child { margin-bottom: 0; }
+.steps li > details.pt, .steps li > p { margin-bottom: 0; }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; font-size: .85rem; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 20px; font-size: .9rem; margin: 14px 0 18px; }
+.meta dt { color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .06em; }
+.meta dd { margin: 0; overflow-wrap: anywhere; }
+.meta .wide { grid-column: 1 / -1; }
+.verdict { margin: 16px 0; }
+.legend { margin: 10px 0 14px; font-size: .9rem; }
+.legend > summary { cursor: pointer; color: var(--muted); }
+.legend dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 10px 0; }
+.legend dt { font-weight: 600; }
+.legend dd { margin: 0; max-width: 72ch; }
+.verdict-label { color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 4px; }
+.verdict-word { display: flex; align-items: center; gap: 10px; max-width: none; margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--mid); border-radius: 8px; background: var(--mid-soft); color: var(--fg); font-size: 1.15rem; }
+.verdict-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--mid); color: var(--accent-fg); font-size: .85em; font-weight: 700; }
+.verdict.ok .verdict-word { background: var(--new-soft); border-color: var(--new); }
+.verdict.ok .verdict-icon { background: var(--new); }
+.verdict.fail .verdict-word { background: var(--warn-soft); border-color: var(--warn); }
+.verdict.fail .verdict-icon { background: var(--warn); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 14px 0 6px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font-size: 1.5rem; font-family: var(--font-display); font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: .8rem; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.tbl { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); margin: 12px 0 18px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.steps { counter-reset: s; list-style: none; padding: 0; }
+.steps li { counter-increment: s; position: relative; padding-left: 36px; margin-bottom: 8px; }
+.steps li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: .8rem; display: inline-flex; align-items: center; justify-content: center; }
+figure { margin: 22px 0; max-width: 100%; }
+figure .fig-scroll { overflow-x: auto; max-width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+figure svg { display: block; max-width: 100%; height: auto; font-family: var(--font-body); min-width: 480px; }
+figcaption { font-size: .86rem; color: var(--muted); margin-top: 8px; max-width: 72ch; }
+.svg-box { fill: var(--surface-2); stroke: currentColor; stroke-width: 1; }
+.svg-box-new { fill: var(--new-soft); stroke: var(--new); stroke-width: 1.2; }
+.svg-box-ext { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+.svg-box-warn { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 1.2; }
+.svg-t { font-size: 12px; fill: currentColor; }
+.svg-tb { font-size: 12px; fill: currentColor; font-weight: 600; }
+.svg-ts { font-size: 10.5px; fill: var(--muted); }
+.svg-tn { font-size: 10.5px; fill: var(--new); }
+.svg-tw { font-size: 10.5px; fill: var(--warn); }
+.svg-line { stroke: currentColor; stroke-width: 1.2; fill: none; }
+.svg-line-new { stroke: var(--new); stroke-width: 1.4; fill: none; }
+.svg-line-dash { stroke: currentColor; stroke-width: 1.1; fill: none; stroke-dasharray: 4 3; }
+.svg-lane { stroke: var(--line); stroke-width: 1; stroke-dasharray: 2 4; }
+/* the rows share one label column (subgrid), as wide as the longest label shown; a wrapped chip line starts under the first chip */
+.filters { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 12px 14px; margin: 10px 0 16px; }
+.chips { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: baseline; }
+.chip-set { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips .lbl { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+@media (max-width: 560px) { .filters { grid-template-columns: minmax(0, 1fr); } .chips { gap: 6px; } }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: inherit; font-size: .82rem; padding: 4px 10px; border-radius: 999px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip .n { margin-left: 6px; font-variant-numeric: tabular-nums; opacity: .8; }
+/* a chip that would show no card stays in place, dimmed, so the rows never jump while filtering */
+.chip.zero { opacity: .45; }
+.cards { display: grid; gap: 10px; margin: 14px 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.card .head { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-bottom: 6px; }
+/* a card is a details element: every card starts folded, so the title lines form the list; a click opens one.
+   A ticked card is marked, open or folded: green left edge and tick, grey title, grey pills; nothing is struck
+   through, since a strike reads as "withdrawn" or "refuted" in a review. */
+.card > summary { list-style: none; cursor: pointer; }
+.card > summary::-webkit-details-marker { display: none; }
+.card > summary::before { content: '\25B8'; color: var(--muted); font-size: .8rem; transition: transform .15s; }
+.card[open] > summary::before { transform: rotate(90deg); }
+.card:not([open]) > summary { margin-bottom: 0; }
+.card.done { border-left: 3px solid var(--new); }
+.card.done h4 { color: var(--muted); }
+.card.done .pill { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.done-box input { accent-color: var(--new); width: 18px; height: 18px; margin: 0; cursor: pointer; }
+.done-box { margin-left: auto; display: inline-flex; align-items: center; padding: 4px; cursor: pointer; }
+.card .id { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); }
+.card .file { font-family: var(--font-mono); font-size: .78rem; color: var(--muted); overflow-wrap: anywhere; margin: 0 0 8px; }
+/* the package opens the location line as plain text: the pill shape stays reserved for the severity */
+.card .file .package { font-family: var(--font-body); font-size: .82rem; font-weight: 500; color: var(--fg); }
+.card dl { margin: 0; display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 4px 12px; font-size: .93rem; }
+.card dt { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; padding-top: 3px; align-self: start; }
+/* card text is code-heavy: long identifiers read as one word, so ~90 characters (70ch in this font) keep about 13 words per line */
+.card dd { margin: 0; max-width: 70ch; overflow-wrap: anywhere; }
+.card p, .card li { max-width: 70ch; }
+/* a field with details: its text is the summary of a details.pt, its more the details, in the card's text size */
+.card dd > details.pt { margin: 0; }
+.card dd details.pt > summary > .ptxt { max-width: 70ch; }
+.card .more-body { font-size: .9rem; }
+.card dd p { margin: 0 0 8px; }
+.card dd ul, .card dd ol { margin: 0 0 8px; padding-left: 1.2em; }
+.card dd > div > :last-child, .card dd > :last-child, .card dd .ptxt > :last-child, .card .more-body > div > :last-child { margin-bottom: 0; }
+@media (max-width: 600px) { .card dl { grid-template-columns: minmax(0, 1fr); } .card dt { padding-top: 6px; } }
+.pill { display: inline-block; font-size: .74rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.pill-blocker { background: var(--warn); color: var(--accent-fg); border-color: var(--warn); }
+/* three groups: Blocker holds the verdict; Optional and Nit are changes in the subject (one blue, by weight); FYI is no change here */
+.pill-optional { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.pill-nit { background: transparent; color: var(--accent); border-color: var(--accent); }
+.pill-fyi { background: transparent; color: var(--info); border: 1px dashed var(--info); }
+.pill-ok { background: var(--new-soft); color: var(--new); border-color: var(--new); }
+.pill-fail { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
+.head .category { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.pill-skip { background: var(--surface-2); color: var(--muted); border-color: var(--line); }
+.empty { color: var(--muted); font-size: .9rem; padding: 10px 0; }
+.subsec { margin-top: 36px; }
+.card .glc { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line); }
+/* the comment row takes the label column of the fields; its text keeps its own width cap, beside the Copy button */
+.card dl.glc dd { max-width: none; }
+.glc-item + .glc-item { margin-top: 10px; }
+.glc-at { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: .8rem; margin-bottom: 4px; }
+.glc-at code { overflow-wrap: anywhere; }
+.glc-at a { font-family: var(--font-mono); }
+.glc-anchor { color: var(--muted); }
+.glc-at a.glc-anchor { font-family: inherit; }
+.glc-box { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.glc-text { margin: 0; font-family: var(--font-body); font-size: .9rem; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 70ch; }
+.glc-copy { border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; font-size: .78rem; padding: 3px 10px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.glc-copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.glc-copy:disabled { color: var(--muted); cursor: not-allowed; }
+.glc-ticket { color: var(--warn); font-weight: 600; }
+.glc-copy.done { background: var(--new-soft); color: var(--new); border-color: var(--new); }
+.mts { display: grid; gap: 10px; margin: 14px 0; }
+.mt { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+.mt-head { display: flex; gap: 10px; align-items: baseline; font-weight: 500; overflow-wrap: anywhere; }
+.mt .id { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); font-weight: 400; }
+.mt-expect { margin: 6px 0 8px; max-width: 70ch; overflow-wrap: anywhere; }
+.mt-lbl, .mt-setup b { color: var(--muted); font-size: .78rem; font-weight: 400; text-transform: uppercase; letter-spacing: .05em; margin-right: 6px; }
+.mt-result { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .9rem; }
+.mt-result label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.mt-result input { accent-color: var(--new); }
+.mt-result input[data-mt-state="fail"] { accent-color: var(--warn); }
+.mt-fail { margin-top: 10px; display: grid; gap: 8px; }
+.mt-fail[hidden], .mt-setup[hidden] { display: none; }
+.mt-fail textarea { font: inherit; font-size: .9rem; width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); }
+.glc-file { font-family: var(--font-mono); font-size: .85rem; font-weight: 500; margin: 22px 0 8px; overflow-wrap: anywhere; }
+.gl dt { font-weight: 600; margin-top: 10px; }
+.gl dd { margin: 2px 0 0; max-width: 72ch; }
+footer { margin-top: 56px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .84rem; }
+footer code { overflow-wrap: anywhere; }
+footer .resume { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 0 0; }
+/* the language switch and the expand-all button keep the reader's place themselves; the browser's own anchoring would undo it */
+html, body { overflow-anchor: none; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } details.pt > summary .chev::after, .toc-fold::before { transition: none; } }
+/* Print shows the language selected and the details open on screen: "Expand all details" first. */
+@media print { .topbar { position: static; } .toc { display: none; } figure, .card { break-inside: avoid; } }
+</style>
+
+<script>
+(function () {
+  /* Runs before the content so the stored choice applies on first paint. KEY must match the main script. */
+  var root = document.documentElement;
+  var KEY = '{{key}}';
+  try {
+    var g = localStorage.getItem(KEY + '-lang'); root.dataset.lang = (g === 'de') ? 'de' : 'en';
+  } catch (e) { root.dataset.lang = 'en'; }
+  root.lang = root.dataset.lang;
+})();
+</script>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">{{titleLine}}</div>
+    <div class="switches">
+      <button type="button" class="btn" id="toggle-all" aria-pressed="false"><span data-lang="en">Expand all details</span><span data-lang="de">Alle Details aufklappen</span></button>
+      <div class="seg" role="group" aria-label="Language / Sprache" id="lang-group">
+        <button type="button" data-set-lang="en" aria-pressed="true">EN</button>
+        <button type="button" data-set-lang="de" aria-pressed="false">DE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page">
+<div class="wrap">
+<nav class="toc" aria-label="Contents / Inhalt">
+  <!-- toc: generated by assemble.py from the section and subsection headings -->
+</nav>
+
+<main>
+  <p class="eyebrow" id="overview">{{eyebrow}}</p><!-- the review type per meta.subjectType, e.g. "Merge request review" -->
+  <h1><span data-lang="en">{{headingEn}}</span><span data-lang="de">{{headingDe}}</span></h1>
+
+  <!-- header rows: each fact once; labels per meta.subjectType, written by assemble.py -->
+  <dl class="meta">
+    <div><dt>{{subjectLabel}}</dt><dd>{{subjectLine}}{{linesChanged}}</dd></div>
+    <!-- ticket row: assemble.py writes it when meta.ticket is set -->
+    <div><dt>{{stateLabel}}</dt><dd>{{stateValue}}{{movedNote}}</dd></div>
+    <div><dt><span data-lang="en">Reviewed</span><span data-lang="de">Geprüft am</span></dt><dd><span data-lang="en">{{date}} · depth {{depth}}</span><span data-lang="de">{{date}} · Tiefe {{depth}}</span></dd></div>
+  </dl>
+  <!-- the verdict: a label, the banner with the verdict word (word, icon and colour from findings.json), then one text in paragraphs without a box, a paragraph with details where they pay off -->
+  <div class="verdict {{verdictClass}}"><!-- class set by assemble.py: ok without an open Blocker, else fail -->
+    <p class="verdict-label"><span data-lang="en">Verdict</span><span data-lang="de">Urteil</span></p>
+    <p class="verdict-word">{{verdictLine}}</p><!-- assemble.py: icon and "Mergeable" from verdict.word -->
+    <!-- slot:verdict: verdict.html, written by the findings writer, without the verdict word (assemble.py writes the banner above): an abstract, 2 to 4 short sentences, at most 70 words per language, no details, no ids, no code: what the subject is for, then the gist of why it is or is not fit -->
+    <p data-lang="en">What the subject is for, in words a user understands. The gist of why it is or is not fit: it works as intended, it does not do what it promises, it breaks something, or it violates the architecture.</p><p data-lang="de">Wofür der Gegenstand da ist, in Worten, die ein User versteht. Der Kern, warum er taugt oder nicht: er funktioniert wie gedacht, er hält nicht, was er verspricht, er macht etwas kaputt oder verletzt die Architektur.</p>
+    <!-- /slot:verdict -->
+  </div>
+  <div class="stats">
+    <div class="stat"><b>{{nFindings}}</b><span>Findings</span></div>
+    <div class="stat"><b>{{nBlocker}}</b><span><span data-lang="en">Blockers</span><span data-lang="de">Blocker</span></span></div>
+    <div class="stat"><b>{{nOptional}}</b><span>Optional</span></div>
+    <div class="stat"><b>{{nNit}}</b><span>Nit</span></div>
+    <div class="stat"><b>{{nFyi}}</b><span>FYI</span></div>
+  </div>
+
+  <!-- explanation from qubit-explanation-page: background, the MR; visible paragraphs, each with its details where they pay off
+       (details.pt, one level, never nested); EN/DE pairs; figures and tables in the visible text, never in a summary or the
+       details; marker ids per figure and language. The five top-level sections are fixed on every review report: never skip
+       one, never add one. -->
+  <section id="background">
+    <h2><span data-lang="en">Background</span><span data-lang="de">Hintergrund</span></h2>
+    <!-- slot:background: background.html, from the explanation writer; 1.1 #today first, then one .subsec per concept -->
+    <div id="today" class="subsec">
+      <h3><span data-lang="en">How it works today</span><span data-lang="de">Wie es heute funktioniert</span></h3>
+      <figure><div class="fig-scroll"><svg viewBox="0 0 520 90" role="img" aria-label="…"><defs><marker id="ar-today" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs></svg></div>
+        <figcaption><span data-lang="en">Figure 1. The parts of the area and how they talk.</span><span data-lang="de">Abbildung 1. Die Teile des Bereichs und wie sie miteinander reden.</span></figcaption></figure>
+      <p data-lang="en">What the area is and who uses it, in two to four sentences.</p><p data-lang="de">Was der Bereich ist und wer ihn nutzt, in zwei bis vier Sätzen.</p>
+      <details class="pt"><summary><span data-lang="en" class="ptxt">The existing parts and how they relate, with their real names.</span><span data-lang="de" class="ptxt">Die bestehenden Teile und wie sie zusammenhängen, mit ihren echten Namen.</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">The depth of this paragraph: why, in which order, on errors; the central places only, <code>path/file.ts:12</code>.</p><p data-lang="de">Die Tiefe dieses Absatzes: warum, in welcher Reihenfolge, bei Fehlern; nur die zentralen Stellen, <code>path/file.ts:12</code>.</p></div></details>
+      <!-- a table in the visible text wherever the reader compares along rows and columns (before and after, parts and their
+           responsibilities, options, cases, values); language per row; never inside a summary or the details -->
+      <div class="tbl"><table>
+        <thead><tr><th><span data-lang="en">Part</span><span data-lang="de">Teil</span></th><th><span data-lang="en">Responsible for</span><span data-lang="de">Zuständig für</span></th></tr></thead>
+        <tbody>
+          <tr data-lang="en"><td><code>&lt;part&gt;</code></td><td>What the part does.</td></tr>
+          <tr data-lang="de"><td><code>&lt;part&gt;</code></td><td>Was der Teil tut.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <!-- one per general concept a finding depends on (exists without the MR); a word the reader only needs defined goes to the glossary -->
+    <div id="basics-x" class="subsec">
+      <h3><span data-lang="en">&lt;prerequisite&gt;</span><span data-lang="de">&lt;Grundlage&gt;</span></h3>
+      <details class="pt"><summary><span data-lang="en" class="ptxt">…</span><span data-lang="de" class="ptxt">…</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">… <code>path/file.ts:12</code></p><p data-lang="de">… <code>path/file.ts:12</code></p></div></details>
+    </div>
+    <!-- /slot:background -->
+  </section>
+  <section id="subject">
+    <!-- heading per subject type, filled by assemble.py from meta.subjectType: branch or MR "The MR" / "Der MR"; PR "The PR" / "Der PR"; patch or files "The change" / "Die Änderung"; document "The document" / "Das Dokument" -->
+    <h2><span data-lang="en">{{subjectHeadingEn}}</span><span data-lang="de">{{subjectHeadingDe}}</span></h2>
+    <!-- slot:subject: subject.html, from the explanation writer: #goal, #approach, #flow, then one .subsec per concept; no h2 -->
+    <div id="goal" class="subsec">
+      <h3><span data-lang="en">Goal</span><span data-lang="de">Ziel</span></h3>
+      <p data-lang="en">Which problem the change solves and what changes for people.</p><p data-lang="de">Welches Problem die Änderung löst und was sich für Menschen ändert.</p>
+      <details class="pt"><summary><span data-lang="en" class="ptxt">What is deliberately left out.</span><span data-lang="de" class="ptxt">Was bewusst nicht dazugehört.</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">The ticket and its acceptance criteria: <cite>PROJ-1234</cite>.</p><p data-lang="de">Das Ticket und seine Akzeptanzkriterien: <cite>PROJ-1234</cite>.</p></div></details>
+    </div>
+    <!-- 2.2: how the author built the change: the modules and their responsibilities, their dependencies, the main decision; a small change says where it sits and why there -->
+    <div id="approach" class="subsec">
+      <h3><span data-lang="en">Approach</span><span data-lang="de">Ansatz</span></h3>
+      <figure><div class="fig-scroll"><svg viewBox="0 0 520 90" role="img" aria-label="…"><defs><marker id="ar-approach" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs></svg></div>
+        <figcaption><span data-lang="en">Figure 2. The building blocks of the change and the direction of their dependencies.</span><span data-lang="de">Abbildung 2. Die Bausteine der Änderung und die Richtung ihrer Abhängigkeiten.</span></figcaption></figure>
+      <details class="pt"><summary><span data-lang="en" class="ptxt">…</span><span data-lang="de" class="ptxt">…</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">… <code>path/file.ts:12</code></p><p data-lang="de">… <code>path/file.ts:12</code></p></div></details>
+    </div>
+    <div id="flow" class="subsec">
+      <h3><span data-lang="en">Flow</span><span data-lang="de">Ablauf</span></h3>
+      <figure><div class="fig-scroll"><svg viewBox="0 0 520 90" role="img" aria-label="…"><defs><marker id="ar-flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs></svg></div>
+        <figcaption><span data-lang="en">Figure 3. One request through the building blocks.</span><span data-lang="de">Abbildung 3. Eine Anfrage durch die Bausteine.</span></figcaption></figure>
+      <ol class="steps">
+        <li><p data-lang="en">…</p><p data-lang="de">…</p></li>
+        <li>
+        <details class="pt"><summary><span data-lang="en" class="ptxt">…</span><span data-lang="de" class="ptxt">…</span><span class="chev" aria-hidden="true"></span></summary>
+          <div class="more-body"><p data-lang="en">… <code>path/file.ts:12</code></p><p data-lang="de">… <code>path/file.ts:12</code></p></div></details>
+        </li>
+      </ol>
+    </div>
+    <!-- one subsection per new concept, after the flow -->
+    <div id="concept-x" class="subsec">
+      <h3><span data-lang="en">&lt;concept&gt;</span><span data-lang="de">&lt;Konzept&gt;</span></h3>
+      <details class="pt"><summary><span data-lang="en" class="ptxt">…</span><span data-lang="de" class="ptxt">…</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="more-body"><p data-lang="en">… <code>path/file.ts:12</code></p><p data-lang="de">… <code>path/file.ts:12</code></p></div></details>
+    </div>
+    <!-- /slot:subject -->
+  </section>
+
+  <!-- review sections: language-switched; subsections in this order, none skipped -->
+  <section id="assessment">
+    <h2><span data-lang="en">Assessment</span><span data-lang="de">Bewertung</span></h2>
+    <!-- manual tests: the steps that reproduce what the subject promises, run before reading on; results stay in this browser and never touch the verdict -->
+    <div id="manual" class="subsec" data-subject="{{subject}}">
+      <h3><span data-lang="en">Manual tests</span><span data-lang="de">Manuelle Tests</span></h3>
+      <p class="note"><span data-lang="en">Run these first: if a step fails, the findings can wait. Report a failed step to the review session with its copy line. Results stay in this browser and change nothing for others.</span><span data-lang="de">Zuerst ausführen: Schlägt ein Schritt fehl, können die Findings warten. Einen fehlgeschlagenen Schritt mit seiner Kopierzeile an die Review-Session melden. Ergebnisse bleiben in diesem Browser und ändern nichts für andere.</span></p>
+      <p class="mt-count" data-pass="0" data-fail="0" data-total="0"></p>
+      <p class="mt-setup" hidden></p>
+      <div class="mts" id="mts"></div>
+      <p class="empty" id="manual-empty" hidden><span data-lang="en">No manual tests for this subject.</span><span data-lang="de">Keine manuellen Tests für diesen Gegenstand.</span></p>
+    </div>
+    <div id="findings" class="subsec">
+      <h3>Findings</h3>
+      <!-- slot:summary: summary.html, written by the findings writer: a short list by severity (Blocker, Optional, Nit, FYI, "none" when empty), a few words each, an id only where a line singles out one finding, no ranges; then "Related:" with the dependencies that are not obvious, ids only; "Hint:" only for a point the order and severities do not show; at most 120 words; assemble.py adds "Not fully checked" -->
+      <div data-lang="en"><ul><li><b>Blocker:</b> what they are about, in a few words.</li><li><b>Optional:</b> …, and one fix that stands out (F3).</li><li><b>Nit:</b> ….</li><li><b>FYI:</b> none.</li></ul><p><b>Related:</b> F2 is solved by the fix of F1 · F3 and F4 address the same thing.</p><p><b>Hint:</b> only when there is one, e.g. F5 is an Optional that decides whether the feature is usable on phones.</p></div><div data-lang="de"><ul><li><b>Blocker:</b> worum es geht, in wenigen Worten.</li><li><b>Optional:</b> …, und ein Fix, der heraussticht (F3).</li><li><b>Nit:</b> ….</li><li><b>FYI:</b> keine.</li></ul><p><b>Zusammenhänge:</b> F2 löst sich mit dem Fix von F1 · F3 und F4 betreffen dasselbe.</p><p><b>Hinweis:</b> nur wenn es einen gibt, z. B. F5 ist ein Optional, das entscheidet, ob das Feature auf Smartphones nutzbar ist.</p></div>
+      <!-- /slot:summary -->
+      <details class="legend"><summary><span data-lang="en">What severities and categories mean</span><span data-lang="de">Was Schweregrade und Kategorien bedeuten</span></summary>
+        <dl>
+          <dt>Blocker</dt><dd><span data-lang="en">Must be resolved; it {{blockerHoldsEn}}. A defect that can be triggered in live use (the change fails at what it promises, or an unhandled case gives a wrong result), a security hole, worse code health (breaks an ADR or a boundary, inverts a dependency, adds a second mechanism or needless complexity, breaks an invariant, leaves a test failing), or a new feature without any test.</span><span data-lang="de">Muss gelöst werden; {{blockerHoldsDe}}. Ein im Live-Betrieb auslösbarer Defekt (die Änderung verfehlt, was sie verspricht, oder ein unbehandelter Fall liefert ein falsches Ergebnis), eine Sicherheitslücke, schlechtere Codequalität (bricht ein ADR oder eine Grenze, kehrt eine Abhängigkeit um, fügt einen zweiten Mechanismus oder unnötige Komplexität hinzu, bricht eine Invariante, lässt einen Test fehlschlagen) oder ein neues Feature ohne jeden Test.</span></dd>
+          <dt>Optional</dt><dd><span data-lang="en">Can be left out; the author decides. A change {{changesInEn}} to behaviour, tests or structure without a failure in live use, e.g. a missing test case.</span><span data-lang="de">Kann entfallen; der Autor entscheidet. Eine Änderung {{changesInDe}} an Verhalten, Tests oder Struktur ohne Fehler im Live-Betrieb, z. B. ein fehlender Testfall.</span></dd>
+          <dt>Nit</dt><dd><span data-lang="en">Like Optional, wording only: names, comments, docs.</span><span data-lang="de">Wie Optional, nur Formulierung: Namen, Kommentare, Doku.</span></dd>
+          <dt>FYI</dt><dd><span data-lang="en">Nothing to change {{changesInEn}}; worth a follow-up ticket.</span><span data-lang="de">Nichts zu ändern {{changesInDe}}; ein Folgeticket wert.</span></dd>
+        </dl>
+        <dl>{{categoryLegend}}</dl>
+        <p class="note"><span data-lang="en">Cards are ordered by severity, then by weight.</span><span data-lang="de">Karten sind nach Schweregrad, dann nach Gewicht geordnet.</span></p>
+      </details>
+      <div class="filters">
+      <div class="chips" id="chips-sev"><span class="lbl"><span data-lang="en">Severity</span><span data-lang="de">Schweregrad</span></span><div class="chip-set">
+        <button type="button" class="chip" data-filter="sev" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
+        <button type="button" class="chip" data-filter="sev" data-value="blocker" aria-pressed="false">Blocker</button>
+        <button type="button" class="chip" data-filter="sev" data-value="optional" aria-pressed="false">Optional</button>
+        <button type="button" class="chip" data-filter="sev" data-value="nit" aria-pressed="false">Nit</button>
+        <button type="button" class="chip" data-filter="sev" data-value="fyi" aria-pressed="false">FYI</button>
+      </div></div>
+      <div class="chips" id="chips-category"><span class="lbl"><span data-lang="en">Category</span><span data-lang="de">Kategorie</span></span><div class="chip-set">
+        <button type="button" class="chip" data-filter="category" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
+        <!-- categorychips: generated by assemble.py from the findings' categories -->
+      </div></div>
+      <div class="chips" id="chips-status"><span class="lbl"><span data-lang="en">Status</span><span data-lang="de">Status</span></span><div class="chip-set">
+        <button type="button" class="chip" data-filter="status" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
+        <button type="button" class="chip" data-filter="status" data-value="open" aria-pressed="false"><span data-lang="en">Open</span><span data-lang="de">Offen</span></button>
+        <button type="button" class="chip" data-filter="status" data-value="done" aria-pressed="false"><span data-lang="en">Done</span><span data-lang="de">Erledigt</span></button>
+      </div></div>
+      </div>
+      <p class="note"><span data-lang="en">Done marks are saved only in this browser.</span><span data-lang="de">Erledigt-Markierungen werden nur in diesem Browser gespeichert.</span></p>
+      <div class="cards" id="cards"></div>
+      <p class="empty" id="cards-empty" hidden><span data-lang="en">No finding matches this selection.</span><span data-lang="de">Kein Finding passt zu dieser Auswahl.</span></p>
+    </div>
+    <div id="questions" class="subsec">
+      <h3><span data-lang="en">Open questions for the author</span><span data-lang="de">Offene Fragen an den Autor</span></h3>
+      <!-- slot:questions: questions.html, from the findings writer -->
+      <div data-lang="en"><ul><li>…</li></ul></div>
+      <div data-lang="de"><ul><li>…</li></ul></div>
+      <!-- /slot:questions -->
+    </div>
+    <div id="good" class="subsec">
+      <h3><span data-lang="en">What works well</span><span data-lang="de">Was gut funktioniert</span></h3>
+      <!-- slot:good: good.html, from the findings writer -->
+      <div data-lang="en"><ul><li>…</li></ul></div>
+      <div data-lang="de"><ul><li>…</li></ul></div>
+      <!-- /slot:good -->
+    </div>
+    <div id="gitlab" class="subsec">
+      <h3><span data-lang="en">GitLab comments by file</span><span data-lang="de">GitLab-Kommentare nach Datei</span></h3>
+      <p class="note"><span data-lang="en">The same comments as in the findings, here sorted for posting on the MR by file and line as in the MR's file list, general comments last. Follows the filters on the findings. The text follows the language switch, and Copy copies the one shown; the prefix comes from the severity.</span><span data-lang="de">Dieselben Kommentare wie bei den Findings, hier zum Posten im MR sortiert nach Datei und Zeile wie in der Dateiliste des MR, allgemeine Kommentare am Ende. Folgt den Filtern bei den Findings. Der Text folgt dem Sprachschalter, Kopieren kopiert den angezeigten; das Präfix kommt aus dem Schweregrad.</span></p>
+      <div id="gitlab-list"></div>
+      <p class="empty" id="gitlab-empty" hidden><span data-lang="en">No comment matches this selection.</span><span data-lang="de">Kein Kommentar passt zu dieser Auswahl.</span></p>
+    </div>
+  </section>
+
+  <section id="evidence">
+    <h2><span data-lang="en">Evidence</span><span data-lang="de">Nachweis</span></h2>
+    <div id="checks" class="subsec">
+      <h3><span data-lang="en">Tests and checks</span><span data-lang="de">Tests und Prüfungen</span></h3>
+      <!-- slot:checks: checks.html, from the findings writer -->
+      <div data-lang="en">
+        <div class="tbl"><table>
+          <thead><tr><th>Check</th><th>Result</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td>&lt;suite, lint, build, merge test, promotion checks&gt;</td><td><span class="pill pill-ok">green</span></td><td>…</td></tr>
+            <tr><td>…</td><td><span class="pill pill-fail">red</span></td><td>…</td></tr>
+            <tr><td>…</td><td><span class="pill pill-skip">skipped</span></td><td>why</td></tr>
+            <tr><td>Worktree hygiene at the end (<code>git status --short</code>)</td><td><span class="pill pill-ok">green</span></td><td>…</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div data-lang="de">
+        <div class="tbl"><table>
+          <thead><tr><th>Prüfung</th><th>Ergebnis</th><th>Detail</th></tr></thead>
+          <tbody>
+            <tr><td>&lt;Suite, Lint, Build, Merge-Test, Beförderungsprüfungen&gt;</td><td><span class="pill pill-ok">grün</span></td><td>…</td></tr>
+            <tr><td>…</td><td><span class="pill pill-fail">rot</span></td><td>…</td></tr>
+            <tr><td>…</td><td><span class="pill pill-skip">übersprungen</span></td><td>warum</td></tr>
+            <tr><td>Worktree-Hygiene am Ende (<code>git status --short</code>)</td><td><span class="pill pill-ok">grün</span></td><td>…</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <!-- /slot:checks -->
+    </div>
+    <div id="method" class="subsec">
+      <h3><span data-lang="en">Method and sources</span><span data-lang="de">Methode und Quellen</span></h3>
+      <p class="effort">{{effortLine}}</p>
+      <p class="further"><span data-lang="en">Further sources</span><span data-lang="de">Weitere Quellen</span>: {{reference}}</p><!-- meta.reference; assemble.py drops the line when it is empty -->
+      <!-- slot:method: method.html, from the findings writer -->
+      <div data-lang="en">
+        <div class="tbl"><table>
+          <thead><tr><th>Source</th><th>What it did</th><th>Run time</th><th>Findings raised</th><th>Found by no other source</th></tr></thead>
+          <tbody>
+            <tr><td>Core reviewer (&lt;type&gt;)</td><td>shared prompt, whole subject</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>Lane reviewer (medium, high)</td><td>shared prompt, one area …</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>Lens reviewer (high only)</td><td>shared prompt, lenses: attacker | consumers | production, two runs each</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>codex exec &lt;version&gt;</td><td>shared prompt, whole subject</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>codex exec &lt;version&gt; (medium, high)</td><td>shared prompt, extra run: &lt;scope&gt;</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>codex exec &lt;version&gt; (high)</td><td>severity rating of the consolidated claims, blind</td><td class="num">m:ss</td><td class="num">–</td><td class="num">–</td></tr>
+            <tr><td>Explorer</td><td>explorer variant, flows …</td><td class="num">m:ss</td><td class="num">–</td><td class="num">–</td></tr>
+            <tr><td>Follow-up agent (high)</td><td>follow-up variant, one confirmed Blocker: other places, other consequences</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>Tests and lint</td><td>run once by the orchestrator: …</td><td class="num">m:ss</td><td class="num">–</td><td class="num">–</td></tr>
+            <tr><td>Earlier review</td><td>none | path, read by the orchestrator only</td><td></td><td class="num">–</td><td class="num">–</td></tr>
+          </tbody>
+        </table></div>
+        <p>Consolidation: the same root cause yields one finding. Checks by severity: every Blocker confirmed by its own investigator (&lt;n&gt;); every promotion candidate and every factual contradiction to an investigator, in a batch or on its own (&lt;m&gt;), whose final label stands. Sources are named only here.</p>
+        <p><b>Refuted and dropped:</b> …</p>
+      </div>
+      <div data-lang="de">
+        <div class="tbl"><table>
+          <thead><tr><th>Quelle</th><th>Was sie tat</th><th>Laufzeit</th><th>Findings gemeldet</th><th>Von keiner anderen Quelle gefunden</th></tr></thead>
+          <tbody>
+            <tr><td>Kern-Reviewer (&lt;Typ&gt;)</td><td>geteilter Prompt, ganzes Subjekt</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>Bahn-Reviewer (medium, high)</td><td>geteilter Prompt, ein Bereich …</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>Linsen-Reviewer (nur high)</td><td>geteilter Prompt, Linsen: Angreifer | Abhängige | Produktion</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>codex exec &lt;version&gt;</td><td>geteilter Prompt, ganzes Subjekt</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>codex exec &lt;version&gt; (medium, high)</td><td>geteilter Prompt, Zusatzlauf: &lt;Scope&gt;</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>codex exec &lt;version&gt; (high)</td><td>Schweregrad-Bewertung der konsolidierten Aussagen, blind</td><td class="num">m:ss</td><td class="num">–</td><td class="num">–</td></tr>
+            <tr><td>Explorer</td><td>Explorer-Variante, Abläufe …</td><td class="num">m:ss</td><td class="num">–</td><td class="num">–</td></tr>
+            <tr><td>Nachsuche (high)</td><td>Nachsuche-Variante, ein bestätigter Blocker: weitere Stellen, weitere Folgen</td><td class="num">m:ss</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>Tests und Lint</td><td>einmal vom Orchestrator ausgeführt: …</td><td class="num">m:ss</td><td class="num">–</td><td class="num">–</td></tr>
+            <tr><td>Frühere Review</td><td>keine | Pfad, nur vom Orchestrator gelesen</td><td></td><td class="num">–</td><td class="num">–</td></tr>
+          </tbody>
+        </table></div>
+        <p>Konsolidierung: Gleiche Ursache ergibt ein Finding. Prüfung nach Schweregrad: jeder Blocker von einem eigenen Investigator bestätigt (&lt;n&gt;); jeder Beförderungskandidat und jeder Widerspruch in den Fakten an einen Investigator, im Stapel oder einzeln (&lt;m&gt;), dessen endgültiges Label gilt. Quellen werden nur hier genannt.</p>
+        <p><b>Widerlegt und gestrichen:</b> …</p>
+      </div>
+      <!-- /slot:method -->
+    </div>
+  </section>
+
+  <section id="glossary">
+    <h2><span data-lang="en">Glossary</span><span data-lang="de">Glossar</span></h2>
+    <!-- slot:glossary: glossary.html, from the explanation writer -->
+    <div data-lang="en"><dl class="gl"><dt>Term</dt><dd>One or two sentences.</dd></dl></div>
+    <div data-lang="de"><dl class="gl"><dt>Begriff</dt><dd>Ein oder zwei Sätze.</dd></dl></div>
+    <!-- /slot:glossary -->
+  </section>
+
+  <footer>
+    <span data-lang="en">Worktree: <code>{{worktree}}</code>. Copy of this report and the raw outputs: <code>{{runDir}}</code>. Consolidated {{date}}.</span>
+    <span data-lang="de">Worktree: <code>{{worktree}}</code>. Kopie dieses Berichts und der Rohausgaben: <code>{{runDir}}</code>. Konsolidiert am {{date}}.</span>
+    <p class="resume"><span data-lang="en">Claude session of this review, to resume in a terminal:</span><span data-lang="de">Claude-Session dieser Review, zum Fortsetzen im Terminal:</span>
+      <code>{{resume}}</code><button type="button" class="glc-copy" data-copy="{{resume}}"><span data-lang="en">Copy</span><span data-lang="de">Kopieren</span></button></p>
+  </footer>
+</main>
+</div>
+</div>
+
+<script>
+(function () {
+  var KEY = '{{key}}';
+  var root = document.documentElement;
+  /* in-page jumps land below the sticky bar, which wraps to more rows on a narrow screen */
+  function padForBar() { var bar = document.querySelector('.topbar'); if (bar) { root.style.scrollPaddingTop = (bar.offsetHeight + 12) + 'px'; } }
+  padForBar();
+  window.addEventListener('resize', padForBar, { passive: true });
+  var langButtons = Array.prototype.slice.call(document.querySelectorAll('[data-set-lang]'));
+  function setLang(lang) {
+    root.dataset.lang = lang;
+    root.lang = lang;
+    langButtons.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.setLang === lang)); });
+    try { localStorage.setItem(KEY + '-lang', lang); } catch (e) { /* storage unavailable */ }
+  }
+  /* The language switch and the expand-all button keep the reader's place. The most visible marks are the heads: a finding card's title line with its
+     severity pill, a subsection's or a section's heading. The first head on screen below the sticky bar keeps its
+     distance from the bar. With no head on screen (inside a card taller than the screen), the first field label of the
+     card under the line does, as every card has the same fields; else the innermost card, subsection or section the
+     reading line is in keeps the line at the same share of its height. Own logic, since browsers differ in
+     their scroll anchoring (Safari has none). */
+  var HEADS = '.card[id] > summary, .subsec[id] > h3, section[id] > h2';
+  var BLOCKS = '.card[id], .subsec[id], section[id]';
+  function visibleAll(sel) {
+    return Array.prototype.filter.call(document.querySelectorAll(sel), function (e) { return e.getClientRects().length > 0; });
+  }
+  var LABELS = '.card[id] dt[data-field]';
+  function keyOf(e) {
+    if (e.dataset.field) { return e.closest('.card').id + ':' + e.dataset.field; }
+    return e.id || e.parentElement.id + ':head';
+  }
+  function readingLine() { var bar = document.querySelector('.topbar'); return bar ? bar.getBoundingClientRect().bottom : 0; }
+  function notePlace() {
+    var line = readingLine(), head = null, inside = [];
+    /* a head counts while any of it shows below the bar, so a title the bar half covers still wins */
+    visibleAll(HEADS).forEach(function (e) {
+      var b = e.getBoundingClientRect();
+      if (b.bottom > line && b.top < window.innerHeight && (!head || b.top - line < head.gap)) { head = { key: keyOf(e), gap: b.top - line }; }
+    });
+    visibleAll(BLOCKS).forEach(function (e) {
+      var b = e.getBoundingClientRect();
+      if (b.top <= line && b.bottom > line) { inside.push({ key: keyOf(e), share: (line - b.top) / b.height, height: b.height }); }
+    });
+    inside.sort(function (a, c) { return a.height - c.height; });
+    if (!head) {
+      var card = inside.filter(function (x) { return /^F\d+$/.test(x.key); })[0];
+      visibleAll(LABELS).forEach(function (e) {
+        var b = e.getBoundingClientRect();
+        if (card && e.closest('.card').id === card.key && b.bottom > line && b.top < window.innerHeight && (!head || b.top - line < head.gap)) {
+          head = { key: keyOf(e), gap: b.top - line, sel: LABELS };
+        }
+      });
+    }
+    return { head: head, inside: inside };
+  }
+  function restorePlace(place) {
+    var line = readingLine(), delta = null;
+    function find(sel, key) { return visibleAll(sel).filter(function (e) { return keyOf(e) === key; })[0]; }
+    var e = place.head ? find(place.head.sel || HEADS, place.head.key) : null;
+    if (e) { delta = e.getBoundingClientRect().top - line - place.head.gap; }
+    for (var i = 0; delta === null && i < place.inside.length; i += 1) {
+      e = find(BLOCKS, place.inside[i].key);
+      if (e) { var b = e.getBoundingClientRect(); delta = b.top + place.inside[i].share * b.height - line; }
+    }
+    if (delta) { window.scrollTo(0, window.scrollY + delta); }
+  }
+  function keepingPlace(fn) { return function () { var place = notePlace(); fn(); restorePlace(place); }; }
+  langButtons.forEach(function (b) { b.addEventListener('click', keepingPlace(function () { setLang(b.dataset.setLang); })); });
+  setLang(root.dataset.lang || 'en');
+
+  /* Expand all details opens every paragraph disclosure at once, for search and print; a second click closes them.
+     The button shows the state of all disclosures, also after the reader opens or closes one by hand. */
+  var toggleAll = document.getElementById('toggle-all');
+  /* the paragraph disclosures, and the finding cards where a page has them (they start folded) */
+  function disclosures() { return Array.prototype.slice.call(document.querySelectorAll('details.pt, details.card')); }
+  function allOpen() { var d = disclosures(); return d.length > 0 && d.every(function (x) { return x.open; }); }
+  function syncToggle() {
+    if (!toggleAll) { return; }
+    toggleAll.setAttribute('aria-pressed', String(allOpen()));
+    toggleAll.innerHTML = allOpen() ? '<span data-lang="en">Collapse all details</span><span data-lang="de">Alle Details zuklappen</span>'
+                                    : '<span data-lang="en">Expand all details</span><span data-lang="de">Alle Details aufklappen</span>';
+  }
+  if (toggleAll) {
+    toggleAll.addEventListener('click', keepingPlace(function () {
+      var open = !allOpen();
+      disclosures().forEach(function (x) { x.open = open; });
+      syncToggle();
+    }));
+  }
+  disclosures().forEach(function (x) { x.addEventListener('toggle', syncToggle); });
+  syncToggle();
+
+  /* Scroll spy: the active entry is the last visible target whose top has passed the reading line under the
+     sticky bar. A clicked entry stays active until the page moves away from where its jump ended: a short
+     section near the end of the page never reaches the line. Hidden targets are skipped. */
+  var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+  var toc = document.querySelector('.toc');
+  var pinned = null, pinY = null, settle = 0, lastActive = null;
+  /* The table of contents starts with every section's subsections shown; a section the reader folds by its arrow
+     stays folded, and one the reader opens again stays open. */
+  function setFold(li, open) {
+    li.classList.toggle('toc-closed', !open);
+    var b = li.querySelector(':scope > .toc-fold');
+    if (b) { b.setAttribute('aria-expanded', String(open)); }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.toc > ol > li'), function (li) {
+    if (!li.querySelector(':scope > .toc-sub')) { return; }
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'toc-fold';
+    b.setAttribute('aria-label', 'Subsections / Unterabschnitte');
+    b.addEventListener('click', function () { li.dataset.manual = '1'; setFold(li, li.classList.contains('toc-closed')); });
+    li.insertBefore(b, li.firstChild);
+    setFold(li, true);
+  });
+  /* Once the table of contents is taller than the screen it scrolls in its own box: keep the active entry inside
+     that box, or a section that opens unfolds out of sight. Only the box scrolls, never the page, and only when the
+     active entry changes, so a reader scrolling the box by hand is left alone. */
+  function keepInToc(link, li) {
+    if (!toc || toc.scrollHeight <= toc.clientHeight + 1) { return; }
+    var el = link.getClientRects().length ? link : li && li.querySelector(':scope > a');
+    if (!el) { return; }
+    var t = toc.getBoundingClientRect(), r = el.getBoundingClientRect();
+    if (r.top < t.top + 8 || r.bottom > t.bottom - 8) { toc.scrollTop += r.top - t.top - toc.clientHeight / 3; }
+  }
+  function markActive(link) {
+    links.forEach(function (a) { a.classList.toggle('active', a === link); });
+    var li = link ? link.closest('.toc > ol > li') : null;
+    if (li && !li.dataset.manual && li.classList.contains('toc-closed')) { setFold(li, true); }
+    if (link && link !== lastActive) { lastActive = link; keepInToc(link, li); }
+  }
+  function spy() {
+    if (pinned) { markActive(pinned); return; }
+    var line = (parseFloat(getComputedStyle(root).scrollPaddingTop) || 0) + 24;
+    var current = links[0];
+    links.forEach(function (a) {
+      var t = document.getElementById(a.getAttribute('href').slice(1));
+      if (t && t.getClientRects().length && t.getBoundingClientRect().top <= line) { current = a; }
+    });
+    markActive(current);
+  }
+  /* the jump of a click has ended when the page has not moved for 150 ms; any move after that releases the pin,
+     whatever moved it (wheel, keys, the scrollbar, find in page) */
+  function settleLater() { clearTimeout(settle); settle = setTimeout(function () { if (pinned && pinY === null) { pinY = window.scrollY; } }, 150); }
+  var spyQueued = false;
+  window.addEventListener('scroll', function () {
+    if (pinned && pinY !== null && Math.abs(window.scrollY - pinY) > 4) { pinned = null; pinY = null; }
+    if (pinned && pinY === null) { settleLater(); }
+    if (spyQueued) { return; }
+    spyQueued = true;
+    requestAnimationFrame(function () { spyQueued = false; spy(); });
+  }, { passive: true });
+  links.forEach(function (a) { a.addEventListener('click', function () { pinned = a; pinY = null; markActive(a); settleLater(); }); });
+  ['wheel', 'touchmove', 'keydown'].forEach(function (ev) { window.addEventListener(ev, function () { pinned = null; }, { passive: true }); });
+  if (toggleAll) { toggleAll.addEventListener('click', function () { pinned = null; spy(); }); }
+  spy();
+
+  /* Findings. Keys of CATEGORY are the chip values (assemble.py CATEGORIES), labels [en, de] pairs; package is a string or an [en, de] pair.
+     Text fields are [en, de] pairs: the writers fill the English, the translator the German. Ids F<n> in list order, never changed on a republish.
+     No secret values. assemble.py escapes every `<` in the strings, so a closing script tag in a string is safe. */
+  var CATEGORY = {{categories}};
+  /* slot:data: assemble.py writes the checked array from data.json here (the writers' JSON, never executed) */
+  var findings = [
+    { id: 'F1', sev: 'optional', category: 'design', package: '<package>', file: '<path>:<line>',
+      t: ['<title: effect first, one technical term at most>', '<Titel: Wirkung zuerst, höchstens ein Fachbegriff>'],
+      /* each field: text, the visible explanation (two to four sentences, exact and readable, no file:line, never starting
+         with its label), and more, its details (the evidence and depth: fact plus consequence, file:line allowed) or null.
+         The findings writer writes both from the consolidated finding in findings.json, which stays the record. */
+      fields: {
+        what: { text: ['<what is wrong and what it means>', '<was falsch ist und was es bedeutet>'], more: ['<the path through the code, with file:line>', '<DE>'] },
+        why: { text: ['<why it matters, one concrete example>', '<warum es zählt, ein konkretes Beispiel>'], more: null },
+        fix: { text: ['<the way out>', '<der Ausweg>'], more: ['<the concrete change>', '<die konkrete Änderung>'] },
+        verify: { text: ['<what the review read or ran>', '<was der Review gelesen oder ausgeführt hat>'], more: ['<how to check it again>', '<wie man es wieder prüft>'] } },
+      followUp: { title: '<ticket title, if not fixed in this MR>', key: null },
+      /* GitLab comments: text is an [en, de] pair without the severity prefix (the renderer adds it).
+         anchor 'line' = lines in the MR diff, 'file' = a file in the diff, 'mr' = general MR comment.
+         path and startLine name the place (optional for 'mr'); endLine, on a line comment only, ends a range.
+         side 'old' only for removed lines. Every finding has a gitlab entry. See gitlab-comments.md.
+         FYI and Optional: followUp { title, key: null | 'PROJ-1234' }; for an FYI the comment cannot be copied until key is set. */
+      gitlab: [{ path: '<path>', startLine: 11, endLine: 13, anchor: 'line', text: ['<Finding. Effect. Suggestion.>', '<Befund. Folge. Vorschlag.>'] }] }
+  ];
+  /* /slot:data */
+  /* slot:manual: assemble.py writes the checked object from manual.json here; null for a subject with nothing to run.
+     Ids M<n> never change on a republish; text fields are [en, de] pairs. */
+  var manual = { setup: ['<one shared setup: stack, URL, accounts>', '<DE>'],
+    steps: [{ id: 'M1', do: ['<what to do>', '<DE>'], expect: ['<what you should see>', '<DE>'] }] };
+  /* /slot:manual */
+  var state = { sev: 'all', category: 'all', status: 'all' };
+  /* "done" marks and the status choice are per viewer: localStorage under the report's key, which survives a republish to the same URL */
+  var DONE_KEY = KEY + '-done', STATUS_KEY = KEY + '-status', OLD_HIDE_KEY = KEY + '-hide-done';
+  var STATUSES = ['all', 'open', 'done'];
+  var done = {}, opened = {};
+  try {
+    (JSON.parse(localStorage.getItem(DONE_KEY)) || []).forEach(function (id) { done[id] = true; });
+    var stored = localStorage.getItem(STATUS_KEY);
+    /* a report published before the status row stored a hide-done switch: on means Open */
+    if (stored === null && localStorage.getItem(OLD_HIDE_KEY) === '1') { stored = 'open'; }
+    if (STATUSES.indexOf(stored) >= 0) { state.status = stored; }
+  } catch (e) { /* storage unavailable or not a list */ }
+  var cards = document.getElementById('cards');
+  var empty = document.getElementById('cards-empty');
+  var SEV = { blocker: 'Blocker', optional: 'Optional', nit: 'Nit', fyi: 'FYI' };
+  var SEV_RANK = { blocker: 0, optional: 1, nit: 2, fyi: 3 };
+  /* cards by severity, within a group in list order: a finding re-graded after publish keeps its id but moves to its group */
+  function byDisplayOrder(list) {
+    return list
+      .map(function (f, i) { return { f: f, i: i }; })
+      .sort(function (a, b) { return SEV_RANK[a.f.sev] - SEV_RANK[b.f.sev] || a.i - b.i; })
+      .map(function (x) { return x.f; });
+  }
+  /* Google/GitLab convention: a required change stays unlabeled, only the rest is labeled */
+  var PREFIX = { blocker: '', optional: '**Optional:** ', nit: '**Nit:** ', fyi: '**FYI:** ' };
+  var ANCHOR = {
+    line: ['line comment in the diff', 'Zeilenkommentar im Diff'],
+    file: ['file comment in the diff', 'Dateikommentar im Diff'],
+    mr: ['general MR comment', 'allgemeiner MR-Kommentar']
+  };
+  /* GitLab diff URLs by linkKey, filled by assemble.py from findings.json mrUrl; {} without an MR */
+  var GL_LINKS = {{gitlabLinks}};
+  /* {base, project} from meta.ticket, or null: keys of that Jira project link to Jira in card text, never in GitLab comments */
+  var JIRA = {{jiraLinks}};
+  var JIRA_KEY = JIRA ? new RegExp('(^|[^\\w/.-])(' + JIRA.project + '-\\d+)(?![\\w-])', 'g') : null;
+  function jira(html) {
+    return JIRA_KEY ? html.replace(JIRA_KEY, function (m, pre, key) {
+      return pre + '<a href="' + JIRA.base + key + '" target="_blank" rel="noopener noreferrer">' + key + '</a>';
+    }) : html;
+  }
+  var gitlabList = document.getElementById('gitlab-list');
+  var gitlabEmpty = document.getElementById('gitlab-empty');
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function pair(v) { return Array.isArray(v) ? '<span data-lang="en">' + esc(v[0]) + '</span><span data-lang="de">' + esc(v[1]) + '</span>' : esc(v); }
+  /* finding text: `code` becomes code, a finding id outside code a link to its card, a blank line a new paragraph, a block of
+     "- " lines a list, a block of "1. " lines a numbered list, a leading **…** a bold lead */
+  function inline(s) {
+    return esc(s).split(/(`[^`]+`)/).map(function (part, i) {
+      return i % 2 ? '<code>' + part.slice(1, -1) + '</code>' : jira(part).replace(/\b(F\d+)\b/g, '<a href="#$1">$1</a>');
+    }).join('');
+  }
+  function lead(s) {
+    var m = /^\*\*([^*\n]+)\*\*/.exec(s);
+    return m ? '<strong>' + inline(m[1]) + '</strong>' + inline(s.slice(m[0].length)) : inline(s);
+  }
+  function block(s) {
+    return String(s).split(/\n\s*\n/).map(function (para) {
+      var lines = para.split('\n');
+      if (lines.every(function (l) { return /^- /.test(l); })) {
+        return '<ul>' + lines.map(function (l) { return '<li>' + lead(l.slice(2)) + '</li>'; }).join('') + '</ul>';
+      }
+      if (lines.every(function (l) { return /^\d+\. /.test(l); })) {
+        return '<ol>' + lines.map(function (l) { return '<li>' + lead(l.replace(/^\d+\. /, '')) + '</li>'; }).join('') + '</ol>';
+      }
+      return '<p>' + lead(para) + '</p>';
+    }).join('');
+  }
+  function rich(v) { return Array.isArray(v) ? '<div data-lang="en">' + block(v[0]) + '</div><div data-lang="de">' + block(v[1]) + '</div>' : block(v); }
+  function richInline(v) { return Array.isArray(v) ? '<span data-lang="en">' + inline(v[0]) + '</span><span data-lang="de">' + inline(v[1]) + '</span>' : inline(v); }
+  function matches(f, row, v) {
+    if (v === 'all') { return true; }
+    if (row === 'status') { return v === 'done' ? !!done[f.id] : !done[f.id]; }
+    return f[row] === v;
+  }
+  function shown(f) { return matches(f, 'sev', state.sev) && matches(f, 'category', state.category) && matches(f, 'status', state.status); }
+  /* a chip counts the cards it would show together with the other rows' current choice */
+  function chipCount(row, v) {
+    return findings.filter(function (f) {
+      return ['sev', 'category', 'status'].every(function (k) { return matches(f, k, k === row ? v : state[k]); });
+    }).length;
+  }
+  /* a card the reader opened or closed by hand keeps that until it is ticked or unticked; otherwise open means not done */
+  function isOpen(f) { return f.id in opened ? opened[f.id] : false; }
+  function ticketKey(f) { return f.followUp && f.followUp.key ? f.followUp.key : ''; }
+  function ticketMissing(f) { return f.sev === 'fyi' && !ticketKey(f); }
+  /* c.text is an [en, de] pair; each language gets its own box, and Copy copies the one on screen */
+  function commentText(f, c, i) {
+    var t = Array.isArray(c.text) ? c.text[i] : c.text;
+    return PREFIX[f.sev] + t + (f.sev === 'fyi' && ticketKey(f) ? '\n\n' + ['Follow-up ticket: ', 'Folgeticket: '][i] + ticketKey(f) : '');
+  }
+  function commentBox(f, c, i) {
+    return '<div class="glc-box" data-lang="' + ['en', 'de'][i] + '"><p class="glc-text">' + esc(commentText(f, c, i)) + '</p>' +
+      (ticketMissing(f)
+        ? '<button type="button" class="glc-copy" disabled>' + ['Create the ticket first', 'Erst Ticket anlegen'][i] + '</button></div>'
+        : '<button type="button" class="glc-copy" data-copy="' + esc(commentText(f, c, i)) + '">' + ['Copy', 'Kopieren'][i] + '</button></div>');
+  }
+  /* the comment's place as text, as in assemble.py's comment_place; '' for a general MR comment without a file */
+  function place(c) { return (c.path || '') + (c.startLine ? ':' + c.startLine + (c.endLine ? '–' + c.endLine : '') : ''); }
+  /* the GL_LINKS key, as in assemble.py's link_key */
+  function linkKey(c) { return (c.path || '') + ':' + (c.startLine || '') + (c.side === 'old' ? '|old' : ''); }
+  /* a range: the link opens its first line, the hint names the lines to select in GitLab */
+  function rangeHint(c) {
+    var lines = c.startLine + '–' + c.endLine, old = c.side === 'old';
+    return ['multi-line comment: select ' + (old ? 'old ' : '') + 'lines ' + lines,
+      'mehrzeiliger Kommentar: ' + (old ? 'alte ' : '') + 'Zeilen ' + lines + ' markieren'];
+  }
+  function commentItem(f, c, withId, anchorId) {
+    var href = GL_LINKS[linkKey(c)], range = c.anchor === 'line' && c.endLine;
+    var side = c.side === 'old' && !range ? ' <span data-lang="en">(old side)</span><span data-lang="de">(alte Seite)</span>' : '';
+    var label = pair(range ? rangeHint(c) : ANCHOR[c.anchor]);
+    var where, anchor;
+    if (c.anchor === 'mr') {
+      /* the file is outside the diff: the place is text, the link opens the MR */
+      where = place(c) ? '<code>' + esc(place(c)) + '</code>' : '';
+      anchor = href ? '<a class="glc-anchor" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + label + ' ↗</a>'
+        : '<span class="glc-anchor">' + label + '</span>';
+    } else {
+      where = href
+        ? '<a href="' + esc(href) + '" target="_blank" rel="noopener noreferrer"><code>' + esc(place(c)) + '</code> ↗</a>' + side
+        : '<code>' + esc(place(c)) + side + '</code>';
+      anchor = '<span class="glc-anchor">' + label + '</span>';
+    }
+    return '<div class="glc-item"' + (anchorId ? ' id="' + anchorId + '"' : '') + '><div class="glc-at">' + (withId ? '<a href="#' + f.id + '">' + f.id + '</a>' : '') +
+      where + anchor +
+      (ticketMissing(f) ? '<span class="glc-ticket">' + pair(['Ticket missing', 'Ticket fehlt']) + '</span>' : '') + '</div>' +
+      commentBox(f, c, 0) + commentBox(f, c, 1) + '</div>';
+  }
+  /* one more field row under the card's fields */
+  function gitlabBlock(f) {
+    if (!f.gitlab || !f.gitlab.length) { return ''; }
+    return '<dl class="glc"><dt>' + pair('GitLab') + '</dt><dd>' +
+      f.gitlab.map(function (c) { return commentItem(f, c, false); }).join('') + '</dd></dl>';
+  }
+  function renderGitlab() {
+    var items = [];
+    findings.forEach(function (f) { if (shown(f)) { (f.gitlab || []).forEach(function (c) { items.push({ f: f, c: c, pos: { path: c.path || '', line: c.startLine || 0 } }); }); } });
+    items.sort(function (a, b) {
+      var am = a.c.anchor === 'mr', bm = b.c.anchor === 'mr';
+      if (am !== bm) { return am ? 1 : -1; }
+      return a.pos.path < b.pos.path ? -1 : a.pos.path > b.pos.path ? 1 : a.pos.line - b.pos.line;
+    });
+    var html = '', group = null, anchored = {};
+    items.forEach(function (it) {
+      var g = it.c.anchor === 'mr' ? '' : it.pos.path;
+      if (g !== group) {
+        html += '<p class="glc-file">' + (g ? esc(g) : '<span data-lang="en">General MR comments</span><span data-lang="de">Allgemeine MR-Kommentare</span>') + '</p>';
+        group = g;
+      }
+      html += commentItem(it.f, it.c, true, anchored[it.f.id] ? '' : 'glc-' + it.f.id);
+      anchored[it.f.id] = true;
+    });
+    gitlabList.innerHTML = html;
+    gitlabEmpty.hidden = items.length > 0;
+  }
+  function flash(btn) { btn.classList.add('done'); setTimeout(function () { btn.classList.remove('done'); }, 1600); }
+  function copyFallback(btn) {
+    var ta = document.createElement('textarea');
+    ta.value = btn.dataset.copy; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    if (ok) { flash(btn); return; }
+    /* clipboard blocked: select the text so Cmd/Ctrl+C works */
+    var range = document.createRange(); range.selectNodeContents(btn.previousElementSibling);
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('.glc-copy') : null;
+    if (!btn) { return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(btn.dataset.copy).then(function () { flash(btn); }, function () { copyFallback(btn); });
+    } else { copyFallback(btn); }
+  });
+  /* the card's fields, always the same four under the same labels; a field with more is a paragraph disclosure (details.pt):
+     its text is the summary, with the small arrow at the end of its last paragraph, its more the details */
+  var FIELDS = [
+    ['what', ['What', 'Was']], ['why', ['Impact', 'Auswirkung']], ['fix', ['Fix', 'Lösung']],
+    ['verify', ['Checked', 'Geprüft']]
+  ];
+  var CHEV = '<span class="chev" aria-hidden="true"></span>';
+  function withChev(html) { return html.replace(/(<\/(?:p|li)>)((?:<\/[uo]l>)?)$/, CHEV + '$1$2'); }
+  function fieldText(v) {
+    var text = v.text || ['', ''];
+    if (!v.more) { return rich(text); }
+    return '<details class="pt"><summary>' +
+      '<div data-lang="en" class="ptxt">' + withChev(block(text[0])) + '</div><div data-lang="de" class="ptxt">' + withChev(block(text[1])) + '</div>' +
+      '</summary><div class="more-body">' + rich(v.more) + '</div></details>';
+  }
+  function fields(f) {
+    var src = f.fields || {};
+    var html = FIELDS.map(function (k) {
+      return src[k[0]] ? '<dt data-field="' + k[0] + '">' + pair(k[1]) + '</dt><dd>' + fieldText(src[k[0]]) + '</dd>' : '';
+    }).join('');
+    if ((f.sev === 'fyi' || f.sev === 'optional') && f.followUp) {
+      html += '<dt>' + pair(f.sev === 'fyi' ? ['Follow-up', 'Folgeticket'] : ['Follow-up if not fixed here', 'Folgeticket, falls hier nicht behoben']) + '</dt><dd>' +
+        (ticketKey(f) ? jira(esc(ticketKey(f))) : pair(['Not created yet. Draft: ' + f.followUp.title, 'Noch nicht angelegt. Entwurf: ' + f.followUp.title])) + '</dd>';
+    }
+    return '<dl>' + html + '</dl>';
+  }
+  function render() {
+    var html = '';
+    var n = 0;
+    /* with every disclosure open, the cards a filter brings back open theirs too */
+    var expanded = !!toggleAll && toggleAll.getAttribute('aria-pressed') === 'true';
+    byDisplayOrder(findings).forEach(function (f) {
+      if (!shown(f)) { return; }
+      n += 1;
+      html += '<details class="card' + (done[f.id] ? ' done' : '') + '" id="' + f.id + '"' + (isOpen(f) || expanded ? ' open' : '') + '>' +
+        '<summary class="head"><span class="id">' + f.id + '</span>' +
+        '<span class="pill pill-' + f.sev + '">' + SEV[f.sev] + '</span>' +
+        (CATEGORY[f.category] ? '<span class="category">' + pair(CATEGORY[f.category]) + '</span>' : '') +
+        '<h4>' + richInline(f.t) + '</h4>' +
+        '<label class="done-box" title="Done / Erledigt"><input type="checkbox" aria-label="Done / Erledigt" data-done="' + f.id + '"' +
+        (done[f.id] ? ' checked' : '') + '></label></summary>' +
+        '<p class="file"><span class="package">' + pair(f.package) + '</span> · ' + esc(f.file) + '</p>' +
+        fields(f) + gitlabBlock(f) + '</details>';
+    });
+    cards.innerHTML = html;
+    if (expanded) { Array.prototype.forEach.call(cards.querySelectorAll('details.pt'), function (x) { x.open = true; }); }
+    syncToggle();
+    empty.hidden = n > 0;
+    renderGitlab();
+    renderCounts();
+  }
+  var filterChips = Array.prototype.slice.call(document.querySelectorAll('.chip[data-filter]'));
+  function renderCounts() {
+    filterChips.forEach(function (c) {
+      var n = chipCount(c.dataset.filter, c.dataset.value);
+      var badge = c.querySelector('.n');
+      if (!badge) { badge = document.createElement('span'); badge.className = 'n'; c.appendChild(badge); }
+      badge.textContent = String(n);
+      c.classList.toggle('zero', n === 0);
+      c.setAttribute('aria-pressed', String(state[c.dataset.filter] === c.dataset.value));
+    });
+  }
+  function saveDone() {
+    var ids = findings.filter(function (f) { return done[f.id]; }).map(function (f) { return f.id; });
+    try { localStorage.setItem(DONE_KEY, JSON.stringify(ids)); } catch (e) { /* storage unavailable */ }
+  }
+  /* ticking marks the card in place and folds it (the checkbox sits in the title line, so it and keyboard focus stay
+     in view); unticking leaves the card as it is; a full render only when the card has to disappear */
+  cards.addEventListener('change', function (e) {
+    var id = e.target.dataset ? e.target.dataset.done : null;
+    if (!id) { return; }
+    done[id] = e.target.checked;
+    delete opened[id];
+    saveDone();
+    if (state.status !== 'all') { render(); return; }
+    var card = document.getElementById(id);
+    card.classList.toggle('done', done[id]);
+    if (done[id]) { card.open = false; }
+    renderCounts();
+  });
+  /* toggle does not bubble: listen in the capture phase */
+  cards.addEventListener('toggle', function (e) {
+    if (e.target.classList && e.target.classList.contains('card')) { opened[e.target.id] = e.target.open; }
+    /* the cards render after the expand-all button binds its disclosures: a card's own keeps the button's label right */
+    if (e.target.classList && (e.target.classList.contains('pt') || e.target.classList.contains('card'))) { syncToggle(); }
+  }, true);
+  function openTarget() {
+    if (!/^#F\d+$/.test(location.hash)) { return; }
+    var t = document.getElementById(location.hash.slice(1));
+    if (t) { t.open = true; t.scrollIntoView(); }
+  }
+  window.addEventListener('hashchange', openTarget);
+  filterChips.forEach(function (c) {
+    c.addEventListener('click', function () {
+      state[c.dataset.filter] = c.dataset.value;
+      if (c.dataset.filter === 'status') {
+        try { localStorage.setItem(STATUS_KEY, state.status); } catch (e) { /* storage unavailable */ }
+      }
+      render();
+    });
+  });
+  /* manual tests: two exclusive result boxes per step, a note and a copy line on a failure; per browser only, like the done marks */
+  var MANUAL_KEY = KEY + '-manual';
+  var mtBox = document.getElementById('manual'), mtList = document.getElementById('mts');
+  var results = {};
+  try { results = JSON.parse(localStorage.getItem(MANUAL_KEY)) || {}; } catch (e) { results = {}; }
+  if (typeof results !== 'object' || Array.isArray(results)) { results = {}; }
+  function saveManual() { try { localStorage.setItem(MANUAL_KEY, JSON.stringify(results)); } catch (e) { /* storage unavailable */ } }
+  function stepOf(id) { return manual.steps.filter(function (s) { return s.id === id; })[0]; }
+  /* the line the user pastes into the review session: English, so the session reads the same words as findings.json */
+  function mtLine(s) { return mtBox.dataset.subject + ' · ' + s.id + ' ✗ · Expected: ' + s.expect[0] + ' · Observed: ' + ((results[s.id] || {}).note || ''); }
+  function mtCount() {
+    var c = mtBox.querySelector('.mt-count'), p = 0, f = 0, n = manual.steps.length;
+    manual.steps.forEach(function (s) { var st = (results[s.id] || {}).state; if (st === 'pass') { p += 1; } if (st === 'fail') { f += 1; } });
+    c.dataset.pass = p; c.dataset.fail = f; c.dataset.total = n;
+    c.innerHTML = pair(['Results in this browser: ' + p + ' ✓ · ' + f + ' ✗ of ' + n, 'Ergebnisse in diesem Browser: ' + p + ' ✓ · ' + f + ' ✗ von ' + n]);
+  }
+  function mtStep(s) {
+    var r = results[s.id] || {}, line = esc(mtLine(s));
+    var box = function (st, label) {
+      return '<label><input type="checkbox" data-mt="' + esc(s.id) + '" data-mt-state="' + st + '"' + (r.state === st ? ' checked' : '') + '> ' + pair(label) + '</label>';
+    };
+    return '<div class="mt" id="mt-' + esc(s.id) + '">' +
+      '<div class="mt-head"><span class="id">' + esc(s.id) + '</span><span class="mt-do">' + richInline(s.do) + '</span></div>' +
+      '<p class="mt-expect"><span class="mt-lbl">' + pair(['Expect', 'Erwartet']) + '</span>' + richInline(s.expect) + '</p>' +
+      '<div class="mt-result">' + box('pass', ['✓ as expected', '✓ wie erwartet']) + box('fail', ['✗ different', '✗ anders']) + '</div>' +
+      '<div class="mt-fail"' + (r.state === 'fail' ? '' : ' hidden') + '>' +
+      '<textarea data-mt-note="' + esc(s.id) + '" rows="2" aria-label="Observed / Beobachtet" placeholder="Observed / Beobachtet">' + esc(r.note || '') + '</textarea>' +
+      '<div class="glc-box"><p class="glc-text">' + line + '</p><button type="button" class="glc-copy" data-copy="' + line + '">' +
+      pair(['Copy for the session', 'Für die Session kopieren']) + '</button></div></div></div>';
+  }
+  function renderManual() {
+    if (!manual) {
+      document.getElementById('manual-empty').hidden = false;
+      mtBox.querySelector('.mt-count').hidden = true;
+      mtBox.querySelector('.note').hidden = true;
+      return;
+    }
+    var su = mtBox.querySelector('.mt-setup');
+    su.innerHTML = '<b>' + pair(['Setup', 'Vorbereitung']) + '</b>' + richInline(manual.setup);
+    su.hidden = false;
+    mtList.innerHTML = manual.steps.map(mtStep).join('');
+    mtCount();
+  }
+  mtList.addEventListener('change', function (e) {
+    var id = e.target.dataset ? e.target.dataset.mt : null;
+    if (!id) { return; }
+    var r = results[id] || (results[id] = {});
+    if (e.target.checked) {
+      r.state = e.target.dataset.mtState;
+      mtList.querySelector('#mt-' + id + ' input[data-mt-state="' + (r.state === 'pass' ? 'fail' : 'pass') + '"]').checked = false;
+    } else { delete r.state; }
+    mtList.querySelector('#mt-' + id + ' .mt-fail').hidden = r.state !== 'fail';
+    if (!r.state && !r.note) { delete results[id]; }
+    saveManual();
+    mtCount();
+  });
+  mtList.addEventListener('input', function (e) {
+    var id = e.target.dataset ? e.target.dataset.mtNote : null;
+    if (!id) { return; }
+    (results[id] || (results[id] = {})).note = e.target.value;
+    var line = mtLine(stepOf(id)), copy = mtList.querySelector('#mt-' + id + ' .glc-box');
+    copy.querySelector('.glc-text').textContent = line;
+    copy.querySelector('.glc-copy').dataset.copy = line;
+    saveManual();
+  });
+  renderManual();
+  render();
+  openTarget();
+})();
+</script>
