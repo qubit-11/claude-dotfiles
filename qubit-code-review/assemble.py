@@ -131,11 +131,10 @@ def principle_required(spec):
 
 ANCHORS = ['line', 'file', 'mr']
 # verdict word -> its negative; the negative is required exactly when a Blocker is open
-VERDICTS = {'mergeable': 'not mergeable', 'applicable': 'not applicable', 'fit for use': 'not yet', 'accepted': 'needs revision'}
+VERDICTS = {'mergeable': 'not mergeable', 'applicable': 'not applicable', 'fit for use': 'not yet'}
 # the German verdict words the translator uses
 VERDICTS_DE = {'mergeable': 'mergebar', 'not mergeable': 'nicht mergebar', 'applicable': 'anwendbar',
-               'not applicable': 'nicht anwendbar', 'fit for use': 'einsatzbereit', 'not yet': 'noch nicht',
-               'accepted': 'angenommen', 'needs revision': 'überarbeiten'}
+               'not applicable': 'nicht anwendbar', 'fit for use': 'einsatzbereit', 'not yet': 'noch nicht'}
 # the explanation fragments: every subsection cites its source (a file:line in its details, a link or a <cite>)
 CITED = {'background', 'subject'}
 FINDING_ID = re.compile(r'\bF(\d+)\b')
@@ -149,8 +148,6 @@ SUBJECT_TYPES = {
               ['in this patch', 'in diesem Patch']),
     'files': ('fit for use', ['The code', 'Der Code'], ['holds their use', 'hält den Einsatz auf'],
               ['in these files', 'in diesen Dateien']),
-    'document': ('accepted', ['The document', 'Das Dokument'], ['holds acceptance', 'hält die Annahme auf'],
-                 ['in this document', 'in diesem Dokument']),
 }
 # per subject type: the label above the heading, the first header row's label, the reviewed-up-to row's label and the
 # word after its sha (None: meta.state shown as it is); [en, de]
@@ -163,12 +160,11 @@ HEADER_LABELS = {
            ['Reviewed up to', 'Geprüft bis'], ['branch head', 'Branch-Head']),
     'patch': (['Patch review', 'Patch-Review'], ['Patch', 'Patch'], ['Applied to', 'Angewendet auf'], None),
     'files': (['Code review', 'Code-Review'], ['Files', 'Dateien'], ['Version', 'Fassung'], None),
-    'document': (['Document review', 'Dokument-Review'], ['Document', 'Dokument'], ['Version', 'Fassung'], None),
 }
 GITLAB_TYPES = {'branch', 'mr', 'pr'}
 MANUAL_ID = re.compile(r'^M[1-9]\d*$')
 # a subject with nothing to run has no manual tests
-NO_MANUAL_TYPES = {'files', 'document'}
+NO_MANUAL_TYPES = {'files'}
 MANUAL_TEXT = ['do', 'expect']
 # what the cold reader names in a GitLab comment (gitlab-comments.md, Cold read)
 COLD_READ_TYPES = ('ref', 'calque', 'mismatch')
@@ -349,8 +345,7 @@ def check_verdict(root, word, blockers, known=(), ids=True):
 
 
 # verdict words whose banner text needs more than the word to stand alone; [en, de]
-VERDICT_DISPLAY = {'not yet': ['Not yet fit for use', 'Noch nicht einsatzbereit'],
-                   'needs revision': ['Needs revision', 'Überarbeitung nötig']}
+VERDICT_DISPLAY = {'not yet': ['Not yet fit for use', 'Noch nicht einsatzbereit']}
 
 
 def check_verdict_short(root):

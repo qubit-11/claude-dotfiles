@@ -22,7 +22,7 @@ hypotheses, no earlier findings, no verdict.
 
 ```
 You are reviewing <subject: branch (HEAD <sha>) against <target> (merge-base
-<sha>) | patch <file> | files <paths> | document <path>> in <repo and path>.
+<sha>) | patch <file> | files <paths>> in <repo and path>.
 <One sentence on what it is, from the MR description, the commit messages or
 the cover note, verbatim where possible.>
 
@@ -52,7 +52,7 @@ How to see the subject (keep the line for the subject type):
           and lockfiles removed) and change.files.txt; the files themselves in the
           worktree <worktree path>
   patch: <scratchpad path>/inputs/change.diff, read against the worktree at the base
-  files / document: <paths in the scratchpad or the repo, read in full>
+  files: <paths in the scratchpad or the repo, read in full>
 The pre-computed inputs are in <scratchpad path>/inputs/.
 The ticket, the MR description and the other sources are in
 <scratchpad path>/inputs/sources/ (facts the change is judged against).
@@ -218,10 +218,8 @@ Severity, by what the finding means for the merge:
   request); the ticket is background: ticket vs. code is at most an open
   question or FYI.
 - Optional: a change to behaviour, tests, coverage or structure, with no
-  failure in live use: additional tests, a missing case in present tests. For a
-  document: a gap or unclear passage a builder would have to ask about.
+  failure in live use: additional tests, a missing case in present tests.
 - Nit: a change to wording only: names by convention, comments, docs wording.
-  For a document: wording only.
 - FYI: no change in this subject; worth a follow-up ticket.
 
 <Whole-review form, for core and lane reviewers and foreign whole-subject runs:>
@@ -283,10 +281,6 @@ the change carefully):
     leave the invariant to the callers? That is reason (c), owned invariant,
     whether or not a current caller passes such an input.
 And at every depth: does the change fit the existing architecture?
-For a document, spec or design the floor is instead: a statement that
-contradicts the code or another part of the document, and an instruction that
-fails when followed; (c) reads "the document introduces a second mechanism or
-contradicts an accepted ADR without amending it"; (d) does not apply.
 
 standard adds (what one sees by following one path through the changed code):
 - Paths: every path through the changed code, its error paths included,
@@ -365,14 +359,14 @@ Output format (Markdown, English), exactly:
 # Summary
 (3 to 6 sentences: what the subject does, overall quality, verdict:
 <mergeable / not mergeable | applicable / not applicable | fit for use / not
-yet | accepted / needs revision, per subject type>)
+yet, per subject type>)
 
 # Findings
 ## F<n>: <short title>
 - Severity: Blocker | Optional | Nit | FYI
 - Blocker reason: (a) | (b) | (c) | (d) (Blocker only)
 - Category: Functionality | Architecture | Design | Security | Ops | Performance | UX | Tests | Docs | Style
-- Package: <package | module or file group | chapter, per subject type>
+- Package: <package | module or file group, per subject type>
 - Location: <repo-relative path>:<line> (one or more)
 - Confidence: High | Medium | Low
 - Description: what is wrong, with the evidence you saw (no value from a secret file)
@@ -400,7 +394,7 @@ Appended for every subagent type without Bash:
 Note: you have no shell. Do NOT run any command. Use only your file-reading,
 directory-listing and search tools. The complete diff is in
 <scratchpad>/inputs/change.diff and the file list in
-<scratchpad>/inputs/change.files.txt (for files or a document: the copy in
+<scratchpad>/inputs/change.files.txt (for files: the copy in
 <scratchpad>/inputs/subject/); read those first, then open the real files.
 Your answer, in the output format above, is the expected final answer, not a
 plan.
@@ -417,8 +411,8 @@ Explorer:
 
 ```
 Your task: document, do not review. Give no opinions, no severities, no
-suggestions. Trace these flows end to end with a file:line reference (section
-reference for a document) for every claim: <list of flows>.
+suggestions. Trace these flows end to end with a file:line reference for
+every claim: <list of flows>.
 
 Output format (Markdown, English), exactly:
 
@@ -452,7 +446,7 @@ cases; normally 3 to 5. First `Setup:` one paragraph: how to start what runs,
 the URL, the accounts or roles a step needs, from the repository's docs and
 config. Then one line per step:
 `M<n>. Do: <what the person does> / Expect: <what they see when it works> / Flow: <flow name above>`.
-Facts only. For a document or files with nothing to run: `None.`)
+Facts only. For files with nothing to run: `None.`)
 ```
 
 Investigator (consolidation step, one claim per agent):

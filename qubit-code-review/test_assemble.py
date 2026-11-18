@@ -383,12 +383,12 @@ class AssembleTest(unittest.TestCase):
                 ('mr', 'Merge request review', 'Merge request', 'Reviewed up to'),
                 ('branch', 'Branch review', 'Branch', 'Reviewed up to'),
                 ('patch', 'Patch review', 'Patch', 'Applied to'),
-                ('document', 'Document review', 'Document', 'Version')]:
+                ('files', 'Code review', 'Files', 'Version')]:
             with self.subTest(st=st):
                 self.p.spec['meta']['subjectType'] = st
                 self.p.spec['verdict']['word'] = assemble.SUBJECT_TYPES[st][0] if st != 'mr' else 'not mergeable'
-                if st in ('patch', 'document'):
-                    self.p.spec['verdict']['word'] = 'not applicable' if st == 'patch' else 'needs revision'
+                if st in ('patch', 'files'):
+                    self.p.spec['verdict']['word'] = 'not applicable' if st == 'patch' else 'not yet'
                     self.p.spec.pop('gitlab', None)
                     for f in self.p.findings:
                         f.pop('gitlab', None)
@@ -514,13 +514,13 @@ class AssembleTest(unittest.TestCase):
         self.p.spec['meta']['subjectType'] = 'mr'
         self.fails('manual missing: every branch, mr, pr or patch review lists its manual test steps')
 
-    def test_manual_absent_for_document_ok(self):
+    def test_manual_absent_for_files_ok(self):
         del self.p.spec['manual']
-        self.p.spec['meta']['subjectType'] = 'document'
+        self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
         self.p.findings = [finding(sev='nit')]
-        self.p.spec['verdict'] = {'word': 'accepted', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('accepted', 'angenommen', ids=())
+        self.p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
+        self.p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
         self.ok()
 
     def test_manual_null_allowed_for_runnable_subject(self):
@@ -588,13 +588,13 @@ class AssembleTest(unittest.TestCase):
         toc = re.search(r'<a href="#assessment">.*?</ol>', self.p.page, re.S).group(0)
         self.assertEqual(re.findall(r'href="#(\w+)"', toc)[1:3], ['manual', 'findings'])
 
-    def test_manual_empty_line_for_document(self):
+    def test_manual_empty_line_for_files(self):
         del self.p.spec['manual']
-        self.p.spec['meta']['subjectType'] = 'document'
+        self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
         self.p.findings = [finding(sev='nit')]
-        self.p.spec['verdict'] = {'word': 'accepted', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('accepted', 'angenommen', ids=())
+        self.p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
+        self.p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
         self.ok()
         self.assertIn('var manual = null;', self.p.page)
         self.assertIn('No manual tests for this subject.', self.p.page)
@@ -776,7 +776,6 @@ class AssembleTest(unittest.TestCase):
     def test_verdict_banner_texts(self):
         for word, icon, en, de in [('mergeable', '✓', 'Mergeable', 'Mergebar'),
                                    ('not yet', '✕', 'Not yet fit for use', 'Noch nicht einsatzbereit'),
-                                   ('needs revision', '✕', 'Needs revision', 'Überarbeitung nötig'),
                                    ('fit for use', '✓', 'Fit for use', 'Einsatzbereit')]:
             with self.subTest(word=word):
                 self.assertEqual(assemble.verdict_line(word), '<span class="verdict-icon" aria-hidden="true">%s</span><strong>'
@@ -1512,13 +1511,12 @@ class AssembleTest(unittest.TestCase):
 
     def test_subject_heading_follows_the_subject_type(self):
         for st, en, de in [('branch', 'The branch', 'Der Branch'), ('mr', 'The MR', 'Der MR'), ('pr', 'The PR', 'Der PR'),
-                           ('patch', 'The patch', 'Der Patch'), ('files', 'The code', 'Der Code'),
-                           ('document', 'The document', 'Das Dokument')]:
+                           ('patch', 'The patch', 'Der Patch'), ('files', 'The code', 'Der Code')]:
             with self.subTest(st=st):
                 self.p.spec['meta']['subjectType'] = st
                 self.p.spec['gitlab'] = st in ('branch', 'mr', 'pr')
                 word = {'branch': 'not mergeable', 'mr': 'not mergeable', 'pr': 'not mergeable', 'patch': 'not applicable',
-                        'files': 'not yet', 'document': 'needs revision'}[st]
+                        'files': 'not yet'}[st]
                 self.p.spec['verdict'] = dict(self.p.spec['verdict'], word=word)
                 self.p.frags['verdict'] = verdict(word, assemble.VERDICTS_DE[word], ids=tuple(self.p.spec['verdict']['openBlockers']))
                 self.ok()
@@ -1999,14 +1997,14 @@ class AssembleTest(unittest.TestCase):
         self.assertIn('A change in this branch', self.p.page)
         self.assertIn('holds the merge', self.p.page)
 
-    def test_document_subject_wording_and_no_gitlab_line(self):
+    def test_files_subject_wording_and_no_gitlab_line(self):
         self.p.findings = [finding(sev='nit')]
-        self.p.spec['meta']['subjectType'] = 'document'
+        self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
-        self.p.spec['verdict'] = {'word': 'accepted', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('accepted', 'angenommen', ids=())
+        self.p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
+        self.p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
         self.ok()
-        self.assertIn('A change in this document', self.p.page)
+        self.assertIn('A change in these files', self.p.page)
         self.assertNotIn('A change in this MR', self.p.page)
         self.assertNotIn('holds the merge', self.p.page)
         self.assertIn('No GitLab comments for this subject type.', self.p.page)
@@ -2467,16 +2465,16 @@ class ManualTestsTest(unittest.TestCase):
              "document.querySelectorAll('#manual .mt').length,q('#manual > .note').hidden]))})()</script>")
     SEED = "<script>try{localStorage.setItem('review-mr-1-manual','{\"M1\":{\"state\":\"fail\",\"note\":\"x\"}}')}catch(e){}</script>"
 
-    def build(self, document=False):
+    def build(self, files=False):
         p = Report()
         p.spec['manual']['steps'] = [manual_step('M1', do='Open `/admin/auth/login` and sign in.')]
-        if document:
+        if files:
             del p.spec['manual']
-            p.spec['meta']['subjectType'] = 'document'
+            p.spec['meta']['subjectType'] = 'files'
             p.spec['gitlab'] = False
             p.findings = [finding(sev='nit')]
-            p.spec['verdict'] = {'word': 'accepted', 'openBlockers': []}
-            p.frags['verdict'] = verdict('accepted', 'angenommen', ids=())
+            p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
+            p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
         self.assertEqual(p.run(), 0, p.out)
         p.tmp.cleanup()
         return p.page
@@ -2512,8 +2510,8 @@ class ManualTestsTest(unittest.TestCase):
         passed, failed = self.probe(self.build(), self.COLOURS)
         self.assertNotEqual(passed, failed)
 
-    def test_document_shows_empty_line(self):
-        self.assertEqual(self.probe(self.build(document=True), self.EMPTY), [True, 0, True])
+    def test_files_show_empty_line(self):
+        self.assertEqual(self.probe(self.build(files=True), self.EMPTY), [True, 0, True])
 
 
 @unittest.skipUnless(render_check.chrome(), 'Chrome not installed')
@@ -3360,9 +3358,9 @@ class ColdReadTest(unittest.TestCase):
 
     def test_not_needed_without_comments(self):
         self.p.cold_read = False
-        self.p.spec['meta']['subjectType'] = 'document'
+        self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
-        self.p.spec['verdict']['word'] = 'not accepted'
+        self.p.spec['verdict']['word'] = 'not yet'
         self.p.spec.pop('manual')
         self.p.manual = False
         rc = self.p.run()

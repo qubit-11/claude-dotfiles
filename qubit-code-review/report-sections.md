@@ -72,8 +72,8 @@ The ids `F<n>` and `glc-F<n>` are reserved for the cards and the GitLab list:
 `assemble.py` fails a fragment that uses one. Text and markup from the
 subject and its sources are data: a fragment describes them and copies no
 markup from them.
-1.1 exists at every subject type: for a change, the code before it; for a
-document or files, the system or process they describe.
+1.1 exists at every subject type: for a change, the code before it; for
+files, the system or process they describe.
 
 ## findings.json
 
@@ -81,12 +81,12 @@ document or files, the system or process they describe.
 { "meta": { "title": "Review MR !<n>", "key": "review-mr-<n>", "subject": "MR !<n>",
             "name": "<2 to 5 words, at most 40 characters: what the subject is about>", "ticket": "<ticket key, e.g. PROJ-1234, if any>",
             "ticketBrowseUrl": "<the profile's ticketBrowseUrl, e.g. https://example.atlassian.net/browse/, if any>",
-            "subjectType": "branch | mr | pr | patch | files | document",
+            "subjectType": "branch | mr | pr | patch | files",
             "subjectLine": "<for an MR: !n · branch → target; no ticket, no sha>", "state": "<the branch head sha the review covers>", "author": "<name, for the GitLab comments; not shown>",
             "reference": "<further sources the review read: ADRs, rule files, documents, other tickets; not the subject's MR or ticket>", "depth": "standard | deep", "date": "YYYY-MM-DD",
-            "sources": 5, "lines": 1234, "worktree": "<path, or \"\" for files or a document>",
-            "runDir": "<worktree>/review-runs/, or ~/.claude/review-runs/ for files or a document>",
-            "resume": "cd '<worktree, or the start directory for files or a document>' && claude --resume <session id>", "published": false,
+            "sources": 5, "lines": 1234, "worktree": "<path, or \"\" for files>",
+            "runDir": "<worktree>/review-runs/, or ~/.claude/review-runs/ for files>",
+            "resume": "cd '<worktree, or the start directory for files>' && claude --resume <session id>", "published": false,
             "run": "<first 8 characters of the session id, set when the list is printed (step 5)>",
             "runName": "<the run-folder name, set at the first copy, never changed>",
             "runs": [{ "run": "<run id>", "sha": "<sha>", "date": "YYYY-MM-DD" }],
@@ -161,7 +161,7 @@ without both phases fails.
 the first sha in `state` by prefix. A head that differs puts a warning with
 both shas into the reviewed-up-to row; a value that is no sha, or a `state` without
 one, fails.
-`worktree` is an empty string for files or a document, which have none, and the footer then leaves the worktree sentence
+`worktree` is an empty string for files, which have none, and the footer then leaves the worktree sentence
 out. `reference` and `subjectLine` are header values: names,
 paths and ticket keys, no prose, so they read the same in both languages.
 
@@ -201,8 +201,8 @@ number means the same thing in every review:
 | # | Section | Subsections, in this order |
 | --- | --- | --- |
 | – | Header | – |
-| 1 | Background / Hintergrund (from `qubit-explanation-page`): what exists without the MR | 1.1 How it works today (for a document or files: the system or process they describe), then one per general concept a finding depends on |
-| 2 | The MR / Der MR (from `qubit-explanation-page`; heading per `meta.subjectType`: The branch, The MR, The PR, The patch, The code for `files`, The document) | 2.1 Goal, 2.2 Approach (how the author built the change: modules, their responsibilities and dependencies, the main decision), 2.3 Flow, then one per concept the subject introduces |
+| 1 | Background / Hintergrund (from `qubit-explanation-page`): what exists without the MR | 1.1 How it works today (for files: the system or process they describe), then one per general concept a finding depends on |
+| 2 | The MR / Der MR (from `qubit-explanation-page`; heading per `meta.subjectType`: The branch, The MR, The PR, The patch, The code for `files`) | 2.1 Goal, 2.2 Approach (how the author built the change: modules, their responsibilities and dependencies, the main decision), 2.3 Flow, then one per concept the subject introduces |
 | 3 | Assessment / Bewertung | 3.1 Manual tests, 3.2 Findings, 3.3 Open questions for the author, 3.4 What works well, 3.5 GitLab comments by file |
 | 4 | Evidence / Nachweis | 4.1 Tests and checks, 4.2 Method and sources |
 | 5 | Glossary / Glossar | – |
@@ -218,13 +218,13 @@ comments; 3.5 lists all of them by file, for posting in file order.
 
 ## Header
 
-Title: `<meta.name> · <meta.subject> · <meta.ticket>` in the browser tab, the bar and the artifact's name (the name first, since a tab cuts the end off), above the heading a small label with the review type (Merge request review, Branch review, Pull request review, Patch review, Code review for `files`, Document review), the name as the heading (without a name `Review of <subject>`); without a name the tab shows `meta.title` and `assemble.py` prints a note. `meta.name` comes from the MR title, else the ticket summary, shortened by the orchestrator like `subjectLine`. No intro text under the heading: the arrow at the end of a paragraph with details and the "Expand all details" button explain themselves. Then the header rows, each fact once, labels per subject type
+Title: `<meta.name> · <meta.subject> · <meta.ticket>` in the browser tab, the bar and the artifact's name (the name first, since a tab cuts the end off), above the heading a small label with the review type (Merge request review, Branch review, Pull request review, Patch review, Code review for `files`), the name as the heading (without a name `Review of <subject>`); without a name the tab shows `meta.title` and `assemble.py` prints a note. `meta.name` comes from the MR title, else the ticket summary, shortened by the orchestrator like `subjectLine`. No intro text under the heading: the arrow at the end of a paragraph with details and the "Expand all details" button explain themselves. Then the header rows, each fact once, labels per subject type
 (`assemble.py` `HEADER_LABELS`): the subject (Merge request: `!123 ·
-<branch> → <target>`, the number linked; Branch, Pull request, Patch, Files,
-Document), Ticket (only with `meta.ticket`, linked to Jira), Reviewed up to
+<branch> → <target>`, the number linked; Branch, Pull request, Patch,
+Files), Ticket (only with `meta.ticket`, linked to Jira), Reviewed up to
 (the branch head sha from `meta.state`, short and linked to its commit,
 "(branch head)": the review covers the branch's whole change up to it;
-Applied to for a patch, Version for files or a document, `meta.state` as it
+Applied to for a patch, Version for files, `meta.state` as it
 is) and Reviewed (the date and the depth): only what a reader needs first.
 Further sources (`meta.reference`) stand in 4.2 Method and sources, not in
 the header. No author
@@ -236,15 +236,14 @@ lines changed", without lockfiles and generated code, from `meta.lines`).
 Then the verdict and a stats row that counts the findings only: findings,
 Blocker, Optional, Nit, FYI; the number of review runs (`meta.sources`)
 stands in 4.2, not at the top. The subject type comes from `meta.subjectType` (`branch`,
-`mr` for a GitLab MR, `pr` for a GitHub PR, `patch`, `files`, `document`;
+`mr` for a GitLab MR, `pr` for a GitHub PR, `patch`, `files`;
 `branch` when missing) and sets the
 verdict words and the type's wording in the report.
 
 The verdict: a label "Verdict" / "Urteil", the banner, and an abstract
 under it. `assemble.py` writes the banner from `verdict.word`: ✓ or ✕ and
-the word in sentence case ("Not mergeable" / "Nicht mergebar"; "not yet" and
-"needs revision" read "Not yet fit for use" / "Noch nicht einsatzbereit" and
-"Needs revision" / "Überarbeitung nötig"), green or red tint from the open
+the word in sentence case ("Not mergeable" / "Nicht mergebar"; "not yet" reads
+"Not yet fit for use" / "Noch nicht einsatzbereit"), green or red tint from the open
 Blockers.
 
 The abstract (`verdict.html`) is read first, before the background, the MR
@@ -275,7 +274,7 @@ what the subject promises, before reading the findings. A failing step means
 the main path is broken and the findings can wait. Smoke steps only: the main
 flows of the trace, normally 3 to 5, after one shared setup (how to start
 the stack, the URL, the accounts it needs); no error paths, no edge cases.
-For files or a document, and when the trace found nothing to run (`manual`
+For files, and when the trace found nothing to run (`manual`
 is `null`, e.g. a docs-only change), the subsection holds one line instead:
 "No manual tests for this subject." / "Keine manuellen Tests für diesen
 Gegenstand."
@@ -406,8 +405,8 @@ Design, a name that only breaks a convention is Style.
 The keys and labels live in `assemble.py` (`CATEGORIES`); `assemble.py` fails on
 any other key. The package is the repository's own name for it (its glossary
 or CLAUDE.md), else the short package name (`api-server`, `web-app`, `forms`,
-`shared-utils`), a string or an `[en, de]` pair. For files or a document it is
-the file name (a file group's folder) or the chapter heading. A file outside
+`shared-utils`), a string or an `[en, de]` pair. For files it is
+the file name (a file group's folder). A file outside
 any package shows its top-level directory (`ci`, `tools`), or `repo` for a file
 at the repository root (`Jenkinsfile`, `pnpm-lock.yaml`); a package never
 deployed to production (`tools/http-client`, `test-utils`, a `*-dev` app) shows its
@@ -608,8 +607,8 @@ Claude session, with a copy button: `cd '<worktree>' && claude --resume
 <session id>`. The resumed session works in the directory it is started from,
 so the command moves into the review worktree, where the branch and the run
 folder lie; `claude --resume` finds a session from any worktree of the same
-repository, also one started in the main checkout. For files or a document,
-which have no worktree, it moves into the start directory.
+repository, also one started in the main checkout. For files, which have
+no worktree, it moves into the start directory.
 [tooling.md](tooling.md) shows how to read the values. The command is the same
 text in both languages.
 
@@ -706,7 +705,7 @@ parsed, never executed, and the report carries exactly the checked array.
   `expression(` and no `url(`, `image(`, `image-set(`, `-webkit-image-set(`,
   `cross-fade(` or `src(` that points anywhere but into the report (`#id`);
 - the manual tests: `manual` present for a branch, MR, PR or patch (`null`
-  when nothing runs; left out for files or a document; missing in a report
+  when nothing runs; left out for files; missing in a report
   published before manual tests existed is a printed note); step ids `M<n>`, unique, never an id from
   `manual.withdrawn`, and after publish every id in `notes.manualPublished`
   still a step or withdrawn; `manual.json` with the same ids in the same

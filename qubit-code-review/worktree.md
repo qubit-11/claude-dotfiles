@@ -1,7 +1,7 @@
 # Review worktree: branch, MR, PR or patch
 
 Step 1 of [SKILL.md](SKILL.md) sends every branch, MR, PR or patch here
-before anything else. Files or a document need no worktree. Where this file
+before anything else. Code files need no worktree. Where this file
 says "stop and ask", ask the user with AskUserQuestion and wait; never pick
 an option yourself. The commands that follow the worktree are in
 [tooling.md](tooling.md), Preparation.

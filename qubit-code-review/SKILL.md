@@ -1,10 +1,10 @@
 ---
 name: qubit-code-review
-description: "Use when asked to review something with more than one AI reviewer: a branch, merge request, pull request, patch, set of files, document, spec or design; when a review must be written up as a report for the team; or when a change needs independent second opinions from Claude and another model family (codex). Depth is how sure the report must be: standard (default, a finished MR, your own MR before opening it) or deep (a miss is expensive or hard to undo: auth, wire formats, migrations): `/qubit-code-review deep`. Not for a quick check during development: that is the built-in `/code-review`. Every run prints a short findings list in chat, then builds and publishes the bilingual report, readable at a glance with details to open per paragraph; `skip-report` leaves the report out (`/qubit-code-review deep skip-report`), and `/qubit-code-review publish-report` or \"make the report\" builds it later for a finished run without reviewing again. Works for a local branch without an MR and for non-code subjects."
+description: "Use when asked to review code with more than one AI reviewer: a branch, merge request, pull request, patch or set of code files; when a code review must be written up as a report for the team; or when a change needs independent second opinions from Claude and another model family (codex). Depth is how sure the report must be: standard (default, a finished MR, your own MR before opening it) or deep (a miss is expensive or hard to undo: auth, wire formats, migrations): `/qubit-code-review deep`. Not for a quick check during development: that is the built-in `/code-review`. Every run prints a short findings list in chat, then builds and publishes the bilingual report, readable at a glance with details to open per paragraph; `skip-report` leaves the report out (`/qubit-code-review deep skip-report`), and `/qubit-code-review publish-report` or \"make the report\" builds it later for a finished run without reviewing again. Works for a local branch without an MR."
 argument-hint: "[standard|deep] [skip-report]"
 ---
 
-# Review with independent agents
+# Code review with independent agents
 
 Reviewers read the same subject without knowing each other, each other's
 findings, or any earlier review. The orchestrator consolidates their output
@@ -30,8 +30,7 @@ line. Anything handed over works the same way:
 | --- | --- | --- | --- | --- |
 | branch, MR, PR | diff against the target branch, without inflators | the target branch, the MR description, the ticket | mergeable / not mergeable | package |
 | patch or diff file | the file itself, plus the repo at the stated base | the base commit, the cover note | applicable / not applicable | package |
-| files or a directory | the paths, read in full | the spec or ticket they implement, neighbouring code | fit for use / not yet | module or file group |
-| document, spec, design | the document, read in full | what it is meant to achieve, the code or system it describes | accepted / needs revision | chapter |
+| code files or a directory | the paths, read in full | the spec or ticket they implement, neighbouring code | fit for use / not yet | module or file group |
 
 ## Commands
 
@@ -97,8 +96,8 @@ orchestrator never sets it.
 | Severity | Definition | Merge |
 | --- | --- | --- |
 | Blocker | (a) a defect that can be triggered in live use of the subject: a broken intent (a mechanism the change adds fails on a live path to do what its quoted intent says, whatever the harm) or a gap (an unhandled case with no stated intent whose live trigger gives a user, stored data or availability a wrong result); (b) a vulnerability; (c) a change that makes the code health worse: it breaks an accepted ADR or an enforced boundary, inverts a dependency direction, adds a second mechanism next to an existing one, adds complexity or generality the change does not need, leaves an invariant its module owns to the callers (an input that the module's own types and checks accept breaks the invariant the module exists to keep), or breaks an invariant the code enforces (a schema validator or required field, a unique index, a type, a consumer's strict check of a value it receives) by writing data or handing over a value that breaks it, instead of changing the invariant or migrating the consumer, or leaves an existing test failing that passed before the change, without fixing it or disabling it visibly with a ticket; (d) a missing test: a new feature with no test at all | waits for it |
-| Optional | a change to behaviour, tests, coverage or structure, something a user, a test or a later change to the code depends on, with no failure in live use: additional tests, a missing case in otherwise present tests. For a document: a gap or unclear passage a builder would have to ask about | allowed |
-| Nit | a change to wording only: names by convention, comments, docs wording. For a document: wording only | allowed |
+| Optional | a change to behaviour, tests, coverage or structure, something a user, a test or a later change to the code depends on, with no failure in live use: additional tests, a missing case in otherwise present tests | allowed |
+| Nit | a change to wording only: names by convention, comments, docs wording | allowed |
 | FYI | no change in this subject; worth a follow-up ticket | allowed |
 
 Live use, per subject type (the reviewer prompt's placeholder line is filled
@@ -107,8 +106,7 @@ from this):
 | Subject | Live use |
 | --- | --- |
 | branch, MR, PR, patch | the code as deployed in production or a supported setup, with every flag, link and release step it depends on switched on and every release precondition it declares met, as our shipped clients call it (our frontends, our other servers, documented partner integrations), with any value a user can enter in them |
-| files or a directory | running or calling them as the code base does, or as their docs say, with any value those callers can pass |
-| document, spec, design | building, deciding or acting on it as written |
+| code files or a directory | running or calling them as the code base does, or as their docs say, with any value those callers can pass |
 
 Code that is not switched on yet is judged as if it were: a flag that is
 off, a route not yet linked or a draft MR never lowers a severity. An input
@@ -123,11 +121,11 @@ whose follow-up names the precondition for the release; if none of them
 does, live use is today's setup, and the failure is judged as it is.
 
 The rules for (c) and (d), for rules in instruction files and code comments,
-for personal data and for documents stand in the shared prompt only
+and for personal data stand in the shared prompt only
 ([reviewer-prompt.md](reviewer-prompt.md), Conventions, Severity and Floor):
 every reviewer, investigator and rater judges by that text.
 
-- The verdict is mergeable (applicable, fit for use, accepted) exactly when
+- The verdict is mergeable (applicable, fit for use) exactly when
   no Blocker is open.
 - **Open question.** When only the author can say whether a behaviour is
   intended, and one plausible answer makes it a Blocker, the finding is a
@@ -168,7 +166,7 @@ findings.json).
   user where it says so: no remote at all; a review worktree that already
   exists for the subject (stop, update the existing report, or a new
   independent report); a HEAD that is not an ancestor of the sha; a branch checked out
-  elsewhere. Files or a document need no worktree.
+  elsewhere. Code files need no worktree.
 - **Target.** Branch and target (default `master`). The target is always the
   freshly fetched remote ref `<remote>/<target>`, never the local branch,
   which a fetch does not move. The remote comes from `git config
@@ -181,11 +179,11 @@ findings.json).
   each side (the branch's and the target's since the merge base), and `git
   merge-tree --write-tree <remote>/<target> HEAD` for conflicts. For a patch:
   a failed `git apply --check` on the base is a Blocker finding with the
-  check output as evidence. For files or a document: copy the subject into
+  check output as evidence. For code files: copy the subject into
   the scratchpad as the reviewers will see it. Always name the reference it
   is judged against.
 - **Inputs** into the scratchpad ([tooling.md](tooling.md), Preparation;
-  files or a document run only its first step, then their own copy step):
+  code files run only its first step, then their own copy step):
   the diff without inflators (lockfiles, generated or vendored code; count
   the lines the inflators hide, the report states the count),
   `--name-status`, the commit list, the prompts.
@@ -301,15 +299,13 @@ The list (§5), the verdict box and the method section (§6) state "covers" and
 The floor and the focus lists per depth are in
 [reviewer-prompt.md](reviewer-prompt.md). Focus is not a filter: every
 reviewer lists every finding it comes across, at its real severity, at any
-depth. For a document, spec or design the question is the same at every
-depth: what is wrong with it, above all what blocks it. File subjects are
-treated as code.
+depth.
 
 ### Roster
 
 | Depth | Adds | Trace for the report |
 | --- | --- | --- |
-| standard | 1 core reviewer (a fresh Claude subagent on the whole subject, never the orchestrator, which has read the description and the ticket and would judge its own findings); + 1 architecture reviewer, always, on the whole subject, reading beyond the diff (imports and importers of the changed files, existing mechanisms that do the same job, the relevant ADRs in `inputs/sources/`); + 1 lane reviewer per area, each with the `standard` focus (an area is a package when the subject spans 2 or more packages, else a top-level directory; for a document a chapter; at most 4; with one area no lane runs, since the core reviewer already reads the whole subject; split in [tooling.md](tooling.md)); + 1 requirements reviewer on the whole subject (the MR description first, the ticket only where it says nothing; not the ADRs, which the architecture reviewer covers; scope line in [reviewer-prompt.md](reviewer-prompt.md)) | 1 explorer subagent |
+| standard | 1 core reviewer (a fresh Claude subagent on the whole subject, never the orchestrator, which has read the description and the ticket and would judge its own findings); + 1 architecture reviewer, always, on the whole subject, reading beyond the diff (imports and importers of the changed files, existing mechanisms that do the same job, the relevant ADRs in `inputs/sources/`); + 1 lane reviewer per area, each with the `standard` focus (an area is a package when the subject spans 2 or more packages, else a top-level directory; at most 4; with one area no lane runs, since the core reviewer already reads the whole subject; split in [tooling.md](tooling.md)); + 1 requirements reviewer on the whole subject (the MR description first, the ticket only where it says nothing; not the ADRs, which the architecture reviewer covers; scope line in [reviewer-prompt.md](reviewer-prompt.md)) | 1 explorer subagent |
 | deep | + 3 lens reviewers, all three every time, never picked by topic, each on the whole subject and each run twice (two independent runs on the same prompt, outputs `lens-<x>` and `lens-<x>-2`): attacker, consumers, production (Lenses, below). The foreign tools rate every finding's severity blind (§4); every finding gets its own investigator, exempt Nits included, and a second one after a refuted or downgraded Blocker claim or a blind rating that says Blocker (§4); + 1 follow-up agent per Blocker that holds (§4.6, Follow-up) | 1 explorer subagent |
 
 Every Blocker is checked alone at every depth. `deep` runs every check of
@@ -734,7 +730,7 @@ Full report: being built (step 6)
   and republished (step 6).
 - "F2 in detail" prints that finding's `what` and `verify` from
   `findings.json`.
-- A subject without `manual` (files, a document) prints no manual tests
+- A subject without `manual` (code files) prints no manual tests
   block.
 
 A run, with or without a report and also a `publish-report` run, writes
@@ -753,7 +749,7 @@ package, principle, verdict or consolidated text, or reads raw reviewer outputs.
    `$SP/report/findings.json`, every field in
    [report-sections.md](report-sections.md) (`meta.subjectType`: `branch`,
    `mr` for GitLab (a branch with a GitLab MR is `mr`), `pr` for GitHub,
-   `patch`, `files` or `document`), and as short English notes everything
+   `patch` or `files`), and as short English notes everything
    else the report states, the method section
    ([report-sections.md](report-sections.md), 4.2) included at every depth:
    what no run could cover, never that no Blocker is left. This file is the
@@ -838,7 +834,7 @@ subfolder of the same name in the run folder, together with the raw outputs
 (`$SP/reviews/*.md` only, never `*.stderr.log`) and `report/`, `state/` and
 `inputs/change.diff`, which a republish after the scratchpad is cleared
 needs. For a branch, MR, PR or patch the run folder is the worktree's
-`review-runs/` (added once to `info/exclude`); for files or a document it is
+`review-runs/` (added once to `info/exclude`); for code files it is
 `~/.claude/review-runs/` ([tooling.md](tooling.md), Hygiene).
 
 Posting to GitLab or Jira happens only when asked; GitLab comments only
