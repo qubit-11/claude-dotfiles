@@ -1,6 +1,6 @@
 ---
-name: qubit-multi-agent-review
-description: "Use when asked to review something with more than one AI reviewer: a branch, merge request, pull request, patch, set of files, document, spec or design; when a review must be written up as a report for the team; or when a change needs independent second opinions from Claude and another model family (codex). Depth is how sure the report must be: standard (default, a finished MR, your own MR before opening it) or deep (a miss is expensive or hard to undo: auth, wire formats, migrations): `/qubit-multi-agent-review deep`. Not for a quick check during development: that is the built-in `/code-review`. Every run prints a short findings list in chat, then builds and publishes the bilingual report, readable at a glance with details to open per paragraph; `skip-report` leaves the report out (`/qubit-multi-agent-review deep skip-report`), and `/qubit-multi-agent-review publish-report` or \"make the report\" builds it later for a finished run without reviewing again. Works for a local branch without an MR and for non-code subjects."
+name: qubit-code-review
+description: "Use when asked to review something with more than one AI reviewer: a branch, merge request, pull request, patch, set of files, document, spec or design; when a review must be written up as a report for the team; or when a change needs independent second opinions from Claude and another model family (codex). Depth is how sure the report must be: standard (default, a finished MR, your own MR before opening it) or deep (a miss is expensive or hard to undo: auth, wire formats, migrations): `/qubit-code-review deep`. Not for a quick check during development: that is the built-in `/code-review`. Every run prints a short findings list in chat, then builds and publishes the bilingual report, readable at a glance with details to open per paragraph; `skip-report` leaves the report out (`/qubit-code-review deep skip-report`), and `/qubit-code-review publish-report` or \"make the report\" builds it later for a finished run without reviewing again. Works for a local branch without an MR and for non-code subjects."
 argument-hint: "[standard|deep] [skip-report]"
 ---
 
@@ -44,11 +44,11 @@ arguments come in any order.
 
 | Command | Reviews | Report |
 | --- | --- | --- |
-| `/qubit-multi-agent-review [standard]` | yes, steps 1 to 5, depth `standard` | yes, step 6 right after the list |
-| `/qubit-multi-agent-review [standard] skip-report` | yes, steps 1 to 5, depth `standard` | no |
-| `/qubit-multi-agent-review deep` | yes, steps 1 to 5, depth `deep` | yes, step 6 right after the list |
-| `/qubit-multi-agent-review deep skip-report` | yes, steps 1 to 5, depth `deep` | no |
-| `/qubit-multi-agent-review publish-report` | no | yes, for a finished run (step 7) |
+| `/qubit-code-review [standard]` | yes, steps 1 to 5, depth `standard` | yes, step 6 right after the list |
+| `/qubit-code-review [standard] skip-report` | yes, steps 1 to 5, depth `standard` | no |
+| `/qubit-code-review deep` | yes, steps 1 to 5, depth `deep` | yes, step 6 right after the list |
+| `/qubit-code-review deep skip-report` | yes, steps 1 to 5, depth `deep` | no |
+| `/qubit-code-review publish-report` | no | yes, for a finished run (step 7) |
 
 - The two depths are `standard` and `deep`; `standard` is the default, so a
   request without a depth runs it. A depth always means a new review at that
@@ -58,10 +58,10 @@ arguments come in any order.
 - `publish-report` publishes the report of a finished run and never reviews.
   It takes no depth: with one, the skill stops before any work with one line:
   "`publish-report` publishes a finished run and takes no depth. For a review
-  with the report: `/qubit-multi-agent-review [standard|deep]`."
+  with the report: `/qubit-code-review [standard|deep]`."
 - `low`, `medium` and `high` are old names. With one, the skill stops before
   any work with one line: "The depths are `standard` (the default) and
-  `deep`: `/qubit-multi-agent-review [standard|deep]`. For a quick check:
+  `deep`: `/qubit-code-review [standard|deep]`. For a quick check:
   `/code-review`."
 - A question about one finding ("explain F2", "F2 in detail") is answered in
   chat.
@@ -373,7 +373,7 @@ ends the codex side of the review: the remaining codex runs are skipped,
 The architecture scope is the first extra at both depths: of all the Claude
 reviewers, the architecture reviewer's verdict rests most on judgment, so another
 model family adds the most there. A focus in the request
-(`/qubit-multi-agent-review deep focus: auth`) adds one foreign run per tool on
+(`/qubit-code-review deep focus: auth`) adds one foreign run per tool on
 that topic, after the depth's extras; it changes neither the Claude roster
 nor the depth's extras.
 
@@ -724,7 +724,7 @@ Full report: being built (step 6)
   card's visible text; it summarises the `fields.*.text` the findings writer would
   write, never replaces it. Empty groups are left out. No German, no GitLab
   comments.
-- With `skip-report` the last line reads `Full report: /qubit-multi-agent-review
+- With `skip-report` the last line reads `Full report: /qubit-code-review
   publish-report` instead.
 - The list asks nothing, and the run never offers follow-up tickets: the
   drafts stand in the report, and the user creates tickets after reading it.
@@ -849,7 +849,7 @@ while the MR's head is still the reviewed sha
 
 ## 7. Publish a finished run
 
-`/qubit-multi-agent-review publish-report`, or in the session of the run a request
+`/qubit-code-review publish-report`, or in the session of the run a request
 for the report or an explanation of the review ("make the report", "explain
 it as a page"). Reviewers, explorer, investigators, foreign runs and tests
 stay done; no id, severity, category, package, principle, verdict or
@@ -859,7 +859,7 @@ consolidated text changes, except through a missing check (7.2).
    subfolders in the run folder (for a branch the worktree's `review-runs/`,
    else `~/.claude/review-runs/`). Exactly one: restore it into a fresh
    scratchpad as in [tooling.md](tooling.md), Hygiene. Several: list them and
-   ask the user, never guess. None: say so and name `/qubit-multi-agent-review
+   ask the user, never guess. None: say so and name `/qubit-code-review
    <depth>` for a new review; start none. A run whose `meta` lacks
    `ticketBrowseUrl` gets it from `profile.py get ticketBrowseUrl` in the
    reviewed repository; without one, ticket keys stay plain text.

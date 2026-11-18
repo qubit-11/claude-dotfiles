@@ -356,7 +356,7 @@ orchestrator writes the extra runs in order to `$SP/state/ranking.txt`.
 
 Extra runs per tool: the first rank at `standard`, the first 5 at `deep` (rank 5
 is one run per area, so 4 to 8 extras). A
-focus in the request (`/qubit-multi-agent-review deep focus: auth`) adds one run
+focus in the request (`/qubit-code-review deep focus: auth`) adds one run
 per tool on that topic after these (scope line: the whole change, with the
 focus named), output `<tool>.focus`. A request to reorder moves ranks within
 the tables; only the user reorders, never the orchestrator. It writes the extra
@@ -771,7 +771,7 @@ worktree procedure. Keep the output in `$SP/checks/`.
 ### e2e suites and the full stack
 
 The repository's commands for both come from the profile's
-`multi-agent-review.md` (`profile.py doc multi-agent-review`,
+`code-review.md` (`profile.py doc code-review`,
 [_profiles/README.md](../_profiles/README.md)), sections "e2e suites without
 a full stack" and "Full stack". Without a profile or without the section,
 that kind of run does not happen, and 4.1 says so.

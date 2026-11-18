@@ -67,7 +67,7 @@ checkout, without the user having to ask.
   `REVIEW-<ticket>-<name>-<short sha>`, created with `git worktree add
   --detach <dir> <sha>` where the repository's worktree procedure puts
   manually created worktrees, never by a hook or command that branches off
-  the default branch (the profile's `multi-agent-review.md`, section
+  the default branch (the profile's `code-review.md`, section
   Worktree, names the route). An existing directory of that name stops the review (ask the
   user). Then the repository's env provisioning runs on it (the profile's
   section Worktree names it), since tests need its env files, and `EnterWorktree path:` enters it.

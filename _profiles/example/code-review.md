@@ -1,6 +1,6 @@
-# Profile <name>: multi-agent review
+# Profile <name>: code review
 
-Applies on top of `qubit-multi-agent-review` in <repository>. Leave out a section the
+Applies on top of `qubit-code-review` in <repository>. Leave out a section the
 repository does not have; the review then skips that step and says so.
 
 ## Worktree
