@@ -251,9 +251,9 @@ true   # a missing file in the last directory is no failure
 
 For files or a document: the same with the subject's paths.
 
-### Neighbour repositories (`high`, before dispatch)
+### Neighbour repositories (`deep`, before dispatch)
 
-At `high` the consumers and production lenses, their codex runs and the
+At `deep` the consumers and production lenses, their codex runs and the
 follow-up agents also read the repositories the change talks to or is
 deployed by, from their local checkouts beside this one. The profile names
 them (`neighbourRepos`, [_profiles/README.md](../_profiles/README.md)); the
@@ -305,7 +305,7 @@ files: the same `file` together; files of one area join the batch up to the
 limit of 8 claims; a file with more claims splits in list order. No
 candidates, no batch. Output names: `investigator-batch-<n>` for a
 batch, `investigator-<draft id>` for an own investigator,
-`investigator2-<draft id>` for the second (at `high`, after a refuted or
+`investigator2-<draft id>` for the second (at `deep`, after a refuted or
 downgraded Blocker claim or a blind rating that says Blocker; at most one
 per finding). Every investigator ends with a
 final label per claim. The finding's `check` records the strongest check
@@ -325,11 +325,11 @@ default and the output file stays empty.
 ### Which runs, in which order
 
 One strategy for every foreign tool: one run on the whole subject at every
-depth; extra runs in a fixed order, the same for each tool: at `medium` the
-architecture scope, at `high` the architecture scope too (a deeper depth runs every
+depth; extra runs in a fixed order, the same for each tool: at `standard` the
+architecture scope, at `deep` the architecture scope too (a deeper depth runs every
 extra of the one before), then the attacker lens, the consumers lens and the
 production lens, then one run per area (the lanes' areas, each with its
-lane's scope line); at `high` the blind severity rating (below). No run
+lane's scope line); at `deep` the blind severity rating (below). No run
 drops a tool for its findings: a tool leaves the roster only by a measured
 decision recorded in the skill notes (gemini, 2026-11-16). Adding a tool
 means adding its command. An extra run
@@ -340,12 +340,12 @@ requirements scope gets a foreign run only when the user reorders the ranks
 The order is fixed by the tables, never by reading code. At dispatch the
 orchestrator writes the extra runs in order to `$SP/state/ranking.txt`.
 
-| Rank at `medium` | Scope |
+| Rank at `standard` | Scope |
 | --- | --- |
 | 1 | the architecture scope |
 | 2 | areas, by name |
 
-| Rank at `high` | Scope |
+| Rank at `deep` | Scope |
 | --- | --- |
 | 1 | the architecture scope |
 | 2 | the attacker lens |
@@ -354,9 +354,9 @@ orchestrator writes the extra runs in order to `$SP/state/ranking.txt`.
 | 5 | areas, by name |
 | 6 | the requirements scope |
 
-Extra runs per tool: the first rank at `medium`, the first 5 at `high` (rank 5
+Extra runs per tool: the first rank at `standard`, the first 5 at `deep` (rank 5
 is one run per area, so 4 to 8 extras). A
-focus in the request (`/qubit-multi-agent-review high focus: auth`) adds one run
+focus in the request (`/qubit-multi-agent-review deep focus: auth`) adds one run
 per tool on that topic after these (scope line: the whole change, with the
 focus named), output `<tool>.focus`. A request to reorder moves ranks within
 the tables; only the user reorders, never the orchestrator. It writes the extra
@@ -378,7 +378,7 @@ are `$SP/reviews/<tool>.<scope>.md` (`whole` for the whole subject).
 The method table counts per run the findings it raised and the ones only
 it raised.
 
-At `high`, after consolidation and before the final numbering, each tool gets
+At `deep`, after consolidation and before the final numbering, each tool gets
 one more run: the severity-rater variant of the prompt with the consolidated
 claims appended (draft ids), in `$SP/inputs/review-prompt.<tool>.rating.md`,
 output `$SP/reviews/<tool>.rating.md`. Same commands; its completeness check
@@ -466,8 +466,8 @@ real tool set.
   checks it) or `feature-dev:code-reviewer` (no Bash, no Edit; cannot run git,
   so it gets the no-shell note and reads the pre-computed inputs). Core
   reviewers use `general-purpose` with the whole-subject scope line; lane
-  reviewers (`medium`, `high`, with 2 or more areas) get one area each, with `Depth: medium` and the `medium` focus at
-  `high` too (the lenses cover the outside view); with one area no lane
+  reviewers (`standard`, `deep`, with 2 or more areas) get one area each, with `Depth: standard` and the `standard` focus at
+  `deep` too (the lenses cover the outside view); with one area no lane
   runs.
 - Architecture reviewer (every depth): `general-purpose` with the architecture scope line
   from reviewer-prompt.md, dispatched in the same turn as the core reviewer. All
@@ -477,14 +477,14 @@ real tool set.
 - Explorer: `feature-dev:code-explorer` with the explorer variant and the
   no-shell note, dispatched in the same turn as the reviewers.
 - Explorer runs at every depth, with or without a report.
-- Requirements reviewer (`medium`, `high`): `general-purpose`, the shared
+- Requirements reviewer (`standard`, `deep`): `general-purpose`, the shared
   prompt with the requirements scope line from reviewer-prompt.md.
-- Lens reviewers (`high`): `general-purpose`, the shared prompt with the lens
+- Lens reviewers (`deep`): `general-purpose`, the shared prompt with the lens
   scope line from reviewer-prompt.md; two runs per lens on the same prompt,
   dispatched in the same turn, outputs `lens-<x>` and `lens-<x>-2`.
-- Follow-up agents (`high`, after the Blocker checks): `general-purpose`,
+- Follow-up agents (`deep`, after the Blocker checks): `general-purpose`,
   the follow-up variant from reviewer-prompt.md, one per confirmed Blocker.
-- Manual-test agent (`high`, with the full stack): `general-purpose`, given
+- Manual-test agent (`deep`, with the full stack): `general-purpose`, given
   `manual` from `findings.json`, the stack's URLs and the Playwright browser
   tools; it changes no file and reports per step.
 - Report writers (every depth, after consolidation): `general-purpose`, started
@@ -785,7 +785,7 @@ same builds, removed afterwards): a spec red on both is a known failure,
 named in 4.1 and not a claim; a spec red only with the change is a claim
 through steps 3 to 7.
 
-**`high`: the full stack.** Not yet run in a review: the first run checks
+**`deep`: the full stack.** Not yet run in a review: the first run checks
 these steps and records its times in the skill notes.
 1. Only when no other local stack runs (the profile says how to check,
    without printing any process's environment). A stack that runs means

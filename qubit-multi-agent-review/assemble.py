@@ -92,17 +92,18 @@ CATEGORIES = [('functionality', ['Functionality', 'Funktion']),
 # unchecked: an investigator failed three times (tooling.md, "Failed subagents"); 4.2 names the claim
 STRENGTHS = ['inline', 'batch', 'investigator', 'investigator2']
 CHECKS = STRENGTHS + ['unchecked']
-# a Nit in these categories may keep the reviewer's label (check inline) below high
+# a Nit in these categories may keep the reviewer's label (check inline) below deep
 WORDING_CATEGORIES = ('style', 'documentation')
 
 
 def required_check(sev, category, depth):
-    """The weakest check SKILL.md §4 allows for a finding at a depth."""
-    if depth == 'high' or sev == 'blocker':
+    """The weakest check SKILL.md §4 allows for a finding at a depth; older runs keep their old names (high = deep,
+    medium = standard, low below both)."""
+    if depth in ('deep', 'high') or sev == 'blocker':
         return 'investigator'
     if sev == 'nit' and category in WORDING_CATEGORIES:
         return 'inline'
-    if depth == 'medium' and sev in ('optional', 'fyi'):
+    if depth in ('standard', 'medium') and sev in ('optional', 'fyi'):
         return 'investigator'
     return 'batch'
 

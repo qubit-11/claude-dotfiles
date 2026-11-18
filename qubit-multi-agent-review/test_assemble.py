@@ -177,7 +177,7 @@ class Report:
         self.cards = None
         self.spec = {
             'meta': {'title': 'Review MR !1', 'key': 'review-mr-1', 'subject': 'MR !1', 'subjectLine': 'b → master, MR !1',
-                     'state': 'abc123', 'author': 'A', 'reference': 'master', 'depth': 'medium', 'date': '2026-10-19',
+                     'state': 'abc123', 'author': 'A', 'reference': 'master', 'depth': 'standard', 'date': '2026-10-19',
                      'sources': 3, 'lines': 10, 'worktree': '/w', 'runDir': '/w/review-runs/', 'resume': 'claude --resume x',
                      'ticketBrowseUrl': 'https://example.atlassian.net/browse/'},
             'gitlab': True, 'verdict': {'word': 'not mergeable', 'openBlockers': ['F1']},
@@ -925,7 +925,7 @@ class AssembleTest(unittest.TestCase):
     def test_reviewed_row_and_wide_sources(self):
         self.ok()
         self.assertIn('<div><dt><span data-lang="en">Reviewed</span><span data-lang="de">Geprüft am</span></dt>'
-                      '<dd><span data-lang="en">2026-10-19 · depth medium</span><span data-lang="de">2026-10-19 · Tiefe medium</span></dd></div>',
+                      '<dd><span data-lang="en">2026-10-19 · depth standard</span><span data-lang="de">2026-10-19 · Tiefe standard</span></dd></div>',
                       self.p.page)
         self.assertNotIn('<div class="wide"><dt><span data-lang="en">Further sources</span>', self.p.page)
         method = self.p.page[self.p.page.index('<div id="method"'):]
@@ -1586,7 +1586,10 @@ class AssembleTest(unittest.TestCase):
                  ('low', 'nit', 'style', 'inline'), ('medium', 'blocker', 'functionality', 'investigator'),
                  ('medium', 'optional', 'functionality', 'investigator'), ('medium', 'fyi', 'functionality', 'investigator'),
                  ('medium', 'nit', 'functionality', 'batch'), ('medium', 'nit', 'documentation', 'inline'),
-                 ('high', 'nit', 'style', 'investigator'), ('high', 'optional', 'functionality', 'investigator')]
+                 ('high', 'nit', 'style', 'investigator'), ('high', 'optional', 'functionality', 'investigator'),
+                 ('standard', 'optional', 'functionality', 'investigator'), ('standard', 'nit', 'functionality', 'batch'),
+                 ('standard', 'nit', 'documentation', 'inline'), ('deep', 'nit', 'style', 'investigator'),
+                 ('deep', 'optional', 'functionality', 'investigator'), ('deep', 'fyi', 'functionality', 'investigator')]
         strengths = ['inline', 'batch', 'investigator', 'investigator2']
         for depth, sev, cat, need in cases:
             for check in strengths + ['unchecked']:

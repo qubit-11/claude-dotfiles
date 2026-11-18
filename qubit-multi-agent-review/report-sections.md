@@ -83,7 +83,7 @@ document or files, the system or process they describe.
             "ticketBrowseUrl": "<the profile's ticketBrowseUrl, e.g. https://example.atlassian.net/browse/, if any>",
             "subjectType": "branch | mr | pr | patch | files | document",
             "subjectLine": "<for an MR: !n · branch → target; no ticket, no sha>", "state": "<the branch head sha the review covers>", "author": "<name, for the GitLab comments; not shown>",
-            "reference": "<further sources the review read: ADRs, rule files, documents, other tickets; not the subject's MR or ticket>", "depth": "medium | high", "date": "YYYY-MM-DD",
+            "reference": "<further sources the review read: ADRs, rule files, documents, other tickets; not the subject's MR or ticket>", "depth": "standard | deep", "date": "YYYY-MM-DD",
             "sources": 5, "lines": 1234, "worktree": "<path, or \"\" for files or a document>",
             "runDir": "<worktree>/review-runs/, or ~/.claude/review-runs/ for files or a document>",
             "resume": "cd '<worktree, or the start directory for files or a document>' && claude --resume <session id>", "published": false,
@@ -148,7 +148,7 @@ and `ended`, ISO 8601 times with a time zone (`date -u
 models by their product names (`Claude`, `Codex`, never the CLI name), reruns
 included. Roles, which the line shows in this order: `reviewers` (core,
 architecture, requirements, lanes, lenses, explorer, every whole-subject and
-extra run of another tool), `raters` (the blind severity rating, `high`),
+extra run of another tool), `raters` (the blind severity rating, `deep`),
 `investigators` (every investigator and batch run), and in the report phase
 `writers` (the writers and the translator). Times: `review.started` from `$SP/state/review-started.txt` (step 1), `review.ended` right
 before the list is printed (step 5), `report.started` when step 6 starts,
@@ -577,8 +577,8 @@ table: source with tool version, what it did, run time, how many findings it
 raised, how many of those only it raised (`–` for investigators and tests;
 the explorer counts the findings its discrepancy list raised). The column headers, exactly: Source / Quelle, What
 it did / Was sie tat, Run time / Laufzeit, Findings raised / Findings
-gemeldet, Found by no other source / Von keiner anderen Quelle gefunden. The writer's first paragraph, after the effort lines: the depth (`medium`,
-`high`), what its verdict covers and what it does not search (SKILL.md §2, Regions), and the extra runs by Codex: the scopes in their
+gemeldet, Found by no other source / Von keiner anderen Quelle gefunden. The writer's first paragraph, after the effort lines: the depth (`standard`,
+`deep`), what its verdict covers and what it does not search (SKILL.md §2, Regions), and the extra runs by Codex: the scopes in their
 fixed order and which got a Codex run, and any run skipped at its usage limit. Report text names Codex
 by its product name; "foreign" is the skill's own word and never appears in the
 report, in German never "Fremdlauf". One row per reviewer run (one per scope
@@ -596,7 +596,7 @@ refuted claims named here, every id withdrawn after publish (`notes.withdrawn`, 
 source is named; the findings below carry no attribution.
 
 The consolidation paragraph also names what no run covered: failed runs,
-`unchecked` claims, at `high` the claims only the tests raised (they come
+`unchecked` claims, at `deep` the claims only the tests raised (they come
 after the blind foreign rating and get none), and foreign runs without
 repository access. Section 4 never says that no Blocker is left.
 

@@ -41,7 +41,7 @@ leaves out more files, never fewer.
 | `remotes` | all | `<host>/<project path>` (or a prefix) of each repository this profile is for |
 | `ticketBrowseUrl` | multi-agent-review | Jira browse URL; a ticket key is appended to it. Without it, keys in reports stay plain text |
 | `secretFiles` | multi-agent-review, explanation-page | names or globs of the files that hold real secrets, in any folder. Every other env file is treated as code |
-| `neighbourRepos` | multi-agent-review (`high`) | `{dir, role}` of each repository the code calls or is deployed by, checked out beside the main checkout; `reposRoot` overrides that folder |
+| `neighbourRepos` | multi-agent-review (`deep`) | `{dir, role}` of each repository the code calls or is deployed by, checked out beside the main checkout; `reposRoot` overrides that folder |
 | `userRoles` | multi-agent-review | the end-user roles of the product, for the attacker lens |
 
 ## Documents per skill

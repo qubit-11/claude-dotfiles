@@ -1,7 +1,7 @@
 ---
 name: qubit-multi-agent-review
-description: "Use when asked to review something with more than one AI reviewer: a branch, merge request, pull request, patch, set of files, document, spec or design; when a review must be written up as a report for the team; or when a change needs independent second opinions from Claude and another model family (codex). Depth is how sure the report must be: medium (default, a finished MR, your own MR before opening it) or high (a miss is expensive or hard to undo: auth, wire formats, migrations): `/qubit-multi-agent-review high`. Not for a quick check during development: that is the built-in `/code-review`. Every run prints a short findings list in chat, then builds and publishes the bilingual report, readable at a glance with details to open per paragraph; `skip-report` leaves the report out (`/qubit-multi-agent-review high skip-report`), and `/qubit-multi-agent-review publish-report` or \"make the report\" builds it later for a finished run without reviewing again. Works for a local branch without an MR and for non-code subjects."
-argument-hint: "[medium|high] [skip-report]"
+description: "Use when asked to review something with more than one AI reviewer: a branch, merge request, pull request, patch, set of files, document, spec or design; when a review must be written up as a report for the team; or when a change needs independent second opinions from Claude and another model family (codex). Depth is how sure the report must be: standard (default, a finished MR, your own MR before opening it) or deep (a miss is expensive or hard to undo: auth, wire formats, migrations): `/qubit-multi-agent-review deep`. Not for a quick check during development: that is the built-in `/code-review`. Every run prints a short findings list in chat, then builds and publishes the bilingual report, readable at a glance with details to open per paragraph; `skip-report` leaves the report out (`/qubit-multi-agent-review deep skip-report`), and `/qubit-multi-agent-review publish-report` or \"make the report\" builds it later for a finished run without reviewing again. Works for a local branch without an MR and for non-code subjects."
+argument-hint: "[standard|deep] [skip-report]"
 ---
 
 # Review with independent agents
@@ -44,20 +44,25 @@ arguments come in any order.
 
 | Command | Reviews | Report |
 | --- | --- | --- |
-| `/qubit-multi-agent-review high` | yes, steps 1 to 5 | yes, step 6 right after the list |
-| `/qubit-multi-agent-review high skip-report` | yes, steps 1 to 5 | no |
+| `/qubit-multi-agent-review [standard]` | yes, steps 1 to 5, depth `standard` | yes, step 6 right after the list |
+| `/qubit-multi-agent-review [standard] skip-report` | yes, steps 1 to 5, depth `standard` | no |
+| `/qubit-multi-agent-review deep` | yes, steps 1 to 5, depth `deep` | yes, step 6 right after the list |
+| `/qubit-multi-agent-review deep skip-report` | yes, steps 1 to 5, depth `deep` | no |
 | `/qubit-multi-agent-review publish-report` | no | yes, for a finished run (step 7) |
 
-- A depth always means a new review at that depth.
+- The two depths are `standard` and `deep`; `standard` is the default, so a
+  request without a depth runs it. A depth always means a new review at that
+  depth.
 - `skip-report` leaves the report out. The report is left out too when the
   request asks for the list only or a quick check.
 - `publish-report` publishes the report of a finished run and never reviews.
   It takes no depth: with one, the skill stops before any work with one line:
   "`publish-report` publishes a finished run and takes no depth. For a review
-  with the report: `/qubit-multi-agent-review <depth>`."
-- `low` does not exist. With it, the skill stops before any work with one
-  line: "There is no `low`. For a quick check: `/code-review`. For a review:
-  `/qubit-multi-agent-review` (medium) or `/qubit-multi-agent-review high`."
+  with the report: `/qubit-multi-agent-review [standard|deep]`."
+- `low`, `medium` and `high` are old names. With one, the skill stops before
+  any work with one line: "The depths are `standard` (the default) and
+  `deep`: `/qubit-multi-agent-review [standard|deep]`. For a quick check:
+  `/code-review`."
 - A question about one finding ("explain F2", "F2 in detail") is answered in
   chat.
 - The list prints before the report starts, so the user can read it at once.
@@ -217,7 +222,7 @@ findings.json).
   instruction files (`CLAUDE.md`, `AGENTS.md`) of the root and of every
   directory above a changed path into `inputs/sources/rules/`, their
   glossaries (`CONTEXT.md`) into `inputs/sources/glossary/`
-  ([tooling.md](tooling.md), Relevant ADRs and Repo rules); at `high` also
+  ([tooling.md](tooling.md), Relevant ADRs and Repo rules); at `deep` also
   the list of neighbour repositories into `inputs/neighbours.md`
   ([tooling.md](tooling.md), Neighbour repositories).
 - An earlier review in the repo is read only after dispatch, by the
@@ -229,13 +234,13 @@ findings.json).
 
 ### What a depth is
 
-Two depths: `medium` (the default, whenever the request names no depth) and
-`high`. A depth is how sure the report is to be right about its
+Two depths: `standard` (the default, whenever the request names no depth) and
+`deep`. A depth is how sure the report is to be right about its
 findings, within its region: the part of the system where the absence of
 Blockers is checked. The verdict follows from the findings, so it is as sure
 as the findings at the Blocker line. Most Blockers lie in the change itself
 and what it touches directly; a deeper depth searches where the rest lie, so
-a missing one is less likely. `high` contains `medium`.
+a missing one is less likely. `deep` contains `standard`.
 
 Fixed by this skill, not by a run: the severity scale (Severity) gives every
 finding one true severity, and where it needs a judgment the investigator's
@@ -269,13 +274,13 @@ list without a visible trace (§4).
 
 ### Choose a depth
 
-`medium` is the anchor; `high` is the reason to leave it. Choose by what a
+`standard` is the anchor; `deep` is the reason to leave it. Choose by what a
 miss would cost, never by size.
 
 | Depth | Choose it when |
 | --- | --- |
-| medium | the default: a normal, finished MR, your own MR before it is opened |
-| high | a miss is not a normal fix: sensitive (auth, health data, encryption), far-reaching (central code), hard to undo (partner contracts, wire formats, migrations, stored data). Rare, and not because the subject is large |
+| standard | the default: a normal, finished MR, your own MR before it is opened |
+| deep | a miss is not a normal fix: sensitive (auth, health data, encryption), far-reaching (central code), hard to undo (partner contracts, wire formats, migrations, stored data). Rare, and not because the subject is large |
 
 A quick check during development, or on the exact head after fixes before a
 colleague is asked to review, is not this skill: the built-in `/code-review`
@@ -290,8 +295,8 @@ The list (§5), the verdict box and the method section (§6) state "covers" and
 
 | Depth | Searches | The verdict covers | Not searched |
 | --- | --- | --- | --- |
-| medium | the change itself, for what is wrong in any context, even an experiment (the floor); every path through the changed code, the new code's callers and readers included; the direct callers and readers of the existing code it changes, unchanged ones outside the change included, since that is where a change harms what exists (for a changed route, URL, endpoint, event or key: every place in this repository that produces or sends it, found by name, other servers' code included); its fit with the architecture, for which the architecture reviewer reads beyond the diff | the change does what it promises and harms nothing it reaches directly (its paths, its direct callers and readers, inside and outside the change) | stored data across versions (migrations, old documents, rollback), other servers or replicas reading the same stored data, attacker paths through unchanged routes, partners and old clients outside this repository, transitive callers |
-| high | + the system around it: transitive callers, stored data, attacker paths, partners, rollout; the neighbour repositories the change reaches (the ones the profile lists; [tooling.md](tooling.md), Neighbour repositories); the running system (the full local stack, its e2e suites and the manual tests; [tooling.md](tooling.md), Tests and lint) | what `medium` covers, and the change harms nothing beyond its direct reach: transitive callers, stored data, attacker paths, partners and old clients, rollout, the neighbour repositories it reaches | code in repositories that are not checked out locally, and behaviour that neither a suite nor a manual test exercises |
+| standard | the change itself, for what is wrong in any context, even an experiment (the floor); every path through the changed code, the new code's callers and readers included; the direct callers and readers of the existing code it changes, unchanged ones outside the change included, since that is where a change harms what exists (for a changed route, URL, endpoint, event or key: every place in this repository that produces or sends it, found by name, other servers' code included); its fit with the architecture, for which the architecture reviewer reads beyond the diff | the change does what it promises and harms nothing it reaches directly (its paths, its direct callers and readers, inside and outside the change) | stored data across versions (migrations, old documents, rollback), other servers or replicas reading the same stored data, attacker paths through unchanged routes, partners and old clients outside this repository, transitive callers |
+| deep | + the system around it: transitive callers, stored data, attacker paths, partners, rollout; the neighbour repositories the change reaches (the ones the profile lists; [tooling.md](tooling.md), Neighbour repositories); the running system (the full local stack, its e2e suites and the manual tests; [tooling.md](tooling.md), Tests and lint) | what `standard` covers, and the change harms nothing beyond its direct reach: transitive callers, stored data, attacker paths, partners and old clients, rollout, the neighbour repositories it reaches | code in repositories that are not checked out locally, and behaviour that neither a suite nor a manual test exercises |
 
 The floor and the focus lists per depth are in
 [reviewer-prompt.md](reviewer-prompt.md). Focus is not a filter: every
@@ -304,17 +309,17 @@ treated as code.
 
 | Depth | Adds | Trace for the report |
 | --- | --- | --- |
-| medium | 1 core reviewer (a fresh Claude subagent on the whole subject, never the orchestrator, which has read the description and the ticket and would judge its own findings); + 1 architecture reviewer, always, on the whole subject, reading beyond the diff (imports and importers of the changed files, existing mechanisms that do the same job, the relevant ADRs in `inputs/sources/`); + 1 lane reviewer per area, each with the `medium` focus (an area is a package when the subject spans 2 or more packages, else a top-level directory; for a document a chapter; at most 4; with one area no lane runs, since the core reviewer already reads the whole subject; split in [tooling.md](tooling.md)); + 1 requirements reviewer on the whole subject (the MR description first, the ticket only where it says nothing; not the ADRs, which the architecture reviewer covers; scope line in [reviewer-prompt.md](reviewer-prompt.md)) | 1 explorer subagent |
-| high | + 3 lens reviewers, all three every time, never picked by topic, each on the whole subject and each run twice (two independent runs on the same prompt, outputs `lens-<x>` and `lens-<x>-2`): attacker, consumers, production (Lenses, below). The foreign tools rate every finding's severity blind (§4); every finding gets its own investigator, exempt Nits included, and a second one after a refuted or downgraded Blocker claim or a blind rating that says Blocker (§4); + 1 follow-up agent per Blocker that holds (§4.6, Follow-up) | 1 explorer subagent |
+| standard | 1 core reviewer (a fresh Claude subagent on the whole subject, never the orchestrator, which has read the description and the ticket and would judge its own findings); + 1 architecture reviewer, always, on the whole subject, reading beyond the diff (imports and importers of the changed files, existing mechanisms that do the same job, the relevant ADRs in `inputs/sources/`); + 1 lane reviewer per area, each with the `standard` focus (an area is a package when the subject spans 2 or more packages, else a top-level directory; for a document a chapter; at most 4; with one area no lane runs, since the core reviewer already reads the whole subject; split in [tooling.md](tooling.md)); + 1 requirements reviewer on the whole subject (the MR description first, the ticket only where it says nothing; not the ADRs, which the architecture reviewer covers; scope line in [reviewer-prompt.md](reviewer-prompt.md)) | 1 explorer subagent |
+| deep | + 3 lens reviewers, all three every time, never picked by topic, each on the whole subject and each run twice (two independent runs on the same prompt, outputs `lens-<x>` and `lens-<x>-2`): attacker, consumers, production (Lenses, below). The foreign tools rate every finding's severity blind (§4); every finding gets its own investigator, exempt Nits included, and a second one after a refuted or downgraded Blocker claim or a blind rating that says Blocker (§4); + 1 follow-up agent per Blocker that holds (§4.6, Follow-up) | 1 explorer subagent |
 
-Every Blocker is checked alone at every depth. `high` runs every check of
-`medium` or a stronger one (the check table, §4), never a weaker one.
+Every Blocker is checked alone at every depth. `deep` runs every check of
+`standard` or a stronger one (the check table, §4), never a weaker one.
 
 More core reviewers are not a lever: repeated runs of one model share its
 blind spots. Never extra core reviewers as a stand-in for a lens or the
 architecture reviewer. A lens is the exception: its search starts outside
 the diff, and which path a run follows first varies from run to run, so at
-`high` each lens runs twice. The two runs are separate sources in
+`deep` each lens runs twice. The two runs are separate sources in
 `findings.json`, so a finding shows which run of a lens raised it.
 
 Roles:
@@ -338,7 +343,7 @@ lane and architecture reviewers start from the diff, so a Blocker in unchanged c
 is found only from outside. The lenses follow the actors, not the
 categories (scope lines in [reviewer-prompt.md](reviewer-prompt.md)):
 
-| Lens | The actor it starts from | Covers from the `high` region |
+| Lens | The actor it starts from | Covers from the `deep` region |
 | --- | --- | --- |
 | attacker | a hostile person: each user role, another tenant, a partner | attacker paths |
 | consumers | everything that depends on what changed: within one deploy through its imports, across a deploy boundary by name (routes, collections, keys, events) | transitive callers, partners and old clients, stored data other code reads |
@@ -358,8 +363,8 @@ foreign run is never replaced by a Claude stand-in.
 
 | Depth | Runs per tool |
 | --- | --- |
-| medium | the whole-subject run + 1 extra run (architecture scope) |
-| high | the whole-subject run + 4 extra runs (architecture scope, attacker, consumers, production) + 1 run per area (the lanes' areas, at most 4, with the lane's scope line), + 1 blind severity rating after consolidation |
+| standard | the whole-subject run + 1 extra run (architecture scope) |
+| deep | the whole-subject run + 4 extra runs (architecture scope, attacker, consumers, production) + 1 run per area (the lanes' areas, at most 4, with the lane's scope line), + 1 blind severity rating after consolidation |
 
 Codex runs on a subscription with a usage limit. A run that hits the limit
 ends the codex side of the review: the remaining codex runs are skipped,
@@ -368,7 +373,7 @@ ends the codex side of the review: the remaining codex runs are skipped,
 The architecture scope is the first extra at both depths: of all the Claude
 reviewers, the architecture reviewer's verdict rests most on judgment, so another
 model family adds the most there. A focus in the request
-(`/qubit-multi-agent-review high focus: auth`) adds one foreign run per tool on
+(`/qubit-multi-agent-review deep focus: auth`) adds one foreign run per tool on
 that topic, after the depth's extras; it changes neither the Claude roster
 nor the depth's extras.
 
@@ -467,7 +472,7 @@ The steps, in order:
    `<sha>`?"; a refuted one moves to `notes.withdrawn` as
    `"F<n>: fixed in <short sha>"`, and its id stays unused. An earlier
    Blocker the batch refutes or labels lower first gets an investigator of
-   its own, and at `high` a second one, as any Blocker (step 5); it is
+   its own, and at `deep` a second one, as any Blocker (step 5); it is
    withdrawn only when every one of them refutes it. The re-check also
    returns each kept finding's current `file:line`. New findings
    take the ids after the highest one, withdrawn ones included; manual test
@@ -535,10 +540,10 @@ The steps, in order:
    | --- | --- |
    | any source rates it Blocker | investigator: does it hold, and does its Blocker reason hold (questions below)? |
    | sources contradict each other on a fact | investigator |
-   | `high`: a Blocker investigator refutes the claim or labels it below Blocker | a second investigator, fresh, with the claim and without the first verdict |
-   | `high`: the blind foreign severity rating says Blocker and the finding's label is lower | a second investigator, as in the row above; none when one already ran |
-   | any source rates it Optional or FYI; a Nit that cites a rule; a Nit any source filed outside Style and Docs | `medium`: an own investigator per Optional and per FYI, a batch investigator for the Nits (grouping: [tooling.md](tooling.md), Promotion checks). `high`: an own investigator per candidate. Questions per the claim's kind: Optional, does a Blocker reason hold (for a defect: can it be triggered in live use?); FYI, does this change create the trigger, or make it reachable; a Nit that cites a rule, is it a boundary rule or a style rule; any other Nit, is it wording only. Every claim's answer ends in its final label (Blocker, Optional, Nit, FYI) |
-   | a Nit that cites no rule, every source filed as Style or Docs, no source rated higher, and whose assigned category is Style or Docs | `medium`: none; the reviewer's label stands (`check: inline`). `high`: an own investigator, question: is it wording only? (at `high` every finding is checked alone) |
+   | `deep`: a Blocker investigator refutes the claim or labels it below Blocker | a second investigator, fresh, with the claim and without the first verdict |
+   | `deep`: the blind foreign severity rating says Blocker and the finding's label is lower | a second investigator, as in the row above; none when one already ran |
+   | any source rates it Optional or FYI; a Nit that cites a rule; a Nit any source filed outside Style and Docs | `standard`: an own investigator per Optional and per FYI, a batch investigator for the Nits (grouping: [tooling.md](tooling.md), Promotion checks). `deep`: an own investigator per candidate. Questions per the claim's kind: Optional, does a Blocker reason hold (for a defect: can it be triggered in live use?); FYI, does this change create the trigger, or make it reachable; a Nit that cites a rule, is it a boundary rule or a style rule; any other Nit, is it wording only. Every claim's answer ends in its final label (Blocker, Optional, Nit, FYI) |
+   | a Nit that cites no rule, every source filed as Style or Docs, no source rated higher, and whose assigned category is Style or Docs | `standard`: none; the reviewer's label stands (`check: inline`). `deep`: an own investigator, question: is it wording only? (at `deep` every finding is checked alone) |
 
    The category the orchestrator assigns can remove an exemption, never grant
    one.
@@ -589,13 +594,13 @@ The steps, in order:
    investigator are followed once more; a third generation goes to
    `notes.consolidation` as not followed. Each bullet and what became of it
    goes to `notes.sideFindings`.
-6. **Blind rating** (`high`). After consolidation and before the
+6. **Blind rating** (`deep`). After consolidation and before the
    numbering, start the blind severity rating ([tooling.md](tooling.md),
    "Which runs"). The rater may see the claims: it audits labels, it does
    not review. A rating raises a check (the table above), never counts as
    one.
 
-   **Follow-up** (`high`). Every Blocker that holds after its check gets one
+   **Follow-up** (`deep`). Every Blocker that holds after its check gets one
    fresh follow-up agent (the follow-up variant in
    [reviewer-prompt.md](reviewer-prompt.md)), given the confirmed claim and
    its investigator's verdict. It asks two questions and judges nothing
@@ -620,9 +625,9 @@ The steps, in order:
      the later.
 8. **Tests, lint and the build** run once, by the orchestrator, only when the
    subject has something to run, after the last reviewer and the last
-   investigator have returned, at `high` also those started after
+   investigator have returned, at `deep` also those started after
    consolidation. The e2e suites of the touched packages run at every depth
-   when they need no full local stack; at `high` the full stack also runs,
+   when they need no full local stack; at `deep` the full stack also runs,
    with its e2e suite and the manual tests ([tooling.md](tooling.md), e2e
    suites and the full stack). A red test counts only against the same
    suite on the target branch. A claim only a test raised goes through steps 3 to 7 after
@@ -921,9 +926,9 @@ One line each; the rule stands where the pointer says.
 - A depth chosen by size; a roster other than the depth table's (§2).
 - Cores splitting the subject; extra cores instead of a lens (§2, Roster).
 - A run without the architecture reviewer or the requirements reviewer; a lane over the whole subject when there is one area (§2, Roster).
-- A lens chosen by topic, skipped or run only once at `high` (§2, Roster); a lens that starts from the diff instead of its actor (§2, Lenses).
+- A lens chosen by topic, skipped or run only once at `deep` (§2, Roster); a lens that starts from the diff instead of its actor (§2, Lenses).
 - A finding left out because it is outside the depth's focus; a run that does not follow changed existing code to its direct callers and readers (§2, Regions).
-- A check of `medium` skipped or weakened at `high` (§2, Roster); a run at `low`, which does not exist (Commands).
+- A check of `standard` skipped or weakened at `deep` (§2, Roster); a run started from an old depth name (`low`, `medium`, `high`) instead of the one-line hint (Commands).
 - A run without codex, or another foreign roster than the depth's runs plus a requested focus; a Claude stand-in for a failed foreign run; a Claude-side check or depth that leans on a foreign tool (§2, Foreign tools).
 - An extra-run order made by reading code or changed by anyone but the user (tooling.md).
 
@@ -932,7 +937,7 @@ One line each; the rule stands where the pointer says.
 - A prompt naming an earlier review, a suspicion or known problems (§1, §3, tooling.md Hygiene); a `fork` reviewer (§3).
 - A reviewer pointed at the scratchpad root instead of `inputs/`, or a reviewer git command without the secret-file excludes (§1, §3, reviewer-prompt.md).
 - A reviewer running tests or builds, editing files, or edits checked out away (§2, Roster; tooling.md Hygiene).
-- A `medium` or `high` run without the report that skips the explorer (§2, Roster).
+- A `standard` or `deep` run without the report that skips the explorer (§2, Roster).
 
 ### Consolidation and severity
 
@@ -941,7 +946,7 @@ One line each; the rule stands where the pointer says.
 - A finding no grounding check ran on; a finding refuted or dropped by a failed grounding check without an investigator (§4.4).
 - Dropping or investigating a finding because one source saw it (§4.5).
 - A finding checked more weakly than the check table requires for its depth, or not at all, unless its investigator failed for good and the method section (report-sections.md, 4.2) names it; a `check` that names a weaker check than the one that ran (§4.5).
-- At `high`, a refuted or downgraded Blocker claim, or a finding the blind rating calls Blocker, without a second investigator (§4.5).
+- At `deep`, a refuted or downgraded Blocker claim, or a finding the blind rating calls Blocker, without a second investigator (§4.5).
 - An investigator's side finding left unread, or merged into a finding whose fix does not remove it (§4.5, Side findings).
 - The orchestrator setting a severity, at any level, or keeping a finding out of a batch by its own reading of the code (§4).
 - Severity by vote count; a disagreement across the Blocker line settled against the Blocker; a claim dropped although one investigator confirmed it (§4.7).

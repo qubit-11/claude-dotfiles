@@ -12,7 +12,7 @@ reviewer, the scope of a foreign extra run. `<SECRET_FILES>` and
 Shell calls), `<USER_ROLES>` from its `userRoles` joined by ", " (without
 one: "every end-user role of the product"). `Depth:` is the
 run's depth for every reviewer, except a lane reviewer: its `Depth:` is
-`medium` at `high` too, since the lenses cover the outside view. The task
+`standard` at `deep` too, since the lenses cover the outside view. The task
 line has two forms (below): the whole-review form for core and lane
 reviewers and foreign whole-subject runs, the scoped form for the architecture,
 requirements and lens reviewers and every foreign extra run. For a
@@ -85,10 +85,10 @@ customer). A value you choose to illustrate a failure scenario (a date, a
 name, a number the code does not contain) is marked as an example ("e.g.
 01.01.2027").
 
-Depth: <medium | high>.
+Depth: <standard | deep>.
 
 Scope: <one line, e.g. "the whole change", or for a lane reviewer "everything
-under server/ (area), read line by line, with the medium focus at
+under server/ (area), read line by line, with the standard focus at
 every depth">.
 <The architecture reviewer uses this scope line instead:
   architecture: "The whole change, by its structure, reading beyond the diff: the
@@ -99,14 +99,14 @@ every depth">.
   pattern of the touched package where no ADR exists? Does it add a second
   mechanism, or complexity it does not need? Judge only what the change
   introduces or makes worse.">
-<The requirements reviewer (medium and high) uses this scope line instead:
+<The requirements reviewer (standard and deep) uses this scope line instead:
   requirements: "The whole change against what it promises: the MR
   description first (or the commit messages without an MR), the ticket only
   where the description says nothing, and the docs it touches (not the
   `*.spec.ts` test files, not the ADRs). What was promised but is missing,
   what contradicts the promise, and what changed without being mentioned?
   A gap against the ticket alone is an open question, never a Blocker.">
-<Lens reviewers at high depth use one of these scope lines instead. Each
+<Lens reviewers (deep) use one of these scope lines instead. Each
 lens is an actor outside the diff: start from the actor, search inward to the
 change, and try to break it.
   attacker: "Start from each actor who might attack: every user role
@@ -288,7 +288,7 @@ contradicts the code or another part of the document, and an instruction that
 fails when followed; (c) reads "the document introduces a second mechanism or
 contradicts an accepted ADR without amending it"; (d) does not apply.
 
-medium adds (what one sees by following one path through the changed code):
+standard adds (what one sees by following one path through the changed code):
 - Paths: every path through the changed code, its error paths included,
   and the callers and readers of the new code. Does the change do all its
   description promises? Where a path ends in an error the user sees (an
@@ -345,7 +345,7 @@ medium adds (what one sees by following one path through the changed code):
 - Convention rules and convention naming, as Style; a style rule is a Nit,
   a boundary rule is (c) (Conventions, above).
 
-high adds (what one only sees from outside the diff, one lens each):
+deep adds (what one only sees from outside the diff, one lens each):
 - Attacker: cross-tenant access, unchanged routes the change makes
   dangerous, stored input used later, crafted regex patterns, rate
   limiting, CORS, cookies, token lifetimes, encryption and key handling.
@@ -545,7 +545,7 @@ sources gave and the principle a source named. The output block, principle
 and final label included, repeats once per claim,
 headed by the id; `# Side findings` comes once, after the last claim.
 
-Severity rater (`high`, one run per foreign tool, once after consolidation;
+Severity rater (`deep`, one run per foreign tool, once after consolidation;
 the consolidated claims, numbered by id, each with `file:line` and without any
 severity, are appended after the task):
 
@@ -565,7 +565,7 @@ Output format (Markdown, English), exactly, one block per claim:
 - Evidence: file:line
 ```
 
-Follow-up (`high`, SKILL.md §4.6, one confirmed Blocker per agent; replaces
+Follow-up (`deep`, SKILL.md §4.6, one confirmed Blocker per agent; replaces
 the block from "Your task" on, so it gets no severity scale to rate with):
 
 ```
