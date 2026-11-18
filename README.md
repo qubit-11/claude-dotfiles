@@ -11,6 +11,11 @@ in one personal style, independent of the company or the repository.
 | `qubit-multi-agent-review` | reviews with independent Claude and codex reviewers, checks every claim, publishes a bilingual report |
 | `qubit-explanation-page` | explains a topic or a change as a page with diagrams and details per paragraph |
 
+General working rules that are not skills live in [global/](global/), for example
+[worktree naming](global/worktree-naming.md). The personal `~/.claude/CLAUDE.md` imports
+them with `@~/.claude/skills/global/<file>.md` and keeps the environment's values beside
+the import.
+
 ## Principles
 
 - **General, not tied to a company.** A rule here must hold in any team. The values and
