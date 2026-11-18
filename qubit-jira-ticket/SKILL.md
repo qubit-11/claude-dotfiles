@@ -57,4 +57,21 @@ reports what it finds; it decides nothing on its own.
    user the key and the link. When the user asked for Markdown only, give the text
    instead, by FORMAT.md's paste rules.
 
-Existing tickets are changed only when the user asks for that change.
+## Revising an existing ticket
+
+Existing tickets are changed only when the user asks for that change. Then the workflow
+runs on that ticket:
+
+1. **Read** the ticket with its comments and links, and the profile as in step 1.
+2. **Verify** its claims as in step 2: the stated current state, a cause, a code detail
+   it names.
+3. **Check** the text against [FORMAT.md](FORMAT.md)'s checklist and its Size
+   conditions. Each finding names the passage and why: wrong (refuted in step 2), too
+   long, out of date with the code, or prescribing the implementation.
+4. **Draft** the rewrite by [FORMAT.md](FORMAT.md). It keeps what still holds, the
+   recorded decisions and the links; a dropped code detail gets no replacement.
+5. **Show the findings and the draft, then ask once:** approve or give changes. A
+   different type, parent, story points or assignee is a finding with a suggestion, never
+   part of the rewrite.
+6. **Update** after the approval with `editJiraIssue`, in the content format of step 6.
+   Comments, status and every field the user did not approve stay as they are.
