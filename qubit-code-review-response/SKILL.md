@@ -38,8 +38,9 @@ and answers only what the user picked.
 3. **Check the claim, design the fix, check the fix.** A reviewer's suggested fix is a
    second opinion to compare with, not the fix to take.
    - **Simple threads** (a name, a comment's wording, line length, formatting): the
-     claim is checked directly and the fix is the obvious one; none of the agents
-     below.
+     claim and the fix are checked directly; none of the agents below. When the
+     reviewer offers several fixes, the merge rules below pick one; any of them counts
+     as done as suggested.
    - **Every other thread** (behaviour, library semantics, a fix that changes code)
      goes through two stages, all threads at once. No agent gets another agent's
      result or an opinion of the skill.
@@ -52,8 +53,11 @@ and answers only what the user picked.
        code and decides whether the claim is true at the merge request's head, with the
        evidence either way (never "confirm"): the primary source (code, installed
        library, configuration, tests), every number and line reference recomputed, a
-       behaviour claim run, a claimed defect reproduced. The *design agent* gets the
-       same problem statement and the code, and proposes its own fix.
+       behaviour claim run, a claimed defect reproduced (when a run is not possible, a
+       reading of the source counts only if it leaves no doubt). The *design agent*
+       gets the same problem statement, the files and lines it names, and the code, and
+       proposes its own fix. Nothing more: no pointer to a solution, an analogous test
+       or a library behaviour the remedy relies on.
      - **Compare** the design agent's fix with the reviewer's. The same fix, or no
        suggestion from the reviewer: one candidate. Different only in style: the
        reviewer's, as one candidate ("only in style" means the same behaviour and the
@@ -62,25 +66,28 @@ and answers only what the user picked.
      - **Stage 2** starts as soon as the design agent is back; it does not wait for
        the claim agent. One *fix-check agent* per candidate gets the problem, that one
        candidate and the code (never the other candidate), takes the claim as true,
-       and looks for what the fix breaks or misses: the other users of the changed
-       code, the affected tests, the edge values (`undefined`, `null`, empty, the
-       largest and smallest input). It answers in this shape:
+       and looks for what the fix breaks or makes worse: the other users of the
+       changed code, the affected tests and their strength, the repository's lint
+       rules, the edge values (`undefined`, `null`, empty, the largest and smallest
+       input). It answers in this shape:
 
        ```
        solves the problem: yes / no / in part (why)
-       breaks: <list, or "nothing found">
+       breaks or weakens: <list, or "nothing found">
        size: <files and lines touched>
        fits the existing code: yes / no (why)
        ```
 
      - When the claim does not hold, the stage-2 results are dropped.
    - **Merge** (the skill itself, by rule, in this order): the candidate that breaks
-     nothing over one that breaks something; with both breaking something, neither,
-     and a third way if there is one; with neither breaking anything, the smaller
-     change, then the one that fits the existing code, then the reviewer's. The skill
+     or weakens nothing over one that does; when every candidate does, the one whose
+     findings have a plain fix (a lint rule, a name, the same fix as another thread),
+     with those fixes added, else a third way if there is one; when none does, the
+     smaller change, then the one that fits the existing code, then the reviewer's. The skill
      never overrules an agent's finding: when it disagrees with one, the item is Needs
      a look and the block says so.
-   - **Clean** means: the claim is true, the fix check found nothing, and the fix is
+   - **Clean** means: the claim is true, the fix check (for a simple thread, the
+     direct check) found nothing, and the fix is
      the one obvious fix (the design agent's and the reviewer's agree, or the reviewer
      gave none). Anything else (a claim that holds in part, a check that could not be
      finished, two candidates, a fix with side effects, an agent that disagrees with
