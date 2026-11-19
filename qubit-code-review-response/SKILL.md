@@ -1,6 +1,6 @@
 ---
 name: qubit-code-review-response
-description: "Works through a code review that came back on one's own merge request or pull request, the way an author answers reviewers: checks every reviewer claim against the code, reports which points are clean to fix and explains the doubtful ones, fixes what the user picks, and answers every thread on GitLab or GitHub. Use when a review came back, when the user asks to check, evaluate or address review comments, or to answer the reviewer. Not for reviewing someone else's change; that is `qubit-code-review`."
+description: "Works through a code review that came back on one's own merge request or pull request, the way an author answers reviewers: checks every reviewer claim against the code, reports which points are clean to fix and explains the doubtful ones, fixes what the user picks, and answers every thread on GitLab or GitHub, over as many review rounds as it takes. Use when a review came back or the reviewer answered again, when the user asks to check, evaluate or address review comments, or to answer the reviewer. Not for reviewing someone else's change; that is `qubit-code-review`."
 argument-hint: "[merge request or pull request number or URL]"
 ---
 
@@ -13,8 +13,13 @@ is in peer review: every point is checked, what holds is revised, and every poin
 a decision. A reviewer's comment is a set of claims to check, not an instruction; a
 reviewer can be wrong.
 
+A response fix is the smallest change that settles the comment. It refactors nothing
+and cleans up nothing outside the comment; whatever else turns up is reported, and a
+follow-up change takes it.
+
 The user decides what gets done. The skill checks and reports, then stops; it fixes
-and answers only what the user picked.
+and answers only what the user picked. Every round is kept in a run file (see Run
+file), so a later round, or the same round after a context compaction, picks up from it.
 
 ## Workflow
 
@@ -31,16 +36,21 @@ and answers only what the user picked.
    - Sync: fetch, then compare the local branch with the merge request's head. Local
      commits not yet pushed are fine; say so. When the remote has commits the local
      branch lacks (e.g. a suggestion applied in the web interface), stop and report.
+   - Round: read the run files of this merge request (see Run file). The newest one
+     that is not finished is this round, picked up where it stopped; otherwise this is
+     the next round.
 2. **Collect the threads.** Every unresolved review thread and every general comment of
    a reviewer; system notes (pushes, "changed this line", approvals) do not count. A
-   thread whose last non-system note is the author's is answered already and is skipped. On a second round, only threads where the
-   reviewer wrote after the last answer count.
+   thread whose last non-system note is the author's is answered and is skipped.
+   - **Later rounds**: a thread counts when the reviewer wrote after the last answer
+     (a pushback, a question, a new point), and so does every new thread. For such a
+     thread, the earlier rounds' entries in the run files (claim verdict, plan, reply)
+     are the context; the newest reviewer note is the comment to check.
 3. **Check the claim, design the fix, check the fix.** A reviewer's suggested fix is a
    second opinion to compare with, not the fix to take.
    - **Simple threads** (a name, a comment's wording, line length, formatting): the
      claim and the fix are checked directly; none of the agents below. When the
-     reviewer offers several fixes, the merge rules below pick one; any of them counts
-     as done as suggested.
+     reviewer offers several fixes, the ranks below pick one.
    - **Every other thread** (behaviour, library semantics, a fix that changes code)
      goes through two stages, all threads at once. No agent gets another agent's
      result or an opinion of the skill.
@@ -48,7 +58,8 @@ and answers only what the user picked.
        remedy cut out: the reviewer's observations stay, every sentence or code block
        that says what to do instead goes. When the claim is itself the remedy ("this
        does not need X"), the problem is the observation plus "the reviewer questions
-       <the code at file:line>".
+       <the code at file:line>". In a later round, the thread's earlier notes and the
+       author's reply come with it, their remedies cut out the same way.
      - **Stage 1, in parallel.** The *claim agent* gets the problem statement and the
        code and decides whether the claim is true at the merge request's head, with the
        evidence either way (never "confirm"): the primary source (code, installed
@@ -56,13 +67,13 @@ and answers only what the user picked.
        behaviour claim run, a claimed defect reproduced (when a run is not possible, a
        reading of the source counts only if it leaves no doubt). The *design agent*
        gets the same problem statement, the files and lines it names, and the code, and
-       proposes its own fix. Nothing more: no pointer to a solution, an analogous test
+       returns its fix as a diff: the smallest change that settles the comment, with no
+       refactoring and no cleanup outside the comment's scope; what else it notices it
+       lists apart. It gets nothing more: no pointer to a solution, an analogous test
        or a library behaviour the remedy relies on.
-     - **Compare** the design agent's fix with the reviewer's. The same fix, or no
-       suggestion from the reviewer: one candidate. Different only in style: the
-       reviewer's, as one candidate ("only in style" means the same behaviour and the
-       same changes apart from names and formatting). Different in effect, a missing
-       follow-on cleanup included: both are candidates.
+     - **Candidates.** The design agent's diff, and the reviewer's suggestion turned
+       into a diff when there is one. When the two are the same diff, they are one
+       candidate.
      - **Stage 2** starts as soon as the design agent is back; it does not wait for
        the claim agent. One *fix-check agent* per candidate gets the problem, that one
        candidate and the code (never the other candidate), takes the claim as true,
@@ -72,38 +83,45 @@ and answers only what the user picked.
        input). It answers in this shape:
 
        ```
-       solves the problem: yes / no / in part (why)
+       solves the problem: yes / in part / no (why)
        breaks or weakens: <list, or "nothing found">
-       size: <files and lines touched>
-       fits the existing code: yes / no (why)
        ```
 
      - When the claim does not hold, the stage-2 results are dropped.
-   - **Merge** (the skill itself, by rule, in this order): the candidate that breaks
-     or weakens nothing over one that does; when every candidate does, the one whose
-     findings have a plain fix (a lint rule, a name, the same fix as another thread),
-     with those fixes added, else a third way if there is one; when none does, the
-     smaller change, then the one that fits the existing code, then the reviewer's. The skill
+   - **Pick by rank.** The skill compares the candidates rank by rank; the first rank
+     where they differ decides. Ranks 3 to 5 are counted from the diffs.
+
+     | Rank | Criterion | Measure |
+     | --- | --- | --- |
+     | 1 | settles the comment | "solves" yes over in part over no |
+     | 2 | breaks or weakens nothing | fewer findings in "breaks or weakens" |
+     | 3 | stays in scope | fewer changed files outside the comment's scope (the file the comment sits on, the files it names, and their tests) |
+     | 4 | small | fewer changed lines (added plus removed) |
+     | 5 | smaller still | fewer changed characters |
+
+     When the winner still has findings with a plain fix (a lint rule, a name, the
+     same fix as another thread), those fixes are added to it; when its findings have
+     no plain fix, the item says so and names a third way if there is one. The skill
      never overrules an agent's finding: when it disagrees with one, the item is Needs
      a look and the block says so.
    - **Clean** means: the claim is true, the fix check (for a simple thread, the
-     direct check) found nothing, and the fix is
-     the one obvious fix (the design agent's and the reviewer's agree, or the reviewer
-     gave none). Anything else (a claim that holds in part, a check that could not be
-     finished, two candidates, a fix with side effects, an agent that disagrees with
-     the direct reading) is **Needs a look**.
+     direct check) found nothing, and there is one candidate (the design agent's and
+     the reviewer's are the same diff, or the reviewer gave none). Anything else (a
+     claim that holds in part, a check that could not be finished, two candidates, a
+     fix with findings, an agent that disagrees with the direct reading) is **Needs a
+     look**.
    - Kind per thread: a **defect** (triggerable in this change: wrong behaviour, a
      failing test or build), a **suggestion** (anything else that asks for a change),
      or **Info** (asks for no change here: a confirmation, an announced follow-up). The
      kind sets the reply (step 6); the reviewer's own label (Optional, Nit) does not.
-4. **Report, then stop.** The report is ordered by group, not by the threads' order on
-   the platform. It is a numbered list, never a table: the terminal may be a third of a
-   screen wide. Items are numbered straight through all groups (1, 2, 3, …), so the
-   user can answer "do 1–4 and 6"; within a group, defects come first. Each item's
-   title links its thread. The groups, in this order:
+4. **Report, then stop.** Write the round's run file first. The report is ordered by
+   group, not by the threads' order on the platform. It is a numbered list, never a
+   table: the terminal may be a third of a screen wide. Items are numbered straight
+   through all groups (1, 2, 3, …), so the user can answer "do 1–4 and 6"; within a
+   group, defects come first. Each item's title links its thread. In a later round,
+   the report says which round it is. The groups, in this order:
    - **Clean** (step 3's definition): three lines per item, no sources and no
-     description of the checks; the user asks for them when needed. When the reviewer offers several fixes that
-     differ only in style, the item stays Clean and names the one planned.
+     description of the checks; the user asks for them when needed.
 
      ```
      1. Test name promises more than it checks
@@ -120,27 +138,27 @@ and answers only what the user picked.
         Code: <what the source shows, with the file and line>
         Fix A (ours): <the fix> — <what its check found>
         Fix B (reviewer): <the fix> — <what its check found>
-        Plan: <A or B> (<the merge rule that decided>)
+        Plan: <A or B> (rank <n>: <what differed>)
         Reply: <the reply, written out when it is a two-sentence one>
-        Also: <optional: a finding outside the thread, e.g. about the change itself>
+        Also: <optional: a finding outside the comment's scope>
      ```
 
-     With one candidate, a single `Fix:` line replaces the two.
+     With one candidate, a single `Fix:` line replaces the two, and `Plan:` names the
+     fixes added to it.
 
    - **Info (no reply)** (no change asked here): one line per item; a fact worth
      passing to the reviewer is named in the line, for the user to decide.
 
    End with the recommended set ("recommended: 1–5") and ask which items to do. Wait
-   for the answer.
+   for the answer, then record the picks in the run file.
 5. **Fix the picked items.**
-   - Only the picked items, with the fix the report planned. A fix the reviewer
-     offered, also one of several, counts as done as suggested; any other solution
-     becomes a deviation reply (step 6).
+   - Only the picked items, with the fix the report planned.
    - Prove a fix where a test can: the test fails without the fix (revert it for one
      run, then restore) and passes with it.
    - Run the affected tests and the repository's lint gate.
    - Commit by kind (tests, production code, documentation), following the repository's
-     commit conventions. Every reply then names the commit that did its part.
+     commit conventions. Every reply then names the commit that did its part. Record
+     each item's commit in the run file.
 6. **Push and answer.**
    - Push first; the replies name hashes that must exist on the server.
    - One reply per thread, inside the thread. The text comes from this table, never
@@ -149,9 +167,9 @@ and answers only what the user picked.
 
      | Outcome | Reply |
      | --- | --- |
-     | done as suggested | `Addressed in <hash>.` |
+     | the reviewer's fix, or one that differs from it only in names and formatting | `Addressed in <hash>.` |
      | a real defect, fixed | `Fixed in <hash>.` |
-     | done differently or in part | two sentences: what was done instead (with the hash); why the suggestion as written was not taken, or how its goal is still met |
+     | another fix, or the comment settled in part | two sentences: what was done instead (with the hash); why the suggestion as written was not taken, or how its goal is still met |
      | not done | two sentences: what stays; the technical reason |
      | Info | no reply |
 
@@ -161,8 +179,49 @@ and answers only what the user picked.
      later work, no @mentions, no thanks or apologies. English unless the profile says
      otherwise.
    - Threads stay open; the reviewer resolves them.
+   - Record each reply (its text and its note id) in the run file.
 7. **Status.** The pipeline of the new head, whether the approvals survived the push,
    the threads still open, and anything picked but not done. Tickets stay unchanged.
+   Mark the round finished in the run file.
+
+## Run file
+
+One JSON file per round, in the worktree:
+`.code-review-responses/<merge request number>/round-<n>.json`. Before the first write,
+add `.code-review-responses/` to the repository's `.git/info/exclude` (the path from
+`git rev-parse --git-path info/exclude`; shared by every worktree), so it is never
+committed. Write it at the end of step 4 and update it at each later step; after a
+context compaction, read it before anything else.
+
+```json
+{
+  "mergeRequest": "<url>",
+  "round": 1,
+  "head": "<sha the claims were checked at>",
+  "finished": false,
+  "items": [
+    {
+      "number": 1,
+      "thread": "<thread id>",
+      "url": "<link to the note>",
+      "title": "<short title>",
+      "group": "clean | needs-a-look | info",
+      "kind": "defect | suggestion | info",
+      "claim": { "verdict": "holds | in part | does not hold", "evidence": "<file:line, run>" },
+      "candidates": [
+        { "name": "A", "from": "design | reviewer", "diff": "<diff>",
+          "solves": "yes | in part | no", "breaksOrWeakens": ["<finding>"],
+          "outOfScopeFiles": 0, "lines": 0, "characters": 0 }
+      ],
+      "plan": { "candidate": "A", "rank": 2, "why": "<what differed>", "added": ["<plain fix>"] },
+      "also": ["<finding outside the scope>"],
+      "picked": true,
+      "commit": "<hash>",
+      "reply": { "text": "<reply>", "noteId": "<id>" }
+    }
+  ]
+}
+```
 
 ## Common mistakes
 
@@ -171,6 +230,8 @@ and answers only what the user picked.
 | A standard reply that retells the change ("renamed to …", "the spy is now restored …") | `Addressed in <hash>.`; the diff shows the rest |
 | Taking the reply's prefix, language or form from the reviewer's comments | the reply table in step 6 |
 | Agreeing with a claim because the reviewer sounds sure, or quoting the reviewer's numbers | check it against the source and recompute |
+| Refactoring or tidying up beside the fix | the smallest change that settles the comment; the rest goes into `Also:` |
 | Fixing every comment straight away | report, stop, fix what the user picked |
 | Replying to an Info thread to pass on a fact | name the fact in the report; the user decides |
 | Replying before the push | push first, so the hash resolves |
+| Starting a later round from scratch | read the run files of the earlier rounds first |
