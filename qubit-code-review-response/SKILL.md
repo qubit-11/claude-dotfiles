@@ -174,7 +174,7 @@ file), so a later round, or the same round after a context compaction, picks up 
      | --- | --- |
      | the reviewer's fix, also with different names or formatting, or with only the cleanup it makes necessary (an import or attribute it leaves unused) | `Addressed in <hash>.` |
      | a real defect, fixed | `Fixed in <hash>.` |
-     | the comment is settled, but the commit alone does not show which approach was taken: we took one of several options the reviewer offered (keeping the code counts as one); the reviewer named no remedy and the fix is not obvious (a nit's fix is); or the commit, however trivial, changes files beyond the commented file and its companions (as in rank 3) | the `Addressed` or `Fixed` reply plus half a sentence that names the approach, not the steps: `Addressed in <hash>: moved to the sibling entry point <path>.` |
+     | the comment is settled, but the commit alone does not show which approach was taken: we took one of several options the reviewer offered (keeping the code counts as one); the reviewer named no remedy and the comment does not make the fix obvious; or the commit, however trivial, changes files beyond the commented file and its companions (as in rank 3) | the `Addressed` or `Fixed` reply plus half a sentence that names the approach, not the steps: `Addressed in <hash>: moved to the sibling entry point <path>.` |
      | another fix, or the comment settled in part | two sentences: what was done instead (with the hash); why the suggestion as written was not taken, or how its goal is still met |
      | not done | two sentences: what stays; the technical reason |
      | Info | no reply |
