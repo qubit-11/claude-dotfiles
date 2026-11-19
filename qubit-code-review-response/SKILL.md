@@ -174,10 +174,14 @@ file), so a later round, or the same round after a context compaction, picks up 
      | --- | --- |
      | the reviewer's fix, also with different names or formatting, or with only the cleanup it makes necessary (an import or attribute it leaves unused) | `Addressed in <hash>.` |
      | a real defect, fixed | `Fixed in <hash>.` |
-     | either of the two above, when the hash alone does not show what was done: the fix changes files beyond the commented file and its companions (as in rank 3), or the comment leaves the outcome open (several options, keeping the code as one of them, a question) | the same reply plus half a sentence that sums up the result, not the steps: `Addressed in <hash>: moved to the sibling entry point <path>.` |
+     | the comment is settled, but the commit does not show at a glance which approach was taken: the reviewer offered more than one option (keeping the code counts as one); the reviewer named no remedy and more than one would do; or the commit, however trivial, changes files beyond the commented file and its companions (as in rank 3) | the `Addressed` or `Fixed` reply plus half a sentence that names the approach, not the steps: `Addressed in <hash>: moved to the sibling entry point <path>.` |
      | another fix, or the comment settled in part | two sentences: what was done instead (with the hash); why the suggestion as written was not taken, or how its goal is still met |
      | not done | two sentences: what stays; the technical reason |
      | Info | no reply |
+
+     A nit or other small point whose fix is obvious keeps the bare reply, also when the
+     reviewer named no remedy: the remedy is missing because it is obvious. Our own fix
+     in place of a single fix the reviewer proposed is the two-sentence row.
 
    - Post the `Addressed` and `Fixed` replies right away. Show the two-sentence replies
      to the user first and post them after the user's OK.
@@ -234,7 +238,8 @@ context compaction, read it before anything else.
 | Mistake | Instead |
 | --- | --- |
 | A standard reply that retells the change ("renamed to …", "the spy is now restored …") | `Addressed in <hash>.`; the diff shows the rest |
-| A bare `Addressed in <hash>.` for a fix across many files, or for a comment whose outcome was open | half a sentence with the result, so the reviewer sees what was done without opening every file |
+| A bare `Addressed in <hash>.` when the reviewer offered options, named no remedy that is obvious, or the commit spans many files | half a sentence naming the approach, so the reviewer sees what was chosen without reading every file |
+| Half a sentence on a nit whose fix is obvious | the bare `Addressed in <hash>.` |
 | Taking the reply's prefix, language or form from the reviewer's comments | the reply table in step 6 |
 | Agreeing with a claim because the reviewer sounds sure, or quoting the reviewer's numbers | check it against the source and recompute |
 | Refactoring or tidying up beside the fix | the smallest change that settles the comment; the rest goes into `Also:` |
