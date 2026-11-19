@@ -32,7 +32,7 @@ before opening a file.
 4. **Draft** the title and the description by [FORMAT.md](FORMAT.md), then run its
    checklist on the draft.
 5. **Show** the title and the description to the user and wait for an OK or their changes.
-   In the same message, ask what was checked when a line reads `Not tested: <ask>`.
+   In the same message, ask what was checked when a line reads `Tested by hand: <ask>`.
    For a Screenshots section, find the user's screenshots instead of asking for paths:
    the folder is `defaults read com.apple.screencapture location` on macOS (else
    `~/Desktop`), and only images created since the branch's first commit count. View

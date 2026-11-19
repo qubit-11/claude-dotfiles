@@ -12,7 +12,7 @@ copy its acceptance criteria or its background.
 The description is the state handed over, never the way there: no self-review section,
 no review rounds, no work in progress, no author's notes. A review result that describes
 the state goes where that state belongs: a decision into Decisions, an untested part into
-Not tested.
+the `Not tested` line.
 
 The description is written in English. The title follows the repository's commit style.
 A profile may add sections, constrain the title or change the form of a slot. The sections
@@ -94,20 +94,24 @@ come from screenshots the user took while working (step 5); until then the cells
 
 ## How to set up and validate
 
-For the reviewer who wants to try the change: a recipe, not a report of the author's own
-runs. Numbered steps, from the setup (instance, flag, URL) to what the reviewer should
-see, at most six. When a behaviour or a suite the change reaches was checked neither by
-hand nor by a run in this work, a last line names it:
+For the reviewer who wants to try the change: a recipe, then what was checked. Numbered
+steps, from the setup (instance, flag, URL) to what the reviewer should see, at most
+six. After the steps, one line says which steps were checked by hand and where; a check
+by hand in a real environment is visible nowhere else. When a behaviour or a suite the
+change reaches was checked by nobody, a second line names it. Suites that CI runs are
+not listed.
 
 ```md
 1. <setup step>
 2. <action> → <what you should see>
 
+Tested by hand: steps <n–m> in <environment>.
 Not tested: <behaviour or suite that nobody checked>.
 ```
 
-While it is not known what was checked, the line reads `Not tested: <ask>`, and step 5
-asks the user.
+While it is not known what was checked, the first line reads `Tested by hand: <ask>`,
+and step 5 asks the user. A guessed or outdated test line is never published: when the
+author reports a check later, the line is updated.
 
 Leave the section out when the change has no behaviour to try (documentation, build
 configuration, a refactor that changes no behaviour).
@@ -116,7 +120,9 @@ configuration, a refactor that changes no behaviour).
 
 For the reviewer: where to spend attention. One to three bullets, each naming a place
 (a Design part number, or a file when there is no Design) and what feedback is wanted
-there: a risk to check, a decision to challenge, an assumption to confirm.
+there: a risk to check, a decision to challenge, an assumption to confirm. Leave the
+section out when no specific feedback is wanted; it is a common optional section, not
+part of GitLab's default template.
 
 ## Effects on others
 
@@ -137,8 +143,10 @@ other teams' workflows. Leave the section out when there is none.
 - Screenshots is in the draft exactly when the diff changes what a user sees, and in the
   MR only with an After image in every row.
 - How to set up and validate has steps a reviewer can follow, each action with what they
-  should see; no line reports a suite that ran green.
-- Every Notes for the reviewer bullet names a place and the feedback wanted.
+  should see; its `Tested by hand` line says what the author confirmed, never a guess;
+  no line reports a suite that ran green.
+- Notes for the reviewer is present only with a concrete question; every bullet names a
+  place and the feedback wanted.
 - No section or sentence tells how the change was reviewed or worked on; only the state.
 - Problem and Change are in the MR's own words, about what this diff does: no sentence is
   copied or translated from the ticket, and no acceptance-criteria table is reproduced.
