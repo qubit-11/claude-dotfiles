@@ -174,6 +174,7 @@ file), so a later round, or the same round after a context compaction, picks up 
      | --- | --- |
      | the reviewer's fix, also with different names or formatting, or with only the cleanup it makes necessary (an import or attribute it leaves unused) | `Addressed in <hash>.` |
      | a real defect, fixed | `Fixed in <hash>.` |
+     | either of the two above, when the hash alone does not show what was done: the fix changes files beyond the commented file and its companions (as in rank 3), or the comment leaves the outcome open (several options, keeping the code as one of them, a question) | the same reply plus half a sentence that sums up the result, not the steps: `Addressed in <hash>: moved to the sibling entry point <path>.` |
      | another fix, or the comment settled in part | two sentences: what was done instead (with the hash); why the suggestion as written was not taken, or how its goal is still met |
      | not done | two sentences: what stays; the technical reason |
      | Info | no reply |
@@ -233,6 +234,7 @@ context compaction, read it before anything else.
 | Mistake | Instead |
 | --- | --- |
 | A standard reply that retells the change ("renamed to …", "the spy is now restored …") | `Addressed in <hash>.`; the diff shows the rest |
+| A bare `Addressed in <hash>.` for a fix across many files, or for a comment whose outcome was open | half a sentence with the result, so the reviewer sees what was done without opening every file |
 | Taking the reply's prefix, language or form from the reviewer's comments | the reply table in step 6 |
 | Agreeing with a claim because the reviewer sounds sure, or quoting the reviewer's numbers | check it against the source and recompute |
 | Refactoring or tidying up beside the fix | the smallest change that settles the comment; the rest goes into `Also:` |
