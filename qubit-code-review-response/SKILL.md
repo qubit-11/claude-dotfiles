@@ -58,8 +58,9 @@ file), so a later round, or the same round after a context compaction, picks up 
        remedy cut out: the reviewer's observations stay, every sentence or code block
        that says what to do instead goes. When the claim is itself the remedy ("this
        does not need X"), the problem is the observation plus "the reviewer questions
-       <the code at file:line>". In a later round, the thread's earlier notes and the
-       author's reply come with it, their remedies cut out the same way.
+       <the code at file:line>". In a later round, the thread's earlier notes come
+       with it, their remedies cut out the same way; the claim agent also gets the
+       author's earlier reply whole, since a pushback answers its reasons.
      - **Stage 1, in parallel.** The *claim agent* gets the problem statement and the
        code and decides whether the claim is true at the merge request's head, with the
        evidence either way (never "confirm"): the primary source (code, installed
@@ -80,11 +81,14 @@ file), so a later round, or the same round after a context compaction, picks up 
        and looks for what the fix breaks or makes worse: the other users of the
        changed code, the affected tests and their strength, the repository's lint
        rules, the edge values (`undefined`, `null`, empty, the largest and smallest
-       input). It answers in this shape:
+       input). Only what the fix causes counts; a gap in the existing code that stays
+       the same with any fix (e.g. no test covers the component) goes under `apart`.
+       It answers in this shape:
 
        ```
        solves the problem: yes / in part / no (why)
        breaks or weakens: <list, or "nothing found">
+       apart: <gaps in the existing code, or "none">
        ```
 
      - When the claim does not hold, the stage-2 results are dropped.
@@ -95,7 +99,7 @@ file), so a later round, or the same round after a context compaction, picks up 
      | --- | --- | --- |
      | 1 | settles the comment | "solves" yes over in part over no |
      | 2 | breaks or weakens nothing | fewer findings in "breaks or weakens" |
-     | 3 | stays in scope | fewer changed files outside the comment's scope (the file the comment sits on, the files it names, and their tests) |
+     | 3 | stays in scope | fewer changed files outside the comment's scope: the file the comment sits on and the files it names, each with its companion files (same base name: template, styles, test) |
      | 4 | small | fewer changed lines (added plus removed) |
      | 5 | smaller still | fewer changed characters |
 
@@ -121,7 +125,8 @@ file), so a later round, or the same round after a context compaction, picks up 
    group, defects come first. Each item's title links its thread. In a later round,
    the report says which round it is. The groups, in this order:
    - **Clean** (step 3's definition): three lines per item, no sources and no
-     description of the checks; the user asks for them when needed.
+     description of the checks; the user asks for them when needed. A fourth line,
+     `Also:`, only when a finding outside the comment's scope turned up.
 
      ```
      1. Test name promises more than it checks
@@ -167,7 +172,7 @@ file), so a later round, or the same round after a context compaction, picks up 
 
      | Outcome | Reply |
      | --- | --- |
-     | the reviewer's fix, or one that differs from it only in names and formatting | `Addressed in <hash>.` |
+     | the reviewer's fix, also with different names or formatting, or with only the cleanup it makes necessary (an import or attribute it leaves unused) | `Addressed in <hash>.` |
      | a real defect, fixed | `Fixed in <hash>.` |
      | another fix, or the comment settled in part | two sentences: what was done instead (with the hash); why the suggestion as written was not taken, or how its goal is still met |
      | not done | two sentences: what stays; the technical reason |
