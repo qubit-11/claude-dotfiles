@@ -1,7 +1,7 @@
 # Ticket format
 
 The ticket is German. It serves three readers, top to bottom. Everyone, the PM included,
-reads the title and the first section: the Zusammenfassung of a story or bug, the
+reads the title and the first section: the Zusammenfassung of a story, bug or chore, the
 Kontext and Ziel of an epic or initiative. The developer and the AI agent read on
 to the end. QA checks the Akzeptanzkriterien under Ziel, with fresh eyes and without
 test steps; the MR's "Tested" section later records what the author checked.
@@ -21,7 +21,7 @@ skeleton serves every type: a type leaves parts out, never moves them. The skele
 shows the shape to copy.
 
 ```md
-## Zusammenfassung                                            <- story and bug
+## Zusammenfassung                                     <- story, bug and chore
 
 <Two or three sentences: what happens or is missing today, what that means for the
 user, and what is true afterwards (Rules, Zusammenfassung).>
@@ -33,7 +33,7 @@ sentences: what the work is for, what exists already, what a reader must know. E
 one or two sentences: what is missing today, in the words of the business. Never the
 Ziel in the negative.>
 
-**User Story:** Als <Rolle> möchte ich <Funktion>, damit <Nutzen>.   <- a real user
+**User Story:** Als <Rolle> möchte ich <Funktion>, damit <Nutzen>.   <- feature only
 
 ### Problem                                          <- something goes wrong today
 
@@ -72,7 +72,7 @@ Ziel in the negative.>
 
 <One sentence: what is true afterwards. This is the definition of done.>
 
-### Akzeptanzkriterien                                       <- story and bug
+### Akzeptanzkriterien                                <- story, bug and chore
 
 - <One whole sentence: what happens, for whom, and where it shows.>
 - <The behaviour that must stay unchanged, when there is one.>
@@ -111,7 +111,7 @@ Ziel in the negative.>
 ```
 
 Leave out each line in angle brackets that does not apply, and a heading with nothing
-under it. A story or bug always has Zusammenfassung and Ziel; Kontext holds at least
+under it. A story, bug or chore always has Zusammenfassung and Ziel; Kontext holds at least
 the User Story or the Problem, or a bug's Beobachtet and Reproduktion, else its heading
 goes. A bug states its Voraussetzungen under Reproduktion, never a second time under
 Ziel.
@@ -189,21 +189,23 @@ initiative names no key at all.
 The rules follow the ticket from top to bottom; the last three hold for all of it.
 
 1. **Title.** A bug: the symptom and the condition under which it occurs ("Chat-Widget
-   startet nicht auf Wix-Seiten, die globale Browser-Objekte sperren"). A story: the
+   startet nicht auf Wix-Seiten, die globale Browser-Objekte sperren"). A chore: the
+   state afterwards („`Router.getCurrentNavigation()` in otk-booking ersetzt“). A story: the
    outcome. A clarification ticket: the decision that is pending ("Klären, ob die
    native Einbettung das iframe ablöst"), never an outcome nobody has decided. Never
    the fix. About ten words.
-2. **Zusammenfassung** (story, bug, clarification ticket; an epic or initiative has a short
+2. **Zusammenfassung** (story, bug, chore, clarification ticket; an epic or initiative has a short
    Kontext instead, Skeleton). Two or three sentences, about 40 to 80 words; the reader may
    stop after it, and for many readers it is the whole ticket. A bug tells where and
    when it happens, what the user does and then sees, what that means for them, and
    what is true afterwards. A story tells what is missing or goes wrong today, what
-   that costs, and what is true afterwards. A clarification ticket tells what is to be
+   that costs, and what is true afterwards. A chore tells what changes, why it is
+   needed now, and that no one notices a difference. A clarification ticket tells what is to be
    decided and why it is still open. The words are those of the UI and of the user: a
    name only developers use (a code area, a service, an error code, an internal step)
    is said in plain words or moved to Kontext. Every statement agrees with Kontext.
-3. **User Story.** Only when a real user gains something: a customer, or a user of the
-   practice. Never a developer as the role. One sentence in the form of the skeleton.
+3. **User Story.** Only in a feature, when a real user gains something: a customer, or a
+   user of the practice. Never a developer as the role; a chore has none. One sentence in the form of the skeleton.
 4. **Problem**, in any type, whenever something goes wrong today and has a consequence
    for someone; when something is only missing, there is no Problem group. It holds
    what the Zusammenfassung does not already say: numbers, who else is hit, the
@@ -255,7 +257,7 @@ The rules follow the ticket from top to bottom; the last three hold for all of i
     claim at all (Skeleton).
 11. **No implementation plan**: no file lists, no steps to change the code, no
     components to change, no test scripts, no decisions about the implementation.
-12. **Budget**: a story or bug aims at 500 words; an epic or initiative at 200.
+12. **Budget**: a story, bug or chore aims at 500 words; an epic or initiative at 200.
     Count the description without table pipes and divider rows:
     `sed -e 's/|/ /g' -e '/^[ -]*$/d' draft.md | wc -w`.
     - Over 500: cut in this order: bullets that repeat another section, code detail
@@ -349,7 +351,7 @@ mention in Jira. Direct creation through the API needs none of this.
 ## Checklist (run it on the draft)
 
 - The title names symptom and condition, the outcome, or the pending decision; no fix.
-- Story or bug: the Zusammenfassung alone tells someone who knows only the UI what
+- Story, bug or chore: the Zusammenfassung alone tells someone who knows only the UI what
   happens, what it means for the user, and what is true afterwards; it agrees with
   Kontext.
 - Epic or initiative: a short Kontext paragraph (initiative two or three sentences, epic one
