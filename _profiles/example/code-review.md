@@ -27,3 +27,11 @@ repository does not have; the review then skips that step and says so.
 3. <Builds, the start command (in the background) and the wait command.>
 4. <The command that runs named e2e spec files.>
 5. <How to stop the stack's processes by name and restore the databases from step 2.>
+
+## Re-review
+
+- <Platform host and how the CLI reaches it, e.g. an env variable for every call.>
+- <Project path for API calls.>
+- <Read every thread of an MR, with pagination.>
+- <Reply inside a thread; resolve and reopen a thread.>
+- <Pipeline and merge state of an MR.>

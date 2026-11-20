@@ -1,6 +1,6 @@
 ---
 name: qubit-code-review-response
-description: "Works through a code review that came back on one's own merge request or pull request, the way an author answers reviewers: checks every reviewer claim against the code, reports which points are clean to fix and explains the doubtful ones, fixes what the user picks, and answers every thread on GitLab or GitHub, over as many review rounds as it takes. Use when a review came back or the reviewer answered again, when the user asks to check, evaluate or address review comments, or to answer the reviewer. Not for reviewing someone else's change; that is `qubit-code-review`."
+description: "Works through a code review that came back on one's own merge request or pull request, the way an author answers reviewers: checks every reviewer claim against the code, reports which points are clean to fix and explains the doubtful ones, fixes what the user picks, and answers every thread on GitLab or GitHub, over as many review rounds as it takes. Use when a review came back or the reviewer answered again, when the user asks to check, evaluate or address review comments, or to answer the reviewer. Not for reviewing someone else's change, or re-reviewing it after its author answered; that is `qubit-code-review` (`re-review`)."
 argument-hint: "[merge request or pull request number or URL]"
 ---
 

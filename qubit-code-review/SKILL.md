@@ -1,7 +1,7 @@
 ---
 name: qubit-code-review
-description: "Reviews a branch, merge request, pull request, patch or set of code files with several independent AI reviewers (Claude subagents and codex) and publishes a bilingual review report (English and German). Two depths: `standard` (default) and `deep` for changes where a miss is expensive or hard to undo (authentication, wire formats, migrations). Use when a finished change needs a thorough review before merge, a second opinion from another model family, or a review report for the team, or when the user asks for the report of a finished review run (\"make the report\"). Not for a quick check during development; that is the built-in `/code-review`."
-argument-hint: "[standard|deep] [skip-report]"
+description: "Reviews a branch, merge request, pull request, patch or set of code files with several independent AI reviewers (Claude subagents and codex) and publishes a bilingual review report (English and German). Two depths: `standard` (default) and `deep` for changes where a miss is expensive or hard to undo (authentication, wire formats, migrations). Use when a finished change needs a thorough review before merge, a second opinion from another model family, or a review report for the team, when the user asks for the report of a finished review run (\"make the report\"), or when the author of a reviewed merge request answered or pushed fixes and the posted review comments need a re-review. Not for a quick check during development; that is the built-in `/code-review`."
+argument-hint: "[standard|deep] [skip-report] | re-review | publish-report"
 ---
 
 # Code review with independent agents
@@ -48,6 +48,7 @@ arguments come in any order.
 | `/qubit-code-review deep` | yes, steps 1 to 5, depth `deep` | yes, step 6 right after the list |
 | `/qubit-code-review deep skip-report` | yes, steps 1 to 5, depth `deep` | no |
 | `/qubit-code-review publish-report` | no | yes, for a finished run (step 7) |
+| `/qubit-code-review re-review` | no, checks the posted comments of a published run ([re-review.md](re-review.md)) | no |
 
 - The two depths are `standard` and `deep`; `standard` is the default, so a
   request without a depth runs it. A depth always means a new review at that
@@ -58,6 +59,11 @@ arguments come in any order.
   It takes no depth: with one, the skill stops before any work with one line:
   "`publish-report` publishes a finished run and takes no depth. For a review
   with the report: `/qubit-code-review [standard|deep]`."
+- `re-review` checks whether the author's new commits and replies settle the
+  comments the user posted from a published run. It follows only
+  [re-review.md](re-review.md): steps 1 to 8 and the worktree question do
+  not apply. It takes no depth: with one, it stops with the line
+  re-review.md gives.
 - `low`, `medium` and `high` are old names. With one, the skill stops before
   any work with one line: "The depths are `standard` (the default) and
   `deep`: `/qubit-code-review [standard|deep]`. For a quick check:
@@ -75,6 +81,7 @@ loads neither the skill nor a writer.
 
 Files:
 - [worktree.md](worktree.md): the review worktree
+- [re-review.md](re-review.md): the re-review of posted comments
 - [tooling.md](tooling.md): commands, subagents, foreign runs, tests, and the
   shell rules a worktree session needs; `scripts/` holds the git steps it calls
 - [reviewer-prompt.md](reviewer-prompt.md): the shared prompt and its variants
@@ -899,6 +906,8 @@ One line each; the rule stands where the pointer says.
 ### Commands and framing
 
 - `publish-report` with a depth starting a review or a run lookup instead of the one-line hint (Commands).
+- `re-review` asking the worktree question, starting reviewers, running tests or writing a report, or changing the worktree, `findings.json`, `data.json` or the report (re-review.md).
+- `re-review` judging a thread whose comment differs from its finding, or posting, resolving or approving without the user's answer to its one question (re-review.md).
 - A ticket's "merged" or "it is ticket X" taken as fact; a Blocker from the ticket alone other than an open question the description leaves unaddressed (§1, Truth ranking; Severity).
 - An open question one answer of which makes a Blocker, kept out of the list as an open point (Severity, open question).
 - A diff against the local target without the user's no-remote choice (§1).
