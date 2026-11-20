@@ -1,7 +1,7 @@
 ---
 name: qubit-code-review
 description: "Reviews a branch, merge request, pull request, patch or set of code files with several independent AI reviewers (Claude subagents and codex) and publishes a bilingual review report (English and German). Two depths: `standard` (default) and `deep` for changes where a miss is expensive or hard to undo (authentication, wire formats, migrations). Use when a finished change needs a thorough review before merge, a second opinion from another model family, or a review report for the team, when the user asks for the report of a finished review run (\"make the report\"), or when the author of a reviewed merge request answered or pushed fixes and the posted review comments need a re-review. Not for a quick check during development; that is the built-in `/code-review`."
-argument-hint: "[standard|deep] [skip-report] | re-review | publish-report"
+argument-hint: "[standard|deep] [skip-report] | publish-report | re-review"
 ---
 
 # Code review with independent agents
