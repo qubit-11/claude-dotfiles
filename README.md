@@ -6,7 +6,7 @@ in one personal style, independent of the company or the repository.
 
 | Skill | What it does |
 | --- | --- |
-| `qubit-jira-ticket` | writes a ticket that says what is wrong and what must be true afterwards, never the implementation |
+| `qubit-jira-ticket` | cuts a request into vertical, ready tickets and writes each: what is wrong and what must be true afterwards, never the implementation |
 | `qubit-merge-request` | writes a layered MR description: change, design, where to look, how to try it |
 | `qubit-code-review` | reviews code changes with independent Claude and codex reviewers, checks every claim, publishes a bilingual report; re-reviews the posted comments once the author answered |
 | `qubit-code-review-response` | answers a review of one's own change: checks every reviewer claim, fixes what the user picks, replies in every thread |

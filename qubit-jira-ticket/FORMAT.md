@@ -8,19 +8,10 @@ test steps; the MR's "Tested" section later records what the author checked.
 
 ## Size
 
-Judge the size against the type the planner intends, and warn; never split or retype:
-
-- **Too big for a story or bug**: Ziel is more than one outcome (two results that could
-  be checked apart), its sentence does not fit in two lines, or the description stays
-  over 600 words after cutting. Suggest two tickets, or an epic (team rule: at most five
-  stories).
-- **Not ready**: the outcome depends on a decision nobody has made yet ("measure, then
-  decide"). Suggest a clarification ticket whose Ziel is that decision; the follow-ups
-  wait for it.
-- **Too small**: the change is smaller than its ticket would be. Suggest no ticket (the
-  `dev` commit type needs none), or one ticket for several such fixes.
-
-An epic or an initiative may have a wide scope; its text stays short.
+Size and readiness are judged before the draft, by [SLICING.md](SLICING.md). The text adds
+two signals: a Ziel sentence that does not fit in two lines, and a description that stays
+over 600 words after cutting (Rules, Budget); both mean the Small row is not met. An epic or
+an initiative may have a wide scope; its text stays short.
 
 ## Skeleton
 
@@ -114,7 +105,8 @@ Ziel in the negative.>
 
 ## Offen
 
-- <A question the implementer must answer.>
+- <A question the implementer answers while building; its answer changes no criterion.>
+- **Produkt:** <a product question the planner left open: what the refinement decides>
 - <At most one item "Vermutete Lösung: …", marked as such.>
 ```
 
@@ -243,7 +235,7 @@ The rules follow the ticket from top to bottom; the last three hold for all of i
    steps, no code. Each has a source: the Ziel, an Entscheidung (in this ticket or in a
    ticket linked in Jira), behaviour that stays unchanged, or a
    requirement the planner set in the session. A criterion with no source becomes a
-   question under Offen. Bullets, never checkboxes.
+   Produkt question (SLICING.md, Questions). Bullets, never checkboxes.
 8. **Voraussetzungen** (story) say what a tester needs to see the criteria: settings
    and where they are set, versions, data. No steps.
 9. **Entscheidungen hold only agreements with others**: with another developer, the
@@ -269,8 +261,8 @@ The rules follow the ticket from top to bottom; the last three hold for all of i
     - Over 500: cut in this order: bullets that repeat another section, code detail
       outside Befund and Reproduktion, then Kontext down to the Problem's consequence.
       Cut whole bullets; never shorten sentences into fragments to save words.
-    - Over 600 after cutting: stop cutting and report the ticket as too big (Size).
-      Suggest the split; the planner decides.
+    - Over 600 after cutting: stop cutting; the Small row is not met (SLICING.md).
+      Propose the cut; the planner decides.
 
 ## Example (bug, shortened)
 
@@ -362,7 +354,7 @@ mention in Jira. Direct creation through the API needs none of this.
   Kontext.
 - Epic or initiative: a short Kontext paragraph (initiative two or three sentences, epic one
   or two) that says something the Ziel does not, then the one-sentence Ziel; no
-  Zusammenfassung, no Kontext, no claim about code.
+  Zusammenfassung, no groups under Kontext, no claim about code.
 - No `#`; sections `##`, groups `###`, none numbered; headings in normal case; no list
   longer than five bullets.
 - Every set of same-shaped facts is a table, and every cell is a whole statement.
@@ -381,5 +373,8 @@ mention in Jira. Direct creation through the API needs none of this.
   has none; other relations are Jira links. Out of Scope repeats nothing the parent
   already leaves out.
 - No file lists, steps or test scripts outside Befund and Reproduktion.
+- Offen holds questions for the implementer; a product question stands there only as a
+  **Produkt:** bullet the planner left open. Nothing from the report (readiness, size
+  signals, a remark about the title) is in the ticket.
 - The word count, counted, is at most 500, or the report says why it is over and, over
   600, that the ticket is too big.
