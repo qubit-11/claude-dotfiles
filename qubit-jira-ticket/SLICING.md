@@ -7,6 +7,7 @@ it runs before any draft, because a draft of the wrong cut is wasted.
 
 ## Readiness (Definition of Ready)
 
+The rows apply to stories and bugs; an epic or initiative is not checked against them.
 Every ticket of the cut is checked against these rows. The result goes into the report,
 never into the ticket, as one table with a line per ticket: the ticket, the rows not met,
 and one sentence of reason for each. A ticket that meets every row says „alle erfüllt“.
@@ -19,7 +20,7 @@ The request as the planner gave it is the first line when the cut differs from i
 | Negotiable | It holds no implementation plan (FORMAT.md, Rules, No implementation plan). |
 | Valuable | Its Ziel names who gains what. |
 | Estimable | No product question is open: a question whose answer changes what is built or what the Akzeptanzkriterien say. An unknown that only building or trying can answer makes it not estimable too. |
-| Small | One outcome: two results that could be checked apart are two tickets. The size signals of step 2 agree: one variant (one platform, market or user role, unless the variants share every step), few servers or packages. A limit of the team (points, sprint length) comes from the profile. |
+| Small | One outcome: two results that could be checked apart are two tickets. The size signals of step 2 agree: one variant (one platform, market or user role, unless the variants share every step), few servers or packages. A limit of the team (points, sprint length) applies when the profile names one. |
 | Testable | Each Akzeptanzkriterium can be checked by someone who was not in the session (FORMAT.md, Rules, Akzeptanzkriterien). |
 
 INVEST is Bill Wake's checklist (2003); Vertical is listed apart, because INVEST only implies it
