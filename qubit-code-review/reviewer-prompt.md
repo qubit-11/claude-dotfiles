@@ -500,9 +500,13 @@ the right result with the fix in place? Then answer one of:
 - OPTIONS: two or more fixes hold and the code alone does not pick one
   (for example a code change or a limitation stated in the description):
   one line per option, `- <the option>: <which cases it fixes and which it
-  leaves, and what it costs>`. When one fix removes every case another
-  removes and more, at no higher cost, it is the fix: answer OK or PARTIAL
-  for it.
+  leaves, and what it costs>`, the one you recommend first, then one line
+  `Recommended: <why that one>`, or `Recommended: NONE: <the fact the
+  choice depends on>`. Compare fixes on the cases of your Failure scenario
+  only: the cases of Before the change were there on the target and decide
+  nothing. When one fix removes every Failure-scenario case another
+  removes, at no higher cost, it is the fix: answer OK or PARTIAL for it,
+  PARTIAL naming the Before-the-change cases it leaves.
 - HARMFUL: what the fix would break, and a fix the claim or a source names
   that works, or OPEN.
 - OPEN: no named fix can be shown to give the right result; say what is

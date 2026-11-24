@@ -118,7 +118,7 @@ files, the system or process they describe.
                   "triggers": [ { "trigger": "<case>", "wrong": "<wrong result>" } ] /* two or more, worst first; else left out */,
                   "removes": ["F<n>"] /* other findings this finding's fix also removes (SKILL.md §4, step 3, Shared fix); else left out */,
                   "before": "<the cases in which the target already gave the wrong result>" /* from the checks' # Before the change; else left out */,
-                  "options": ["<option>: <the cases it fixes or leaves, its cost>"] /* two or more, when the checks answered OPTIONS; else left out */,
+                  "options": ["<option>: <the cases it fixes or leaves, its cost>"] /* two or more, the recommended one first, when the checks answered OPTIONS; else left out */,
                   "fixLeaves": "<the cases the fix leaves>" /* when the checks answered PARTIAL; else left out */,
                   "fixOpen": "<what is open about the fix>" /* when the checks answered OPEN; else left out */,
                   "followUp": { "title": "<FYI and Optional: ticket title>", "key": null },
@@ -455,7 +455,9 @@ named in their `# Principle` sections (SKILL.md §4), all of them when they
 differ; `null` when they answered NONE. A check's `# Before the change`
 other than NONE becomes `before`, and its `what` and `fields.what.text` say
 it in one sentence. A check's OPTIONS become `options`, one entry per
-option, and `fix` and `fields.fix.text` name every option. A check's
+option, the recommended one first, and `fix` and `fields.fix.text` name
+every option and say which one is recommended and why (from the check's
+`Recommended:` line). A check's
 PARTIAL becomes `fixLeaves`, its OPEN `fixOpen`; `fix` and
 `fields.fix.text` say what is left or open.
 

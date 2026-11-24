@@ -116,7 +116,9 @@ blocks do not count):
    order of `options` that names each option and, where the words allow,
    what it fixes ("Should the pick get its own cookie name, which fixes
    both cases, or is the one-time effect accepted and stated in the
-   description?"); a finding with `removes` says it in the option that
+   description?"), then one sentence with the recommended option and its
+   reason when the check gave one ("The own cookie name is the safer
+   choice, since it also covers returning visitors."); a finding with `removes` says it in the option that
    removes the other error. With `fixOpen`, one question on what is open,
    from `fixOpen`. These two labels, `Suggestion:` (always one fix) and
    `Question:`, are the only ones of this part; they name its content, not
