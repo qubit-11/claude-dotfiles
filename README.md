@@ -1,6 +1,6 @@
 # Claude dotfiles
 
-My personal Claude Code setup: skills, general working rules and a status line. It lives in
+A personal Claude Code setup: skills, general working rules and a status line. It lives in
 git, so a new computer is set up with one prompt.
 
 ## Setup
