@@ -17,6 +17,11 @@ General working rules that are not skills live in [global/](global/), for exampl
 them with `@~/.claude/skills/global/<file>.md` and keeps the environment's values beside
 the import.
 
+The [status line](statusline/statusline.sh) shows folder, branch, context, model and the
+5-hour and 7-day limits. Link it as `~/.claude/statusline.sh`, the path the `statusLine`
+setting runs. Ticket links to the tracker come from a local, untracked
+`~/.claude/statusline.local.env`; the script's header shows its format.
+
 ## Principles
 
 - **General, not tied to a company.** A rule here must hold in any team. The values and
