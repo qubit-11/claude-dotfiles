@@ -14,7 +14,7 @@ Set up https://github.com/qubit-11/claude-dotfiles following "Manual setup" in i
 
 When it is done, restart Claude Code: it reads `~/.claude/CLAUDE.md` and the status line
 setting only when a session starts. The skills then work with general defaults and say
-what they skipped, until step 2 adds a company's values.
+what they skipped, until step 2 adds the values of a working environment.
 
 <details>
 <summary><b>Manual setup</b>: the steps behind the prompt, to set up without Claude</summary>
@@ -41,25 +41,26 @@ Restart Claude Code afterwards.
 
 </details>
 
-### 2. Add a company's environment
+### 2. Add a working environment
 
-A company's values (tracker URL, ticket keys, secret files, repository commands) stay out
-of this repository. To add them, start Claude Code in one of the company's repositories and
-give it this prompt:
+A working environment is where the skills are used: a company, an organization or a team.
+Its values (tracker URL, ticket keys, secret files, repository commands) stay out of this
+repository. To add them, start Claude Code in one of its repositories and give it this
+prompt:
 
 ```text
-Set up the environment of this repository's company following "Add a company's environment" in ~/.claude/skills/README.md.
+Set up the working environment this repository belongs to, following "Add a working environment" in ~/.claude/skills/README.md.
 ```
 
 Claude sets up the following and asks for what it cannot find in the repository:
 
-- a profile `~/.claude/skills/_profiles/<company>/`, copied from `_profiles/example/` and
-  filled in as [_profiles/README.md](_profiles/README.md) describes;
+- a profile `~/.claude/skills/_profiles/<name>/`, named after the environment, copied from
+  `_profiles/example/` and filled in as [_profiles/README.md](_profiles/README.md) describes;
 - the tracker URL and ticket key pattern in `~/.claude/statusline.local.env`, in the format
   the header of [statusline/statusline.sh](statusline/statusline.sh) shows;
 - the values the rules in `global/` ask for (ticket keys, branch names), beside their
   imports in `~/.claude/CLAUDE.md`;
-- the command-line tool of the company's git host: `glab` for GitLab, `gh` for GitHub.
+- the command-line tool of its git host: `glab` for GitLab, `gh` for GitHub.
   Claude installs it; logging in is yours (`! glab auth login` or `! gh auth login` in the
   session). The merge request and review skills read and post through it.
 
@@ -69,7 +70,7 @@ Claude sets up the following and asks for what it cannot find in the repository:
 
 The [skills](https://code.claude.com/docs/en/skills) cover the craft of software work:
 writing a ticket, a merge request description, a review and an explanation in one personal
-style, independent of the company or the repository.
+style, independent of the working environment and the repository.
 
 | Skill | What it does |
 | --- | --- |
@@ -86,4 +87,4 @@ style, independent of the company or the repository.
 | [`global/worktree-naming.md`](global/worktree-naming.md) | rule for naming git worktree folders: `<TYPE>-<ticket>-<name>` | imported in `~/.claude/CLAUDE.md` |
 | [`statusline/statusline.sh`](statusline/statusline.sh) | status line: folder, branch, context, model and effort, 5-hour and 7-day limits, account | linked as `~/.claude/statusline.sh` |
 | [`install.sh`](install.sh) | setup script: links the status line, adds the `statusLine` setting, adds the imports | run by the setup |
-| [`_profiles/`](_profiles/README.md) | a company's values, one folder per company, and `profile.py`, which reads them for the skills | the skills call `profile.py`; only `example/` is in git |
+| [`_profiles/`](_profiles/README.md) | the values of a working environment, one folder per environment, and `profile.py`, which reads them for the skills | the skills call `profile.py`; only `example/` is in git |
