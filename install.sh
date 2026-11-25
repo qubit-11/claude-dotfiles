@@ -64,12 +64,7 @@ done
 
 cat <<EOF
 
-Done. Optional, later:
-  - A profile for a company's repositories: ask Claude to create one from
-    _profiles/example/ (see _profiles/README.md), or copy _profiles/<name>/
-    from the old computer. Without one the skills use general defaults.
-  - Ticket links in the status line: $CLAUDE_DIR/statusline.local.env
-    (format in the header of statusline/statusline.sh).
-  - The values a rule in global/ asks for (e.g. ticket keys for worktree
-    naming) go beside its import in $claude_md.
+Done. Restart Claude Code to load the status line and the imports.
+A company's values (profile, ticket links, ticket keys) come later:
+see "A company's environment" in $REPO/README.md.
 EOF

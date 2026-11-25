@@ -42,21 +42,39 @@ personal style, independent of the company or the repository.
 Start Claude Code in any folder and give it this prompt:
 
 ```text
-Set up https://github.com/qubit-11/claude-dotfiles following its README.
+Set up https://github.com/qubit-11/claude-dotfiles following the section "Manual setup" of its README.
 ```
 
 When it is done, restart Claude Code: it reads `~/.claude/CLAUDE.md` and the status line
-setting only when a session starts. That is the whole setup.
+setting only when a session starts. The skills then work with general defaults; a
+company's values come later, in a repository of that company.
 
-Profiles are not part of the repository and are not created by the setup. Without one the
-skills run with general defaults and say what they skipped. To add one later, ask Claude to
-create it from `_profiles/example/` for a repository, or copy `_profiles/<name>/` from the
-old computer.
+### A company's environment
+
+The values of one company (tracker URL, ticket keys, secret files, repository commands) are
+not part of the repository and not created by the setup. Without them the skills run with
+general defaults and say what they skipped. To add them, start Claude Code in one of the
+company's repositories and give it this prompt:
+
+```text
+Set up the environment of this repository's company following the section "A company's environment" in ~/.claude/skills/README.md.
+```
+
+Claude then sets up three things and asks for what it cannot find in the repository:
+
+- a profile `~/.claude/skills/_profiles/<company>/`, copied from `_profiles/example/` and
+  filled in as [_profiles/README.md](_profiles/README.md) describes;
+- the tracker URL and ticket key pattern in `~/.claude/statusline.local.env`, in the format
+  the header of [statusline/statusline.sh](statusline/statusline.sh) shows;
+- the values the rules in `global/` ask for (ticket keys, branch names), beside their
+  imports in `~/.claude/CLAUDE.md`.
+
+When switching computers, copying these three from the old computer does the same.
 
 ### Manual setup
 
-These are the steps Claude follows. Run them yourself only to set up without Claude, from
-any folder, then restart Claude Code:
+The steps Claude follows for the setup prompt. To set up without Claude, run them yourself
+from any folder, then restart Claude Code:
 
 ```sh
 git clone https://github.com/qubit-11/claude-dotfiles.git ~/.claude/skills
