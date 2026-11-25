@@ -39,16 +39,29 @@ personal style, independent of the company or the repository.
 
 ## Setup
 
-Tell Claude: *"Set up https://github.com/qubit-11/claude-dotfiles following its README."*
-The steps, from any folder:
+Start Claude Code in any folder and give it this prompt:
+
+```text
+Set up https://github.com/qubit-11/claude-dotfiles following its README.
+```
+
+When it is done, restart Claude Code: it reads `~/.claude/CLAUDE.md` and the status line
+setting only when a session starts. That is the whole setup.
+
+Profiles are not part of the repository and are not created by the setup. Without one the
+skills run with general defaults and say what they skipped. To add one later, ask Claude to
+create it from `_profiles/example/` for a repository, or copy `_profiles/<name>/` from the
+old computer.
+
+### Manual setup
+
+These are the steps Claude follows. Run them yourself only to set up without Claude, from
+any folder, then restart Claude Code:
 
 ```sh
 git clone https://github.com/qubit-11/claude-dotfiles.git ~/.claude/skills
 ~/.claude/skills/install.sh
 ```
-
-Then restart Claude Code: it reads `~/.claude/CLAUDE.md` and the status line setting only
-when a session starts.
 
 - The repository lands in `~/.claude/skills` because Claude Code loads personal skills
   only from there.
@@ -58,8 +71,3 @@ when a session starts.
 - [`install.sh`](install.sh) links the status line, adds the `statusLine` setting and
   imports the rules of `global/` in `~/.claude/CLAUDE.md`. It asks nothing, leaves other
   settings alone and can be run again after a `git pull`.
-
-Profiles are not part of the repository and are not created by the setup. Without one the
-skills run with general defaults and say what they skipped. To add one later, ask Claude to
-create it from `_profiles/example/` for a repository, or copy `_profiles/<name>/` from the
-old computer.
