@@ -1,8 +1,13 @@
-# Claude skills
+# Claude dotfiles
 
-Personal [Claude Code skills](https://docs.claude.com/en/docs/claude-code/skills) for the craft
-of software work: writing a ticket, a merge request description, a review and an explanation
-in one personal style, independent of the company or the repository.
+A personal Claude Code setup kept as
+[dotfiles](https://dotfiles.github.io/): the files that shape a tool for one person,
+versioned in git so a new machine is set up by cloning. It holds skills, general working
+rules and the status line.
+
+The [skills](https://docs.claude.com/en/docs/claude-code/skills) cover the craft of software
+work: writing a ticket, a merge request description, a review and an explanation in one
+personal style, independent of the company or the repository.
 
 | Skill | What it does |
 | --- | --- |
@@ -36,3 +41,10 @@ setting runs. Ticket links to the tracker come from a local, untracked
 
 Clone into `~/.claude/skills`, copy `_profiles/example/` to `_profiles/<name>/` and fill it
 in. Without a profile the skills run with general defaults and say what they skipped.
+The folder name differs from the repository name on purpose: Claude Code loads personal
+skills only from `~/.claude/skills`.
+
+```sh
+git clone https://github.com/qubit-11/claude-dotfiles.git ~/.claude/skills
+ln -s ~/.claude/skills/statusline/statusline.sh ~/.claude/statusline.sh
+```
