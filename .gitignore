@@ -5,3 +5,5 @@ __pycache__/
 # profiles hold the values of one environment and stay local; only the template is tracked
 _profiles/*/
 !_profiles/example/
+# Claude Code moves replaced synced skills here before swapping in a new version
+.trash/
