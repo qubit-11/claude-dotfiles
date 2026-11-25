@@ -3656,6 +3656,18 @@ class ColdReadInputTest(unittest.TestCase):
         en2 = self.state('cold-read-2-input-en.md')
         self.assertEqual(re.findall(r'^## (C\d+)', en2, flags=re.M), ['C3'])
 
+    def test_second_round_after_a_dropped_card_takes_changed_comments_only(self):
+        """A finding withdrawn after the first round shifts every later label; texts already read stay out."""
+        self.build()
+        del self.cards[0]
+        self.cards[1]['gitlab'][0]['text'][0] = 'EN mr, reworded.'
+        self.write()
+        out = self.build('--name', 'cold-read-2', '--since', 'cold-read')
+        self.assertIn('1 comments', out)
+        en2 = self.state('cold-read-2-input-en.md')
+        self.assertIn('EN mr, reworded.', en2)
+        self.assertNotIn('EN old.', en2)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=1)

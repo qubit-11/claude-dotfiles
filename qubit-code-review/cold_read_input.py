@@ -6,8 +6,9 @@ Usage: python3 cold_read_input.py [--de] <report dir> <worktree> [--name <name>]
 Without --de it writes <SP>/state/<name>-input-en.md (the English texts) and <SP>/state/<name>-labels.json (label to
 finding, for the orchestrator only); with --de it writes <SP>/state/<name>-input-de.md (the German texts), and only
 once the reader's English notes <SP>/state/<name>-en.md exist and are not empty. <SP> is the report dir's parent;
-<name> defaults to cold-read. --since <name> keeps only the comments whose text changed since that round's labels
-file, under the same labels (the second round, gitlab-comments.md, Cold read). Labels are C1, C2, … in data.json
+<name> defaults to cold-read. --since <name> keeps only the comments whose text that round's labels file does not
+hold, compared by text, so a card dropped since then shifts no comment back in (the second round,
+gitlab-comments.md, Cold read). Labels are C1, C2, … in data.json
 order and carry no finding id and no severity. The packet holds the place, the code around it (CONTEXT lines before
 and after, the commented lines marked; a removed line from the diff's old side) and the text, nothing else.
 Prints the paths written; exit 1 on a missing input, 2 on wrong usage.
@@ -161,8 +162,9 @@ def main(argv):
         if not prev_file.exists():
             print('missing %s: --since names the round whose labels file holds the texts read' % prev_file)
             return 1
-        prev = json.loads(prev_file.read_text())
-        items = [it for it in items if (prev.get(it[0]) or {}).get('sha256') != text_hash(it[2])]
+        # by text, not by label: a card dropped after that round shifts every later label
+        read = {v.get('sha256') for v in json.loads(prev_file.read_text()).values()}
+        items = [it for it in items if text_hash(it[2]) not in read]
     state.mkdir(exist_ok=True)
     if de:
         notes = state / ('%s-en.md' % name)
