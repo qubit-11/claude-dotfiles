@@ -25,6 +25,7 @@ personal style, independent of the company or the repository.
 | --- | --- | --- |
 | [`global/worktree-naming.md`](global/worktree-naming.md) | rule for naming git worktree folders: `<TYPE>-<ticket>-<name>` | imported by `~/.claude/CLAUDE.md` with `@~/.claude/skills/global/worktree-naming.md`; the environment's values (ticket keys, branch names) stay beside the import |
 | [`statusline/statusline.sh`](statusline/statusline.sh) | status line: folder, branch, context, model, 5-hour and 7-day limits | symlinked as `~/.claude/statusline.sh`, the path the `statusLine` setting runs; ticket links come from the untracked `~/.claude/statusline.local.env` (format in the script's header) |
+| [`install.sh`](install.sh) | the setup: status line link and setting, imports in `~/.claude/CLAUDE.md` | run once per computer, see [Setup](#setup) |
 | [`_profiles/`](_profiles/README.md) | the values of one environment (URLs, ticket keys, secret files, repository commands) and `profile.py`, which the skills ask for them | `_profiles/example/` is the template; a filled-in copy in `_profiles/<name>/` stays local and untracked |
 
 ## Principles
@@ -38,12 +39,27 @@ personal style, independent of the company or the repository.
 
 ## Setup
 
+Tell Claude: *"Set up https://github.com/qubit-11/claude-dotfiles following its README."*
+The steps, from any folder:
+
 ```sh
 git clone https://github.com/qubit-11/claude-dotfiles.git ~/.claude/skills
-ln -s ~/.claude/skills/statusline/statusline.sh ~/.claude/statusline.sh
-cp -R ~/.claude/skills/_profiles/example ~/.claude/skills/_profiles/<name>   # then fill it in
+~/.claude/skills/install.sh
 ```
 
-The folder name differs from the repository name on purpose: Claude Code loads personal
-skills only from `~/.claude/skills`. Without a profile the skills run with general defaults
-and say what they skipped.
+Then restart Claude Code: it reads `~/.claude/CLAUDE.md` and the status line setting only
+when a session starts.
+
+- The repository lands in `~/.claude/skills` because Claude Code loads personal skills
+  only from there.
+- If that folder exists and is not empty (Claude Code creates `synced/` in it for skills
+  synced from the claude.ai account), `git clone` refuses it: initialise the repository
+  in the folder and pull `main` into it instead.
+- [`install.sh`](install.sh) links the status line, adds the `statusLine` setting and
+  imports the rules of `global/` in `~/.claude/CLAUDE.md`. It asks nothing, leaves other
+  settings alone and can be run again after a `git pull`.
+
+Profiles are not part of the repository and are not created by the setup. Without one the
+skills run with general defaults and say what they skipped. To add one later, ask Claude to
+create it from `_profiles/example/` for a repository, or copy `_profiles/<name>/` from the
+old computer.
