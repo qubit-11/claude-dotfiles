@@ -667,10 +667,20 @@ real tool set.
      <the batch line from assemble.py, e.g. index.html 1-217; findings-1.js 1-5, 6-11>
   2. <batch 1 of a first publish:> Artifact publish: file_path P/index.html, files {"<path>": "P/<path>"}
      for every other file above, icon "review".
-     <every other batch:> Artifact list, scope "files", url <meta.artifactUrl>; then Artifact publish:
-     url <meta.artifactUrl>, file_path P/index.html, files {"<path>": "P/<path>"} for every other file above.
+     <every other batch:> Artifact list, scope "files", url <meta.artifactUrl>; Artifact read, url
+     <meta.artifactUrl>, without a path; then Artifact publish: url <meta.artifactUrl>, file_path P/index.html,
+     files {"<path>": "P/<path>"} for every other file above. Merge nothing from the live version. A refused
+     publish is not sent again and never with `overwrite_unread`: report the refusal.
   3. Reply with one line only: URL: <artifact url> · FILES: <the published paths> · RESULT: ok | <exact error text>
   ```
+
+  A republish passes two checks of the Artifact tool, both in the worker's own
+  session: every file it replaces was listed or read (the file listing), and
+  the page's live version was read (the read without a path). The worker
+  merges nothing, since only this run writes the report. A refusal after both
+  steps means the artifact holds something this run did not publish: the
+  orchestrator reads what the refusal names and asks the user before any
+  further publish.
 
 Output names are fixed at dispatch: `core`, `architecture`, `requirements`, `lane-<x>`, `lens-<x>`, `lens-<x>-2`,
 `explorer`, `investigator-batch-<n>`, `investigator-<draft id>`, `investigator2-<draft id>`,
