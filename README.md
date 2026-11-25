@@ -20,7 +20,9 @@ what they skipped.
 <details>
 <summary><b>Manual setup</b>: the steps behind the prompt, to set up without Claude</summary>
 
-From any folder, then restart Claude Code:
+Needs `git`, `python3` (for `install.sh` and the profiles) and `jq` (for the status line);
+install what is missing first, on macOS with Homebrew. Then, from any folder, and restart
+Claude Code afterwards:
 
 ```sh
 git clone https://github.com/qubit-11/claude-dotfiles.git ~/.claude/skills
@@ -48,25 +50,16 @@ give it this prompt:
 Set up the environment of this repository's company following "Add a company's environment" in ~/.claude/skills/README.md.
 ```
 
-Claude sets up three things and asks for what it cannot find in the repository:
+Claude sets up four things and asks for what it cannot find in the repository:
 
 - a profile `~/.claude/skills/_profiles/<company>/`, copied from `_profiles/example/` and
   filled in as [_profiles/README.md](_profiles/README.md) describes;
 - the tracker URL and ticket key pattern in `~/.claude/statusline.local.env`, in the format
   the header of [statusline/statusline.sh](statusline/statusline.sh) shows;
 - the values the rules in `global/` ask for (ticket keys, branch names), beside their
-  imports in `~/.claude/CLAUDE.md`.
-
-<details>
-<summary><b>From the old computer</b>: copy the three instead of setting them up again</summary>
-
-Copy to the same places on the new computer:
-
-- the folder `~/.claude/skills/_profiles/<company>/`
-- the file `~/.claude/statusline.local.env`
-- the values beside the imports in `~/.claude/CLAUDE.md`, or the whole file
-
-</details>
+  imports in `~/.claude/CLAUDE.md`;
+- the command-line tool of the company's git host, installed and logged in: `glab` for
+  GitLab, `gh` for GitHub. The merge request and review skills read and post through it.
 
 ## Contents
 

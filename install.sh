@@ -15,6 +15,13 @@ warn()  { printf '  warn  %s\n' "$1"; }
 
 echo "Setting up $REPO"
 
+# Tools: python3 runs step 2 below, so without it nothing is set up; jq only the status line needs.
+if ! command -v python3 >/dev/null; then
+  echo "  error python3 is missing; install it and run this script again" >&2
+  exit 1
+fi
+command -v jq >/dev/null || warn "jq is missing; the status line needs it"
+
 # 1. Status line: a link at the path the statusLine setting runs.
 link="$CLAUDE_DIR/statusline.sh"
 target="$REPO/statusline/statusline.sh"
