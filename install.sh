@@ -66,5 +66,5 @@ cat <<EOF
 
 Done. Restart Claude Code to load the status line and the imports.
 A company's values (profile, ticket links, ticket keys) come later:
-see "A company's environment" in $REPO/README.md.
+see "Add a company's environment" in $REPO/README.md.
 EOF
