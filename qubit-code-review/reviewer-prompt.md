@@ -505,7 +505,9 @@ the right result with the fix in place? Then answer one of:
   choice depends on>`; a reason may be that it removes every case the
   change creates while the others add only Before-the-change cases. When
   one fix removes every case another removes and more, at no higher cost,
-  it is the fix: answer OK or PARTIAL for it.
+  it is the fix: answer OK or PARTIAL for it. When the code solves the same
+  case one way elsewhere, and that fix also removes every case the other
+  options remove, it is the fix: quote the place and answer OK or PARTIAL.
 - HARMFUL: what the fix would break, and a fix the claim or a source names
   that works, or OPEN.
 - OPEN: no named fix can be shown to give the right result; say what is
