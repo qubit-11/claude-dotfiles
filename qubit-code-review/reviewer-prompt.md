@@ -292,7 +292,12 @@ standard adds (what one sees by following one path through the changed code):
 - Architecture: again, line by line: a second mechanism next to an existing
   one, logic in the wrong layer or package, a broken boundary, a module
   whose own checks accept an input that breaks the invariant it exists to
-  keep.
+  keep; a value a user edits and saves that the system changes after the
+  save, on read or on write, beyond a technical form that leaves the stored
+  value the same after a load and a save (before the first save the system
+  may set it as a default; a stated rule may reset it once, written to
+  storage at the event that ends what the value depends on, e.g. when a
+  module is switched off).
 - Design: unneeded complexity and over-engineering, dead code,
   misleading or invented names (category Design).
 - Performance: an unbounded query, a filter without an index, N+1 calls,
