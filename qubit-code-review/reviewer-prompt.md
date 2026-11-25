@@ -160,8 +160,11 @@ Severity, by what the finding means for the merge:
   validator or required field, a unique index, a type, a consumer's strict
   check of a value it receives) by writing data or handing over a value
   that breaks it, instead of changing the invariant or migrating the
-  consumer, or leaves an existing test failing that passed before the
-  change, without fixing it or disabling it visibly with a ticket;
+  consumer, changes after the save a value a user edits and saves in this
+  system, in what the system returns as that value or stores, beyond a
+  technical form that a load and a save leave the same, or leaves an
+  existing test failing that passed before the change, without fixing it
+  or disabling it visibly with a ticket;
   (d) a missing test: a new feature with no test at all.
   Live use here: <what live use means for this subject type, from SKILL.md, Severity>.
   Code not switched on yet (a flag off, a route not linked, a draft) is
@@ -205,6 +208,19 @@ Severity, by what the finding means for the merge:
   (which future change gets harder, or what a reader will misunderstand);
   "I would write it differently" is no Blocker when the change is still
   better than before.
+  A user-owned value: before the first save the system may set it as a
+  default, and a stated rule may reset it once, written to storage at the
+  event that ends what the value depends on (e.g. a module switched off);
+  a value a stated rule gives to another system (e.g. an identity provider
+  that writes it on login) is not the user's; a display derived from the
+  value (a mail text, a rendered style) is not what the system returns as
+  that value. When the change routes its new case through a mechanism
+  that at the merge base already rewrites the same field of a stored
+  document after the save (quote it at the merge base), this reason does
+  not apply to the change: the finding is FYI with a follow-up ticket for
+  that mechanism that names the new case, since fixing it here would grow
+  the scope; a copy of that pattern at a new place is the change's own. A
+  defect the new case causes on a live path keeps its own reason (a).
   For (d): a new feature without any test is a Blocker; a bug fix without a
   regression test is Optional; a refactor, config, deploy or docs-only
   change needs no new test, only the existing tests must pass. Any test
