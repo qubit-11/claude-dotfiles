@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Claude Code status line, two lines:
-#   📁 folder │ 🌿 branch                              (own line: full width)
+#   📁 folder │ 📦 repo │ 🌿 branch                    (own line: full width)
 #   ctx 42% │ Opus 5.5 high │ 5h 23% ↻4h50 │ 7d 85% ↻5d9h │ Example Org
 # ↻ = time left until the limit resets (dimmed; hidden when unknown or past).
 # All values come from the JSON Claude Code sends on stdin, so every
@@ -159,26 +159,41 @@ fi
 five_colour=""; [[ $five != "-" ]] && five_colour=$(colour_for "$five" $LIMIT_5H_ORANGE $LIMIT_5H_RED)
 week_colour=""; [[ $week != "-" ]] && week_colour=$(colour_for "$week" $LIMIT_7D_ORANGE $LIMIT_7D_RED)
 
-# wrap_name ICON NAME MAX: print "ICON NAME", split over several lines if it is
-# wider than MAX columns. Splits after - / _ where possible, continuation lines
-# are indented to line up with the text after the icon. Icon + space = 3 columns.
+# wrap_name ICON NAME MAX [FIRST]: "ICON NAME" split over lines of at most MAX
+# columns. FIRST = columns left on a line already begun: the name then starts
+# there and its first piece must end at - / _ (no piece cut mid-word at a line
+# end). Splits after - / _ where possible, never inside a ticket key like
+# ABC-123; continuation lines are indented to line up with the text after the
+# icon(s). ICON is one or more emoji of 2 columns each, then a space:
+# 📁 = 3 columns. Sets globals (no subshell, so the caller can
+# compare layouts): wrapped (the text), wrapped_lines (999 = FIRST can't be
+# used) and wrapped_last (columns of the last line).
 wrap_name() {
-  local icon=$1 rest=$2 max=$3 prefix="$1 " avail=$(( $3 - 3 )) chunk cut i
+  local rest=$2 max=$3 prefix="$1 " cols=$(( ${#1} * 2 + 1 )) avail low chunk cut i indent
+  local begun=0; [[ -n $4 ]] && begun=1
+  avail=$(( ${4:-$3} - cols ))
   (( avail < 10 )) && avail=10
+  # indent with braille blanks (U+2800): look like spaces, but Claude Code
+  # strips real leading spaces from status lines
+  printf -v indent '%*s' "$cols" ''; indent=${indent// /⠀}
+  wrapped="" wrapped_lines=1
   while (( ${#rest} > avail )); do
-    chunk=${rest:0:avail} cut=0
-    for (( i = avail - 1; i >= avail / 2; i-- )); do
-      # never split inside a ticket key like ABC-123
+    chunk=${rest:0:avail} cut=0 low=$(( begun ? 1 : avail / 2 ))
+    for (( i = avail - 1; i >= low; i-- )); do
       [[ ${chunk:i:1} == - && ${chunk:i-1:1} == [A-Za-z] && ${rest:i+1:1} == [0-9] ]] && continue
       [[ ${chunk:i:1} == [-/_] ]] && { cut=$(( i + 1 )); break; }
     done
-    (( cut == 0 )) && cut=$avail
-    printf '%s\n' "${prefix}${rest:0:cut}"
-    # indent with braille blanks (U+2800): look like spaces, but Claude Code
-    # strips real leading spaces from status lines
-    rest=${rest:cut} prefix=$'⠀⠀⠀'
+    if (( cut == 0 )); then
+      (( begun )) && { wrapped_lines=999; return; }
+      cut=$avail
+    fi
+    wrapped+="${prefix}${rest:0:cut}"$'\n'
+    rest=${rest:cut} prefix=$indent begun=0 avail=$(( max - cols ))
+    (( avail < 10 )) && avail=10
+    (( wrapped_lines++ ))
   done
-  printf '%s' "${prefix}${rest}"
+  wrapped+="${prefix}${rest}"
+  wrapped_last=$(( cols + ${#rest} ))
 }
 
 # Terminal hyperlinks (OSC 8). Added after measuring/splitting, since the
@@ -188,17 +203,18 @@ osc_link() {  # osc_link URL TEXT  (plain TEXT when URL or TEXT is empty)
   if [[ -n $1 && -n $2 ]]; then printf '\e]8;;%s\e\\%s\e]8;;\e\\' "$1" "$2"; else printf '%s' "$2"; fi
 }
 
-# link_name TEXT URL: ticket keys -> tracker, everything else -> URL (the branch
-# or commit page; empty URL = plain text, used for the folder). TEXT may be
-# several lines; icon and indent stay unlinked.
+# link_name TEXT URL: ticket keys -> tracker, everything else -> URL (the repo,
+# branch or commit page; empty URL = plain text, used for the folder). TEXT may
+# be several lines; icons and indent stay unlinked.
 link_name() {
-  local text=$1 url=$2 out="" line prefix body key n=0
+  local text=$1 url=$2 out="" line prefix p body key n=0
   while IFS= read -r line || [[ -n $line ]]; do
     (( n++ )) && out+=$'\n'
     prefix=""
-    [[ $line == "🌿 "* ]] && prefix="🌿 "
-    [[ $line == "📁 "* ]] && prefix="📁 "
-    [[ $line == $'⠀⠀⠀'* ]] && prefix=$'⠀⠀⠀'
+    for p in "📁 " "📦 " "🌿 "; do
+      [[ $line == "$p"* ]] && { prefix=$p; break; }
+    done
+    while [[ -z ${prefix//⠀/} && ${line:${#prefix}:1} == "⠀" ]]; do prefix+="⠀"; done
     body=${line#"$prefix"}; out+=$prefix
     while [[ -n $JIRA_KEY_REGEX && -n $JIRA_BROWSE_URL && $body =~ $JIRA_KEY_REGEX ]]; do
       key=${BASH_REMATCH[1]}
@@ -223,15 +239,29 @@ web_url() {
   printf '%s' "$u"
 }
 
-# Line 1: folder and branch, full names, never cut off. Claude Code passes the
-# terminal width as COLUMNS. Both fit -> one line; otherwise each on its own
-# line(s), split if a single name is wider than the terminal.
+# repo_name DIR URL: the repository's name: last part of its web URL, or without
+# a remote the folder of the main checkout (also right from inside a worktree)
+repo_name() {
+  local name=${2##*/} common
+  if [[ -z $name ]]; then
+    common=$(command git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || return
+    common=${common%/.git}; name=${common##*/}; name=${name%.git}
+  fi
+  printf '%s' "$name"
+}
+
+# Line 1: folder, repository and branch, full names, never cut off. Claude Code
+# passes the terminal width as COLUMNS. The parts fill a line from the left; a
+# part that no longer fits starts a new line, and a single name wider than the
+# terminal is split over several lines. Folder and repository always show
+# separately, even when named alike (main checkout): one fixed pattern reads
+# faster, and the doubled name itself shows "not in a worktree".
 line1=""
 if [[ $dir != "-" ]]; then
   folder=${dir##*/}
   # Branch; detached HEAD shows the commit; not a git repo shows nothing
   branch=$(command git -C "$dir" branch --show-current 2>/dev/null)
-  branch_url=""
+  repo_url="" branch_url=""
   if [[ -n $branch ]]; then
     repo_url=$(web_url "$dir")
     if [[ $repo_url == *github.com* ]]; then branch_url="${repo_url:+$repo_url/tree/$branch}"
@@ -242,16 +272,40 @@ if [[ $dir != "-" ]]; then
     if [[ $repo_url == *github.com* ]]; then branch_url="${repo_url:+$repo_url/commit/$commit}"
     else branch_url="${repo_url:+$repo_url/-/commit/$commit}"; fi
   fi
+  repo=""; [[ -n $branch ]] && repo=$(repo_name "$dir" "$repo_url")
+
+  # Parts in order: icon, name, link (empty = plain text)
+  icons=("📁") names=("$folder") urls=("")
+  [[ -n $repo ]] && { icons+=("📦"); names+=("$repo"); urls+=("$repo_url"); }
+  [[ -n $branch ]] && { icons+=("🌿"); names+=("$branch"); urls+=("$branch_url"); }
+
+  # A part that doesn't fit the rest of the current line starts a new line,
+  # except when it needs splitting anyway and starting on the current line
+  # takes fewer lines (a tie starts a new line: the name stays in one piece
+  # longer). On the current line at least 10 columns of name must fit.
   max=$(( ${COLUMNS:-0} - STATUS_MARGIN ))
-  one_line=$(( 3 + ${#folder} + 3 + 3 + ${#branch} ))   # icon+space, " │ ", icon+space
-  [[ -z $branch ]] && one_line=$(( 3 + ${#folder} ))
-  if (( max <= 0 || one_line <= max )); then
-    line1=$(link_name "📁 ${folder}" "")
-    [[ -n $branch ]] && line1+="${sep}$(link_name "🌿 ${branch}" "$branch_url")"
-  else
-    line1=$(link_name "$(wrap_name 📁 "$folder" "$max")" "")
-    [[ -n $branch ]] && line1+=$'\n'$(link_name "$(wrap_name 🌿 "$branch" "$max")" "$branch_url")
-  fi
+  used=0   # columns taken on the current line
+  for i in "${!names[@]}"; do
+    icon=${icons[i]} name=${names[i]}
+    cols=$(( ${#icon} * 2 + 1 ))            # 2 columns per icon, then a space
+    width=$(( cols + ${#name} ))
+    room=$(( max - used - 3 ))              # left after " │ " (3 columns)
+    if (( max <= 0 || (i > 0 && width <= room) )); then
+      (( i > 0 )) && line1+=$sep
+      text="$icon $name" used=$(( used + 3 + width ))
+    else
+      wrap_name "$icon" "$name" "$max"
+      text=$wrapped lines=$wrapped_lines last=$wrapped_last
+      if (( i > 0 && room - cols >= 10 )) && wrap_name "$icon" "$name" "$max" "$room" \
+         && (( wrapped_lines - 1 < lines )); then
+        line1+=$sep; text=$wrapped used=$wrapped_last
+      else
+        (( i > 0 )) && line1+=$'\n'
+        used=$last
+      fi
+    fi
+    line1+=$(link_name "$text" "${urls[i]}")
+  done
 fi
 
 five_left="" week_left=""
