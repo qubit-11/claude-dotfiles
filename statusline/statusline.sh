@@ -11,11 +11,14 @@
 
 # --- Thresholds -------------------------------------------------------------
 # Context: coloured by token count (quality loss depends on tokens, not on
-# window size), plus orange when the window is nearly full (auto-compact soon).
+# window size), or by window fill when the window is small (200k: the token
+# limits are never or barely reached, auto-compact comes first). Whichever
+# limit is hit first wins.
 # Evidence: Opus 4.6 long-context retrieval ~93% at 256k, ~76% at 1M tokens.
 CTX_ORANGE_TOKENS=250000
 CTX_RED_TOKENS=500000
-CTX_ORANGE_WINDOW_PCT=85
+CTX_ORANGE_WINDOW_PCT=80
+CTX_RED_WINDOW_PCT=90
 # Limits: orange = only one more big task fits, red = less than one fits.
 # One big task (median implementation, measured from session history
 # 2026-11-25): ~30% of the 5h window, ~6% of the 7d window.
@@ -143,12 +146,12 @@ if (( fresh )); then
 fi
 # ----------------------------------------------------------------------------
 
-# Context colour: red by tokens; orange by tokens or by a nearly full window
+# Context colour: by tokens or by window fill, whichever is reached first
 ctx_colour=$green
 if [[ $ctx_pct != "-" ]]; then
   ctx_pct=$(round "$ctx_pct")
   tokens=0; [[ $ctx_tokens != "-" ]] && tokens=$ctx_tokens
-  if   (( tokens >= CTX_RED_TOKENS )); then ctx_colour=$red
+  if   (( tokens >= CTX_RED_TOKENS || ctx_pct >= CTX_RED_WINDOW_PCT )); then ctx_colour=$red
   elif (( tokens >= CTX_ORANGE_TOKENS || ctx_pct >= CTX_ORANGE_WINDOW_PCT )); then ctx_colour=$orange
   fi
 fi
