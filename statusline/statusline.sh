@@ -203,9 +203,9 @@ osc_link() {  # osc_link URL TEXT  (plain TEXT when URL or TEXT is empty)
   if [[ -n $1 && -n $2 ]]; then printf '\e]8;;%s\e\\%s\e]8;;\e\\' "$1" "$2"; else printf '%s' "$2"; fi
 }
 
-# link_name TEXT URL: ticket keys -> tracker, everything else -> URL (the repo,
-# branch or commit page; empty URL = plain text, used for the folder). TEXT may
-# be several lines; icons and indent stay unlinked.
+# link_name TEXT URL: ticket keys -> tracker, everything else -> URL (the
+# folder in the file manager, or the repo, branch or commit page; empty URL =
+# plain text). TEXT may be several lines; icons and indent stay unlinked.
 link_name() {
   local text=$1 url=$2 out="" line prefix p body key n=0
   while IFS= read -r line || [[ -n $line ]]; do
@@ -250,6 +250,26 @@ repo_name() {
   printf '%s' "$name"
 }
 
+# folder_url DIR: file:// address of DIR; a click opens it in the system's
+# file manager. Windows paths become file:///C:/... (Git Bash, native) or
+# file://wsl.localhost/<distro>/... (WSL); macOS/Linux take the path as is.
+# Each path part is percent-encoded, except a drive letter like C:.
+folder_url() {
+  local p=$1 enc
+  if command -v cygpath >/dev/null 2>&1; then p=$(cygpath -m "$p") || return
+  elif [[ -n $WSL_DISTRO_NAME ]] && command -v wslpath >/dev/null 2>&1; then
+    p=$(wslpath -m "$p") || return
+  elif [[ $p =~ ^[A-Za-z]:[\\/] ]]; then p=${p//\\//}
+  fi
+  enc=$(jq -rn --arg p "$p" '$p | split("/")
+    | map(if test("^[A-Za-z]:$") then . else @uri end) | join("/")')
+  case $p in
+    //*)          printf 'file:%s' "$enc" ;;    # //host/share (WSL)
+    [A-Za-z]:/*)  printf 'file:///%s' "$enc" ;;
+    /*)           printf 'file://%s' "$enc" ;;
+  esac
+}
+
 # Line 1: folder, repository and branch, full names, never cut off. Claude Code
 # passes the terminal width as COLUMNS. The parts fill a line from the left; a
 # part that no longer fits starts a new line, and a single name wider than the
@@ -275,7 +295,7 @@ if [[ $dir != "-" ]]; then
   repo=""; [[ -n $branch ]] && repo=$(repo_name "$dir" "$repo_url")
 
   # Parts in order: icon, name, link (empty = plain text)
-  icons=("📁") names=("$folder") urls=("")
+  icons=("📁") names=("$folder") urls=("$(folder_url "$dir")")
   [[ -n $repo ]] && { icons+=("📦"); names+=("$repo"); urls+=("$repo_url"); }
   [[ -n $branch ]] && { icons+=("🌿"); names+=("$branch"); urls+=("$branch_url"); }
 
