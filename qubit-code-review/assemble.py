@@ -122,7 +122,7 @@ PRINCIPLE_ONLY_SINCE = '2026-11-05'
 # from this review date on the verdict text is a quick summary: at most VERDICT_WORDS_MAX words per language, no details
 VERDICT_SHORT_SINCE = '2026-11-06'
 # from this review date on a finding names its aspect `aspect`; an older run wrote it as `category`
-ASPECT_SINCE = '2026-11-26'
+ASPECT_SINCE = '2026-11-27'
 VERDICT_WORDS_MAX = 70
 # the findings summary that opens 3.2: an overview by severity, read in seconds
 SUMMARY_WORDS_MAX = 120

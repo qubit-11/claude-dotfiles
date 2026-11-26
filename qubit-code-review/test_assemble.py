@@ -1159,16 +1159,16 @@ class AssembleTest(unittest.TestCase):
         self.p.findings, self.p.cards = [f], [c]
 
     def test_run_before_the_rename_reads_category_as_aspect(self):
-        self.category_run('2026-11-25')
+        self.category_run('2026-11-26')
         self.ok()
         self.assertIn('data-filter="aspect" data-value="functionality"', self.p.page)
 
     def test_run_from_the_rename_on_fails_on_category(self):
-        self.category_run('2026-11-26')
+        self.category_run('2026-11-27')
         self.fails('F1: findings.json names the aspect `aspect`, not `category`')
 
     def test_category_in_data_json_of_a_new_run_fails(self):
-        self.category_run('2026-11-26', in_data=False)
+        self.category_run('2026-11-27', in_data=False)
         self.p.findings[0]['aspect'] = self.p.findings[0].pop('category')
         self.p.cards[0]['category'] = self.p.cards[0].pop('aspect')
         self.fails('F1: data.json names the aspect `aspect`, not `category`')
