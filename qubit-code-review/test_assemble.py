@@ -66,11 +66,11 @@ def verdict(word_en='not mergeable', word_de='nicht mergebar', ids=('F1',)):
 
 
 def finding(fid='F1', sev='blocking', kind='issue', **kw):
-    f = {'id': fid, 'sev': sev, 'kind': kind, 'proposed': sev, 'category': 'functionality', 'package': 'server',
+    f = {'id': fid, 'sev': sev, 'kind': kind, 'proposed': sev, 'aspect': 'functionality', 'package': 'server',
          'file': 'src/a.ts:11', 'what': 'What happens.', 'why': 'Why it matters.', 'fix': 'The fix.',
          'verify': 'Checked.', 'sources': ['core'], 'check': 'investigator'}
     if kind == 'nitpick':
-        f['category'] = 'style'
+        f['aspect'] = 'style'
     f.update(kw)
     return f
 
@@ -83,7 +83,7 @@ def card(f, gitlab=None):
     fields['verify']['more'] = ['Read `src/a.ts:11` again.', '`src/a.ts:11` erneut gelesen.']
     if isinstance(f.get('principle'), str) and f['principle'].strip():
         fields['what']['text'] = ['Card what, against %s.' % f['principle'], 'Karte what, gegen %s.' % f['principle']]
-    c = {'id': f['id'], 'sev': f['sev'], 'kind': f['kind'], 'category': f['category'], 'package': f['package'],
+    c = {'id': f['id'], 'sev': f['sev'], 'kind': f['kind'], 'aspect': f['aspect'], 'package': f['package'],
          'file': f['file'], 't': ['Title', 'Titel'], 'fields': fields}
     if 'tickets' in f:
         c['tickets'] = list(f['tickets'])
@@ -757,7 +757,7 @@ class AssembleTest(unittest.TestCase):
 
     def test_principle_stands_in_the_what_text(self):
         self.p.spec['meta']['date'] = '2026-11-05'
-        self.p.findings = [finding(category='design', principle='DRY, KISS')]
+        self.p.findings = [finding(aspect='design', principle='DRY, KISS')]
         self.p.cards = [card(self.p.findings[0], [comment()])]
         self.ok()
         self.p.cards[0]['fields']['what']['text'] = ['The mapping is written twice (DRY).', 'Die Zuordnung steht doppelt (DRY).']
@@ -924,9 +924,9 @@ class AssembleTest(unittest.TestCase):
         self.ok()
         self.assertNotIn('Not fully checked', self.p.page)
 
-    def test_legend_is_a_closed_reference_with_categories(self):
+    def test_legend_is_a_closed_reference_with_aspects(self):
         self.ok()
-        self.assertIn('<details class="legend"><summary><span data-lang="en">What severities, kinds and categories mean</span>', self.p.page)
+        self.assertIn('<details class="legend"><summary><span data-lang="en">What severities, kinds and aspects mean</span>', self.p.page)
         self.assertIn('<dt><span data-lang="en">Architecture</span><span data-lang="de">Architektur</span></dt><dd><span data-lang="en">'
                       'fit with the rest of the system', self.p.page)
         self.assertNotIn('One consolidated list', self.p.page)
@@ -1092,17 +1092,17 @@ class AssembleTest(unittest.TestCase):
         self.ok()
 
     # an Architecture or Design finding names the principle it breaks (SKILL.md §4, step 9)
-    def principle_run(self, date='2026-11-04', category='architecture', **kw):
+    def principle_run(self, date='2026-11-04', aspect='architecture', **kw):
         self.p.spec['meta']['date'] = date
-        self.p.findings = [finding(category=category, **kw)]
+        self.p.findings = [finding(aspect=aspect, **kw)]
 
     def test_architecture_finding_without_principle_fails(self):
         self.principle_run()
-        self.fails('F1: category architecture needs principle')
+        self.fails('F1: aspect architecture needs principle')
 
     def test_design_finding_without_principle_fails(self):
-        self.principle_run(category='design')
-        self.fails('F1: category design needs principle')
+        self.principle_run(aspect='design')
+        self.fails('F1: aspect design needs principle')
 
     def test_architecture_finding_with_principle_passes(self):
         self.principle_run(principle='A stored derived value breaks the single source of truth.')
@@ -1117,21 +1117,21 @@ class AssembleTest(unittest.TestCase):
         self.principle_run(principle='  ')
         self.fails('F1: principle must name the principles or be null')
 
-    def test_other_category_needs_no_principle(self):
-        self.principle_run(category='functionality')
+    def test_other_aspect_needs_no_principle(self):
+        self.principle_run(aspect='functionality')
         self.ok()
 
-    def test_other_category_with_principle_fails(self):
-        self.principle_run(date='2026-11-05', category='tests', principle='Test via public APIs.')
+    def test_other_aspect_with_principle_fails(self):
+        self.principle_run(date='2026-11-05', aspect='tests', principle='Test via public APIs.')
         self.fails('F1: only Architecture and Design findings carry a principle')
 
-    def test_other_category_with_null_principle_passes(self):
-        self.principle_run(date='2026-11-05', category='tests', principle=None)
+    def test_other_aspect_with_null_principle_passes(self):
+        self.principle_run(date='2026-11-05', aspect='tests', principle=None)
         self.ok()
 
-    def test_run_before_the_rule_keeps_principle_on_other_category(self):
+    def test_run_before_the_rule_keeps_principle_on_other_aspect(self):
         # a principle elsewhere was allowed until 2026-11-04; such a run still republishes
-        self.principle_run(date='2026-11-04', category='usability', principle='Least astonishment.')
+        self.principle_run(date='2026-11-04', aspect='usability', principle='Least astonishment.')
         self.ok()
 
     def test_old_run_without_principle_passes(self):
@@ -1141,10 +1141,46 @@ class AssembleTest(unittest.TestCase):
 
     def test_old_run_that_uses_principle_needs_it_everywhere(self):
         self.principle_run(date='2026-11-03')
-        self.p.findings.append(finding('F2', category='functionality', principle='Dependencies point inwards.'))
+        self.p.findings.append(finding('F2', aspect='functionality', principle='Dependencies point inwards.'))
         self.p.spec['verdict']['openBlockers'] = ['F1', 'F2']
         self.p.frags['verdict'] = verdict(ids=('F1', 'F2'))
-        self.fails('F1: category architecture needs principle')
+        self.fails('F1: aspect architecture needs principle')
+
+    def category_run(self, date, in_data=True):
+        # a run that wrote the aspect as `category`, in findings.json and, when in_data, in data.json
+        self.p.spec['meta']['date'] = date
+        self.p.frags['verdict'] = para('The MR books again. The booking is lost on iOS.',
+                                       'Der MR bucht erneut. Die Buchung geht auf iOS verloren.')
+        f = finding(aspect='functionality')
+        c = card(f, [comment_for(f)])
+        f['category'] = f.pop('aspect')
+        if in_data:
+            c['category'] = c.pop('aspect')
+        self.p.findings, self.p.cards = [f], [c]
+
+    def test_run_before_the_rename_reads_category_as_aspect(self):
+        self.category_run('2026-11-25')
+        self.ok()
+        self.assertIn('data-filter="aspect" data-value="functionality"', self.p.page)
+
+    def test_run_from_the_rename_on_fails_on_category(self):
+        self.category_run('2026-11-26')
+        self.fails('F1: findings.json names the aspect `aspect`, not `category`')
+
+    def test_category_in_data_json_of_a_new_run_fails(self):
+        self.category_run('2026-11-26', in_data=False)
+        self.p.findings[0]['aspect'] = self.p.findings[0].pop('category')
+        self.p.cards[0]['category'] = self.p.cards[0].pop('aspect')
+        self.fails('F1: data.json names the aspect `aspect`, not `category`')
+
+    def test_severity_and_kind_render_as_keywords(self):
+        # keywords in the code font; the aspect chip is a label
+        self.ok()
+        self.assertIn('class="chip kw" data-filter="sev" data-value="blocking"', self.p.page)
+        self.assertIn('class="chip kw" data-filter="kind" data-value="issue"', self.p.page)
+        self.assertIn('<dt class="kw">issue</dt>', self.p.page)
+        self.assertIn('class="pill kw pill-', self.p.page)
+        self.assertIn('class="chip" data-filter="aspect"', self.p.page)
 
     def test_comment_on_non_branch_subject_fails(self):
         self.p.spec['meta']['subjectType'] = 'files'
@@ -1418,21 +1454,21 @@ class AssembleTest(unittest.TestCase):
         self.assertNotIn('a</SCRIPT>', self.p.page)
         self.assertNotIn('<img src=x', self.p.page)
 
-    def test_unknown_category_fails(self):
-        self.p.findings[0]['category'] = 'bug'
-        self.fails("F1: category 'bug' is not one of")
+    def test_unknown_aspect_fails(self):
+        self.p.findings[0]['aspect'] = 'bug'
+        self.fails("F1: aspect 'bug' is not one of")
 
     def test_old_area_finding_fails_without_traceback(self):
-        del self.p.findings[0]['category']
+        del self.p.findings[0]['aspect']
         self.p.findings[0]['area'] = 'server'
-        self.p.cards = [card(dict(self.p.findings[0], category='functionality'), [comment()])]
-        self.fails('every finding needs an id, a sev, a kind, a category and a package')
+        self.p.cards = [card(dict(self.p.findings[0], aspect='functionality'), [comment()])]
+        self.fails('every finding needs an id, a sev, a kind, an aspect and a package')
         self.assertNotIn('Traceback', self.p.out)
 
-    def test_category_chips_only_used_in_fixed_order(self):
-        self.p.findings = [finding('F1', category='tests'), finding('F2', 'non-blocking', kind='suggestion', category='functionality')]
+    def test_aspect_chips_only_used_in_fixed_order(self):
+        self.p.findings = [finding('F1', aspect='tests'), finding('F2', 'non-blocking', kind='suggestion', aspect='functionality')]
         self.ok()
-        chips = re.findall(r'data-filter="category" data-value="(\w+)"', self.p.page)
+        chips = re.findall(r'data-filter="aspect" data-value="(\w+)"', self.p.page)
         self.assertEqual(chips, ['all', 'functionality', 'tests'])
 
     def test_package_pair_passes(self):
@@ -1454,8 +1490,8 @@ class AssembleTest(unittest.TestCase):
 
 
     # one failing case per check of data.json against findings.json
-    def test_sev_category_package_file_mismatch_fails(self):
-        for k, v in [('sev', 'non-blocking'), ('kind', 'question'), ('category', 'documentation'), ('package', 'other'),
+    def test_sev_aspect_package_file_mismatch_fails(self):
+        for k, v in [('sev', 'non-blocking'), ('kind', 'question'), ('aspect', 'documentation'), ('package', 'other'),
                      ('file', 'src/b.ts:1')]:
             with self.subTest(k=k):
                 self.p.cards = [card(self.p.findings[0], [comment()])]
@@ -2022,8 +2058,8 @@ class AssembleTest(unittest.TestCase):
         self.assertNotIn('Traceback', out.stdout + out.stderr)
         self.assertNotIn('Xk9fakevalue123', out.stdout + out.stderr)
 
-    def test_finding_without_id_sev_category_or_package_fails_without_traceback(self):
-        for k in ['id', 'sev', 'category', 'package']:
+    def test_finding_without_id_sev_aspect_or_package_fails_without_traceback(self):
+        for k in ['id', 'sev', 'aspect', 'package']:
             with self.subTest(k=k):
                 self.p.findings = [finding()]
                 self.p.cards = [card(self.p.findings[0], [comment()])]
@@ -2743,12 +2779,12 @@ class DoneMarkTest(unittest.TestCase):
              "q('#F2 .done-box').click();r.label=[q('#F2').open,box('F2').checked,n('status','done')];"
              "document.documentElement.setAttribute('data-probe',JSON.stringify(r))})()</script>")
     FACETS = ("<script>(function(){" + HELP +
-              "chip('category','tests').click();"
+              "chip('aspect','tests').click();"
               "r.sev={all:n('sev','all'),blocking:n('sev','blocking'),nonBlocking:n('sev','non-blocking')};"
               "r.kind={all:n('kind','all'),issue:n('kind','issue'),suggestion:n('kind','suggestion'),note:n('kind','note')};"
               "r.blockerZero=chip('sev','blocking').classList.contains('zero');"
-              "chip('category','all').click();chip('sev','blocking').click();"
-              "r.category={all:n('category','all'),functionality:n('category','functionality'),tests:n('category','tests')};"
+              "chip('aspect','all').click();chip('sev','blocking').click();"
+              "r.aspect={all:n('aspect','all'),functionality:n('aspect','functionality'),tests:n('aspect','tests')};"
               "document.documentElement.setAttribute('data-probe',JSON.stringify(r))})()</script>")
     EMPTY = ("<script>(function(){" + HELP +
              "chip('status','done').click();"
@@ -2775,9 +2811,9 @@ class DoneMarkTest(unittest.TestCase):
         self.assertIsNotNone(res, 'probe did not run')
         return json.loads(res.replace('&quot;', '"'))
 
-    def build(self, f2_category='functionality'):
+    def build(self, f2_aspect='functionality'):
         p = Report()
-        p.findings = [finding('F1'), finding('F2', 'non-blocking', kind='suggestion', category=f2_category)]
+        p.findings = [finding('F1'), finding('F2', 'non-blocking', kind='suggestion', aspect=f2_aspect)]
         p.spec['verdict']['openBlockers'] = ['F1']
         self.assertEqual(p.run(), 0, p.out)
         p.tmp.cleanup()
@@ -2832,7 +2868,7 @@ class DoneMarkTest(unittest.TestCase):
         self.assertEqual(r['sev'], {'all': '1', 'blocking': '0', 'nonBlocking': '1'})
         self.assertEqual(r['kind'], {'all': '1', 'issue': '0', 'suggestion': '1', 'note': None})  # chips only for used kinds
         self.assertTrue(r['blockerZero'])
-        self.assertEqual(r['category'], {'all': '1', 'functionality': '1', 'tests': '0'})
+        self.assertEqual(r['aspect'], {'all': '1', 'functionality': '1', 'tests': '0'})
 
     def test_empty_selection_keeps_chips(self):
         self.assertEqual(self.probe(self.build(), self.EMPTY), [True, 3, True, 2])
@@ -2883,7 +2919,7 @@ class CardRenderTest(unittest.TestCase):
              "r.why=d[1].innerText;"
              "r.fixList=d[2].querySelectorAll(':scope > [data-lang=\"en\"] ol li').length;r.fixLead=(d[2].querySelector('p strong')||{}).textContent||'';"
              "r.file=vis(q('#F1 > p.file'))?q('#F1 > p.file').innerText:'';"
-             "r.category=(q('#F1 .head .category')||{}).textContent||'';"
+             "r.aspect=(q('#F1 .head .aspect')||{}).textContent||'';"
              "r.followUp=dds('F2').map(function(x){return x.innerText}).join('|');"
              "var g=q('#F1 .glc');r.glc=vis(g);"
              "q('#toggle-all').click();"
@@ -2915,7 +2951,7 @@ class CardRenderTest(unittest.TestCase):
         self.assertEqual(r['fixLead'], 'Two steps.')
         self.assertIn('server', r['file'])
         self.assertIn('src/a.ts:11', r['file'])
-        self.assertIn('Functionality', r['category'])
+        self.assertIn('Functionality', r['aspect'])
         self.assertIn('PROJ-7', r['followUp'])
         self.assertTrue(r['glc'], 'the GitLab comment is not visible inside the card')
         self.assertTrue(r['allOpen'])

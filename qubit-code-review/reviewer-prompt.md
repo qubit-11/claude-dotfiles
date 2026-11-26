@@ -70,7 +70,7 @@ the rule and names its file. A rule that protects a boundary, an invariant
 or the structure (model imports through the barrel, dependency placement)
 is judged as reason (a) when it can be triggered, else (c); a style rule
 (semicolons, braces, naming) is non-blocking, a `nitpick`. A rule in a code comment is judged
-like one in an instruction file. Performance and UX block only through (a).
+like one in an instruction file. Performance and Usability block only through (a).
 A rule from the design guidance counts as a style rule unless the guidance
 marks it mandatory. The
 accepted ADRs relevant to the changed paths are in
@@ -141,7 +141,7 @@ change, and try to break it.
 
 Severity, by what the finding means for the merge:
 - blocking (a Blocker): the merge waits for it. Name the reason: the check that proves the
-  Blocker. The category says what you checked; the reason says how the Blocker
+  Blocker. The aspect says what you checked; the reason says how the Blocker
   is proven, so a Tests finding can have reason (a).
   (a) a defect that can be triggered in live use of the subject: either a
   broken intent (a mechanism the change adds, such as a check, a limit, a
@@ -332,7 +332,7 @@ standard adds (what one sees by following one path through the changed code):
   storage at the event that ends what the value depends on, e.g. when a
   module is switched off).
 - Design: unneeded complexity and over-engineering, dead code,
-  misleading or invented names (category Design).
+  misleading or invented names (aspect Design).
 - Performance: an unbounded query, a filter without an index, N+1 calls,
   a whole collection loaded, work repeated per request that could run once.
 - Input validation quality: does the schema require a string where one is
@@ -404,7 +404,7 @@ yet, per subject type>)
 - Severity: blocking | possibly-blocking | non-blocking
 - Blocker reason: (a) | (b) | (c) | (d) (blocking and possibly-blocking only; for possibly-blocking also what is open)
 - Kind: issue | question | chore | suggestion | nitpick | note
-- Category: Functionality | Architecture | Design | Security | Ops | Performance | UX | Tests | Docs | Style
+- Aspect: Functionality | Architecture | Design | Security | Operations | Performance | Usability | Tests | Documentation | Style
 - Package: <package | module or file group, per subject type>
 - Location: <repo-relative path>:<line> (one or more)
 - Confidence: High | Medium | Low
@@ -414,7 +414,7 @@ yet, per subject type>)
   that the code does not need is left out)
 - Principle: Architecture and Design only: the recognised design principle,
   pattern or ADR (by its title) that the code breaks, in one sentence; for
-  any other category leave the line out. A name a developer can look up,
+  any other aspect leave the line out. A name a developer can look up,
   never one you form
 - Suggested fix: one or two sentences
 

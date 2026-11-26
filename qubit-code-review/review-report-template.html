@@ -208,7 +208,10 @@ figcaption { font-size: .86rem; color: var(--muted); margin-top: 8px; max-width:
 .pill-non-blocking { background: transparent; color: var(--accent); border-color: var(--accent); }
 .pill-ok { background: var(--new-soft); color: var(--new); border-color: var(--new); }
 .pill-fail { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
-.head .category { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.head .aspect { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+/* severity and kind are the comment convention's keywords: shown as written, in the code font; an aspect is a label */
+.kw { font-family: var(--font-mono); }
+.pill.kw { text-transform: none; letter-spacing: 0; }
 .pill-skip { background: var(--surface-2); color: var(--muted); border-color: var(--line); }
 .empty { color: var(--muted); font-size: .9rem; padding: 10px 0; }
 .subsec { margin-top: 36px; }
@@ -398,28 +401,28 @@ html, body { overflow-anchor: none; }
       <!-- slot:summary: summary.html, written by the findings writer: a short list by severity (blocking, non-blocking, "none" when empty), a few words each, naming the kinds where they help, an id only where a line singles out one finding, no ranges; then "Related:" with the dependencies that are not obvious, ids only; "Hint:" only for a point the order and severities do not show; at most 120 words; assemble.py adds "Not fully checked" -->
       <div data-lang="en"><ul><li><b>blocking:</b> what they are about, in a few words.</li><li><b>non-blocking:</b> two issues about …, one suggestion that stands out (F3), wording nitpicks.</li></ul><p><b>Related:</b> F2 is solved by the fix of F1 · F3 and F4 address the same thing.</p><p><b>Hint:</b> only when there is one, e.g. F5 is non-blocking but decides whether the feature is usable on phones.</p></div><div data-lang="de"><ul><li><b>blocking:</b> worum es geht, in wenigen Worten.</li><li><b>non-blocking:</b> zwei issues zu …, eine suggestion, die heraussticht (F3), nitpicks am Wortlaut.</li></ul><p><b>Zusammenhänge:</b> F2 löst sich mit dem Fix von F1 · F3 und F4 betreffen dasselbe.</p><p><b>Hinweis:</b> nur wenn es einen gibt, z. B. F5 ist non-blocking, entscheidet aber, ob das Feature auf Smartphones nutzbar ist.</p></div>
       <!-- /slot:summary -->
-      <details class="legend"><summary><span data-lang="en">What severities, kinds and categories mean</span><span data-lang="de">Was Schweregrade, Arten und Kategorien bedeuten</span></summary>
+      <details class="legend"><summary><span data-lang="en">What severities, kinds and aspects mean</span><span data-lang="de">Was Schweregrade, Arten und Aspekte bedeuten</span></summary>
         <dl>
-          <dt>blocking</dt><dd><span data-lang="en">Must be resolved; it {{blockerHoldsEn}}. A defect that can be triggered in live use (the change fails at what it promises, or an unhandled case gives a wrong result), a security hole, worse code health (breaks an ADR or a boundary, inverts a dependency, adds a second mechanism or needless complexity, breaks an invariant, leaves a test failing), or a new feature without any test.</span><span data-lang="de">Muss gelöst werden; {{blockerHoldsDe}}. Ein im Live-Betrieb auslösbarer Defekt (die Änderung verfehlt, was sie verspricht, oder ein unbehandelter Fall liefert ein falsches Ergebnis), eine Sicherheitslücke, schlechtere Codequalität (bricht ein ADR oder eine Grenze, kehrt eine Abhängigkeit um, fügt einen zweiten Mechanismus oder unnötige Komplexität hinzu, bricht eine Invariante, lässt einen Test fehlschlagen) oder ein neues Feature ohne jeden Test.</span></dd>
-          <dt>non-blocking</dt><dd><span data-lang="en">No Blocker reason holds; the author decides. The kind says what to do {{changesInEn}}, if anything.</span><span data-lang="de">Kein Blocker-Grund greift; der Autor entscheidet. Die Art sagt, was {{changesInDe}} zu tun ist, falls etwas.</span></dd>
+          <dt class="kw">blocking</dt><dd><span data-lang="en">Must be resolved; it {{blockerHoldsEn}}. A defect that can be triggered in live use (the change fails at what it promises, or an unhandled case gives a wrong result), a security hole, worse code health (breaks an ADR or a boundary, inverts a dependency, adds a second mechanism or needless complexity, breaks an invariant, leaves a test failing), or a new feature without any test.</span><span data-lang="de">Muss gelöst werden; {{blockerHoldsDe}}. Ein im Live-Betrieb auslösbarer Defekt (die Änderung verfehlt, was sie verspricht, oder ein unbehandelter Fall liefert ein falsches Ergebnis), eine Sicherheitslücke, schlechtere Codequalität (bricht ein ADR oder eine Grenze, kehrt eine Abhängigkeit um, fügt einen zweiten Mechanismus oder unnötige Komplexität hinzu, bricht eine Invariante, lässt einen Test fehlschlagen) oder ein neues Feature ohne jeden Test.</span></dd>
+          <dt class="kw">non-blocking</dt><dd><span data-lang="en">No Blocker reason holds; the author decides. The kind says what to do {{changesInEn}}, if anything.</span><span data-lang="de">Kein Blocker-Grund greift; der Autor entscheidet. Die Art sagt, was {{changesInDe}} zu tun ist, falls etwas.</span></dd>
         </dl>
         <dl>{{kindLegend}}</dl>
-        <dl>{{categoryLegend}}</dl>
+        <dl>{{aspectLegend}}</dl>
         <p class="note"><span data-lang="en">Cards are ordered by severity, then by kind, then by weight.</span><span data-lang="de">Karten sind nach Schweregrad, dann nach Art, dann nach Gewicht geordnet.</span></p>
       </details>
       <div class="filters">
       <div class="chips" id="chips-sev"><span class="lbl"><span data-lang="en">Severity</span><span data-lang="de">Schweregrad</span></span><div class="chip-set">
         <button type="button" class="chip" data-filter="sev" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
-        <button type="button" class="chip" data-filter="sev" data-value="blocking" aria-pressed="false">blocking</button>
-        <button type="button" class="chip" data-filter="sev" data-value="non-blocking" aria-pressed="false">non-blocking</button>
+        <button type="button" class="chip kw" data-filter="sev" data-value="blocking" aria-pressed="false">blocking</button>
+        <button type="button" class="chip kw" data-filter="sev" data-value="non-blocking" aria-pressed="false">non-blocking</button>
       </div></div>
       <div class="chips" id="chips-kind"><span class="lbl"><span data-lang="en">Kind</span><span data-lang="de">Art</span></span><div class="chip-set">
         <button type="button" class="chip" data-filter="kind" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
         <!-- kindchips: generated by assemble.py from the findings' kinds -->
       </div></div>
-      <div class="chips" id="chips-category"><span class="lbl"><span data-lang="en">Category</span><span data-lang="de">Kategorie</span></span><div class="chip-set">
-        <button type="button" class="chip" data-filter="category" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
-        <!-- categorychips: generated by assemble.py from the findings' categories -->
+      <div class="chips" id="chips-aspect"><span class="lbl"><span data-lang="en">Aspect</span><span data-lang="de">Aspekt</span></span><div class="chip-set">
+        <button type="button" class="chip" data-filter="aspect" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
+        <!-- aspectchips: generated by assemble.py from the findings' aspects -->
       </div></div>
       <div class="chips" id="chips-status"><span class="lbl"><span data-lang="en">Status</span><span data-lang="de">Status</span></span><div class="chip-set">
         <button type="button" class="chip" data-filter="status" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
@@ -706,13 +709,13 @@ html, body { overflow-anchor: none; }
   if (toggleAll) { toggleAll.addEventListener('click', function () { pinned = null; spy(); }); }
   spy();
 
-  /* Findings. Keys of CATEGORY are the chip values (assemble.py CATEGORIES), labels [en, de] pairs; package is a string or an [en, de] pair.
+  /* Findings. Keys of ASPECT are the chip values (assemble.py ASPECTS), labels [en, de] pairs; package is a string or an [en, de] pair.
      Text fields are [en, de] pairs: the writers fill the English, the translator the German. Ids F<n> in list order, never changed on a republish.
      No secret values. assemble.py escapes every `<` in the strings, so a closing script tag in a string is safe. */
-  var CATEGORY = {{categories}};
+  var ASPECT = {{aspects}};
   /* slot:data: assemble.py writes the checked array from data.json here (the writers' JSON, never executed) */
   var findings = [
-    { id: 'F1', sev: 'non-blocking', kind: 'suggestion', category: 'design', package: '<package>', file: '<path>:<line>',
+    { id: 'F1', sev: 'non-blocking', kind: 'suggestion', aspect: 'design', package: '<package>', file: '<path>:<line>',
       t: ['<title: effect first, one technical term at most>', '<Titel: Wirkung zuerst, höchstens ein Fachbegriff>'],
       /* each field: text, the visible explanation (two to four sentences, exact and readable, no file:line, never starting
          with its label), and more, its details (the evidence and depth: fact plus consequence, file:line allowed) or null.
@@ -736,7 +739,7 @@ html, body { overflow-anchor: none; }
   var manual = { setup: ['<one shared setup: stack, URL, accounts>', '<DE>'],
     steps: [{ id: 'M1', do: ['<what to do>', '<DE>'], expect: ['<what you should see>', '<DE>'] }] };
   /* /slot:manual */
-  var state = { sev: 'all', kind: 'all', category: 'all', status: 'all' };
+  var state = { sev: 'all', kind: 'all', aspect: 'all', status: 'all' };
   /* "done" marks and the status choice are per viewer: localStorage under the report's key, which survives a republish to the same URL */
   var DONE_KEY = KEY + '-done', STATUS_KEY = KEY + '-status', OLD_HIDE_KEY = KEY + '-hide-done';
   var STATUSES = ['all', 'open', 'done'];
@@ -815,7 +818,7 @@ html, body { overflow-anchor: none; }
     if (row === 'status') { return v === 'done' ? !!done[f.id] : !done[f.id]; }
     return f[row] === v;
   }
-  var ROWS = ['sev', 'kind', 'category', 'status'];
+  var ROWS = ['sev', 'kind', 'aspect', 'status'];
   function shown(f) { return ROWS.every(function (k) { return matches(f, k, state[k]); }); }
   /* a chip counts the cards it would show together with the other rows' current choice */
   function chipCount(row, v) {
@@ -947,8 +950,8 @@ html, body { overflow-anchor: none; }
       n += 1;
       html += '<details class="card' + (done[f.id] ? ' done' : '') + '" id="' + f.id + '"' + (isOpen(f) || expanded ? ' open' : '') + '>' +
         '<summary class="head"><span class="id">' + f.id + '</span>' +
-        '<span class="pill pill-' + f.sev + '">' + esc(f.kind) + (f.sev === 'blocking' ? ' · blocking' : '') + '</span>' +
-        (CATEGORY[f.category] ? '<span class="category">' + pair(CATEGORY[f.category]) + '</span>' : '') +
+        '<span class="pill kw pill-' + f.sev + '">' + esc(f.kind) + (f.sev === 'blocking' ? ' · blocking' : '') + '</span>' +
+        (ASPECT[f.aspect] ? '<span class="aspect">' + pair(ASPECT[f.aspect]) + '</span>' : '') +
         '<h4>' + richInline(f.t) + '</h4>' +
         '<label class="done-box" title="Done / Erledigt"><input type="checkbox" aria-label="Done / Erledigt" data-done="' + f.id + '"' +
         (done[f.id] ? ' checked' : '') + '></label></summary>' +

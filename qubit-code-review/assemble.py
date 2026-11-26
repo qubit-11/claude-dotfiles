@@ -91,13 +91,13 @@ KINDS = ['issue', 'question', 'chore', 'suggestion', 'nitpick', 'note']
 NON_BLOCKING_KINDS = ('suggestion', 'nitpick', 'note')
 # a ticket a finding refers to: a Jira key
 TICKET_KEY = re.compile(r'[A-Z][A-Z0-9]+-\d+')
-# the category filter: key and [en, de] label, in chip order
-CATEGORIES = [('functionality', ['Functionality', 'Funktion']),
-              ('architecture', ['Architecture', 'Architektur']), ('design', ['Design', 'Design']),
-              ('security', ['Security', 'Sicherheit']), ('operations', ['Ops', 'Betrieb']),
-              ('performance', ['Performance', 'Performance']), ('usability', ['UX', 'UX']),
-              ('tests', ['Tests', 'Tests']), ('documentation', ['Docs', 'Doku']),
-              ('style', ['Style', 'Stil'])]
+# the aspect filter: key and [en, de] label, in chip order
+ASPECTS = [('functionality', ['Functionality', 'Funktion']),
+           ('architecture', ['Architecture', 'Architektur']), ('design', ['Design', 'Design']),
+           ('security', ['Security', 'Sicherheit']), ('operations', ['Operations', 'Betrieb']),
+           ('performance', ['Performance', 'Performance']), ('usability', ['Usability', 'Usability']),
+           ('tests', ['Tests', 'Tests']), ('documentation', ['Documentation', 'Dokumentation']),
+           ('style', ['Style', 'Stil'])]
 # weakest first: batch, investigator (own), investigator2 (own plus a second);
 # unchecked: an investigator failed three times (tooling.md, "Failed subagents"); 4.2 names the claim
 STRENGTHS = ['batch', 'investigator', 'investigator2']
@@ -113,14 +113,16 @@ def required_check(proposed, sev, depth):
     return 'batch'
 
 
-# a finding in these categories names the design principle it breaks, or null when its check named none
-PRINCIPLE_CATEGORIES = ('architecture', 'design')
+# a finding in these aspects names the design principle it breaks, or null when its check named none
+PRINCIPLE_ASPECTS = ('architecture', 'design')
 # runs from this date on carry the field; an older run (republish, publish-report) assembles without it
 PRINCIPLE_SINCE = '2026-11-04'
 # runs from this date on keep a principle on Architecture and Design findings only; older runs may have it elsewhere
 PRINCIPLE_ONLY_SINCE = '2026-11-05'
 # from this review date on the verdict text is a quick summary: at most VERDICT_WORDS_MAX words per language, no details
 VERDICT_SHORT_SINCE = '2026-11-06'
+# from this review date on a finding names its aspect `aspect`; an older run wrote it as `category`
+ASPECT_SINCE = '2026-11-26'
 VERDICT_WORDS_MAX = 70
 # the findings summary that opens 3.2: an overview by severity, read in seconds
 SUMMARY_WORDS_MAX = 120
@@ -516,8 +518,8 @@ def lines_changed(n):
         [('en', '{:,} lines changed'.format(n)), ('de', '{:,} geänderte Zeilen'.format(n).replace(',', '.'))]))
 
 
-# what each category covers, short, from the category table in report-sections.md (Findings 3.2); [en, de]
-CATEGORY_TEXT = {
+# what each aspect covers, short, from the aspect table in report-sections.md (Findings 3.2); [en, de]
+ASPECT_TEXT = {
     'functionality': ['the change does what it intends, completely and without faults',
                       'die Änderung tut, was sie soll, vollständig und fehlerfrei'],
     'architecture': ['fit with the rest of the system: boundaries, dependency direction, ADRs, a second mechanism',
@@ -555,12 +557,12 @@ KIND_TEXT = {
 
 def kind_legend():
     """The kinds part of the 3.2 reference: every kind with what it means."""
-    return ''.join('<dt>%s</dt><dd>%s</dd>' % (k, lang_pair(KIND_TEXT[k])) for k in KINDS)
+    return ''.join('<dt class="kw">%s</dt><dd>%s</dd>' % (k, lang_pair(KIND_TEXT[k])) for k in KINDS)
 
 
-def category_legend():
-    """The categories part of the 3.2 reference: every category with what it covers."""
-    return ''.join('<dt>%s</dt><dd>%s</dd>' % (lang_pair(label), lang_pair(CATEGORY_TEXT[k])) for k, label in CATEGORIES)
+def aspect_legend():
+    """The aspects part of the 3.2 reference: every aspect with what it covers."""
+    return ''.join('<dt>%s</dt><dd>%s</dd>' % (lang_pair(label), lang_pair(ASPECT_TEXT[k])) for k, label in ASPECTS)
 
 
 def verdict_line(word):
@@ -626,10 +628,10 @@ def gitlab_mismatch(spec):
 
 
 def complete_findings(spec):
-    """Every finding has an id, a severity, a kind, a category and a package; the later checks index them."""
+    """Every finding has an id, a severity, a kind, an aspect and a package; the later checks index them."""
     ok = True
     for i, f in enumerate(spec['findings'], 1):
-        for k in ['id', 'sev', 'kind', 'category']:
+        for k in ['id', 'sev', 'kind', 'aspect']:
             if not isinstance(f.get(k), str) or not f[k]:
                 fail('finding %d in findings.json lacks %s' % (i, k))
                 ok = False
@@ -713,13 +715,13 @@ def check_spec(spec):
         p = f.get('principle')
         if 'principle' in f and p is not None and not (isinstance(p, str) and p.strip()):
             fail('%s: principle must name the principles or be null (SKILL.md §4, step 9)' % f.get('id'))
-        if principle_required(spec) and f.get('category') in PRINCIPLE_CATEGORIES and 'principle' not in f:
-            fail('%s: category %s needs principle, the one its check named, or null when it named none '
-                 '(SKILL.md §4, step 9)' % (f.get('id'), f.get('category')))
+        if principle_required(spec) and f.get('aspect') in PRINCIPLE_ASPECTS and 'principle' not in f:
+            fail('%s: aspect %s needs principle, the one its check named, or null when it named none '
+                 '(SKILL.md §4, step 9)' % (f.get('id'), f.get('aspect')))
         if (str((spec.get('meta') or {}).get('date', '')) >= PRINCIPLE_ONLY_SINCE
-                and f.get('category') not in PRINCIPLE_CATEGORIES and p is not None):
-            fail('%s: only Architecture and Design findings carry a principle, not category %s '
-                 '(SKILL.md §4, step 9)' % (f.get('id'), f.get('category')))
+                and f.get('aspect') not in PRINCIPLE_ASPECTS and p is not None):
+            fail('%s: only Architecture and Design findings carry a principle, not aspect %s '
+                 '(SKILL.md §4, step 9)' % (f.get('id'), f.get('aspect')))
         if 'triggers' in f and triggers_of(f) is None:
             fail('%s: triggers in findings.json must list at least two {"trigger", "wrong"} objects with text in both; '
                  'a finding with one trigger has no triggers field (SKILL.md §4, Merge)' % f.get('id'))
@@ -776,7 +778,7 @@ def check_findings(spec, data):
             continue
         if 'sources' in g or 'check' in g:
             fail('%s: data.json carries sources or check; findings name no source' % fid)
-        for k in ['sev', 'kind', 'category', 'package', 'file', 'tickets']:
+        for k in ['sev', 'kind', 'aspect', 'package', 'file', 'tickets']:
             if g.get(k) != w.get(k):
                 fail('%s: %s is %r, findings.json says %r' % (fid, k, g.get(k), w.get(k)))
         if not is_pair(g.get('t')):
@@ -1523,19 +1525,19 @@ def fill_template(spec, data, diff, blockers):
                   changesInEn=where[0], changesInDe=where[1])
     values.update(nFindings=str(len(sevs)), nBlocking=str(sevs.count('blocking')),
                   nNonBlocking=str(sevs.count('non-blocking')), verdictClass='fail' if blockers else 'ok')
-    keys = [k for k, _ in CATEGORIES]
+    keys = [k for k, _ in ASPECTS]
     for f in spec['findings']:
-        if f['category'] not in keys:
-            fail('%s: category %r is not one of %s' % (f['id'], f['category'], ', '.join(keys)))
+        if f['aspect'] not in keys:
+            fail('%s: aspect %r is not one of %s' % (f['id'], f['aspect'], ', '.join(keys)))
     kinds = [k for k in KINDS if any(f.get('kind') == k for f in spec['findings'])]
     page = page.replace('        <!-- kindchips: generated by assemble.py from the findings\' kinds -->\n', ''.join(
-        '        <button type="button" class="chip" data-filter="kind" data-value="%s" aria-pressed="false">%s</button>\n'
+        '        <button type="button" class="chip kw" data-filter="kind" data-value="%s" aria-pressed="false">%s</button>\n'
         % (k, k) for k in kinds))
-    used = [(k, label) for k, label in CATEGORIES if any(f['category'] == k for f in spec['findings'])]
-    chips = ''.join('        <button type="button" class="chip" data-filter="category" data-value="%s" aria-pressed="false">%s</button>\n'
+    used = [(k, label) for k, label in ASPECTS if any(f['aspect'] == k for f in spec['findings'])]
+    chips = ''.join('        <button type="button" class="chip" data-filter="aspect" data-value="%s" aria-pressed="false">%s</button>\n'
                     % (k, lang_pair(label)) for k, label in used)
-    page = page.replace('        <!-- categorychips: generated by assemble.py from the findings\' categories -->\n', chips)
-    page = page.replace('{{categories}}', script_json(dict(used)))
+    page = page.replace('        <!-- aspectchips: generated by assemble.py from the findings\' aspects -->\n', chips)
+    page = page.replace('{{aspects}}', script_json(dict(used)))
     links = gitlab_links(spec, data, diff)
     page = page.replace('{{gitlabLinks}}', script_json(links))
     jira_ticket = str(meta.get('ticket') or '').strip()
@@ -1552,7 +1554,7 @@ def fill_template(spec, data, diff, blockers):
     page = page.replace('{{stateLabel}}', lang_pair(state_label))
     page = page.replace('{{stateValue}}', state_value(meta, mr_base, suffix))
     page = page.replace('{{linesChanged}}', lines_changed(meta.get('lines')))
-    page = page.replace('{{categoryLegend}}', category_legend()).replace('{{kindLegend}}', kind_legend())
+    page = page.replace('{{aspectLegend}}', aspect_legend()).replace('{{kindLegend}}', kind_legend())
     page = page.replace('{{verdictLine}}', verdict_line(str((spec.get('verdict') or {}).get('word', ''))))
     ticket_row = '    <div><dt>Ticket</dt><dd>%s</dd></div>\n' % link_tickets(html.escape(ticket), ticket, base) if ticket else ''
     page = page.replace('    <!-- ticket row: assemble.py writes it when meta.ticket is set -->\n', ticket_row, 1)
@@ -1598,7 +1600,20 @@ def load_spec(path):
             not all(isinstance(f, dict) for f in spec['findings']):
         fail('findings.json must be an object with a findings array of objects')
         return None
+    read_old_category(spec, spec['findings'], 'findings.json')
     return spec
+
+
+def read_old_category(spec, rows, name):
+    """A run before ASPECT_SINCE wrote the aspect as `category`: read it as the aspect; a newer run fails on it."""
+    old = str((spec.get('meta') or {}).get('date', '')) < ASPECT_SINCE
+    for f in rows:
+        if 'category' not in f:
+            continue
+        if old and 'aspect' not in f:
+            f['aspect'] = f.pop('category')
+        else:
+            fail('%s: %s names the aspect `aspect`, not `category` (report-sections.md)' % (f.get('id'), name))
 
 
 def node_error(stderr):
@@ -1772,13 +1787,14 @@ def main():
     if spec is None:
         return result('assemble.py stopped: findings.json is needed for every check')
     if not complete_findings(spec):
-        return result('assemble.py stopped: every finding needs an id, a sev, a kind, a category and a package')
+        return result('assemble.py stopped: every finding needs an id, a sev, a kind, an aspect and a package')
     blockers = check_spec(spec)
 
     data_json = d / 'data.json'
     data = []
     if data_json.exists():
         data = load_data_json(data_json)
+        read_old_category(spec, data, 'data.json')
         check_findings(spec, data)
     else:
         fail('missing data.json')

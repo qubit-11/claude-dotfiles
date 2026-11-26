@@ -22,7 +22,7 @@ too.
 `assemble.py` fills it: `{{name}}` placeholders and the stats from
 `findings.json`, each `<!-- slot:name -->` block from `$SP/report/name.html`,
 the data slot from `data.json` (parsed, checked, and written into the report as
-that checked array), the category chips and the table of contents from the
+that checked array), the aspect chips and the table of contents from the
 content. The placeholder content inside a slot shows the writer the expected
 shape; where it and this file differ, this file wins.
 
@@ -113,10 +113,10 @@ files, the system or process they describe.
               "withdrawn": ["M<n>: <reason, after publish only>"] },
   "findings": [ { "id": "F1", "sev": "blocking | non-blocking", "kind": "issue | question | chore | suggestion | nitpick | note",
                   "proposed": "blocking | possibly-blocking | non-blocking" /* the strongest proposal of any source; picks the check */,
-                  "category": "<category key>",
+                  "aspect": "<aspect key>",
                   "package": "<package>" | ["<EN>", "<DE>"], "file": "<path>:<line>",
                   "what": "…", "why": "…", "fix": "…", "verify": "…",
-                  "principle": "<names, comma-separated: DRY, KISS>" | null /* architecture and design only: required there, null when the check named none; never on another category; acronym where one exists */,
+                  "principle": "<names, comma-separated: DRY, KISS>" | null /* architecture and design only: required there, null when the check named none; never on another aspect; acronym where one exists */,
                   "triggers": [ { "trigger": "<case>", "wrong": "<wrong result>" } ] /* two or more, worst first; else left out */,
                   "removes": ["F<n>"] /* other findings this finding's fix also removes (SKILL.md §4, step 3, Shared fix); else left out */,
                   "before": "<the cases in which the target already gave the wrong result>" /* from the checks' # Before the change; else left out */,
@@ -184,7 +184,7 @@ numbers them `F<n>` and rewrites every draft id in `verdict` and `notes`.
 artifact URL goes into `meta.artifactUrl`, so a republish after a compaction
 or a resume reaches the same report.
 
-`category` is one key of the category table under Findings (3.2); `package`
+`aspect` is one key of the aspect table under Findings (3.2); `package`
 is the text that opens the card's location line.
 `meta.subjectType` is the subject type, `branch` when missing. `assemble.py`
 fills from it the report's fixed wording that differs per type: section 2's
@@ -336,24 +336,27 @@ no unknown id, and requires the file from
 `assemble.py` adds the line "Not fully checked: …" for findings whose
 `check` is `unchecked`, from findings.json.
 
-Under it a closed reference, "What severities, kinds and categories mean":
+Under it a closed reference, "What severities, kinds and aspects mean":
 each severity by what it means for the merge, then the skill's definition in
 short (SKILL.md severity table), each kind with what it means (`assemble.py`
-`KIND_TEXT`, from the kind table below), and each category with what it
-covers (`assemble.py` `CATEGORY_TEXT`, from the category table below).
+`KIND_TEXT`, from the kind table below), and each aspect with what it
+covers (`assemble.py` `ASPECT_TEXT`, from the aspect table below).
 
 The cards form one list. Four filter rows of plain chips: Severity, Kind,
-Category, Status. Each row works the same way: pick one value, `All` / `Alle`
+Aspect, Status. Each row works the same way: pick one value, `All` / `Alle`
 first. Every chip label is sentence case in both languages, except the
 severity and kind chips, which show the lowercase keywords of the comment
-convention (`blocking`, `issue`). The kind row and the category row show
+convention (`blocking`, `issue`) as written, in the code font; the same
+holds for the pill and the severity and kind terms of the reference above
+(class `kw`). The font, not the case, marks a keyword: an aspect is a
+translated label and stays sentence case. The kind row and the aspect row show
 only the values some finding has, in table order (`assemble.py`). Every chip
 shows its count: the number of cards it would show together with the other
 rows' current choice; a chip whose count is 0 stays in place, dimmed, so the
 rows never jump while filtering. The pill is the only pill on a card: it
 names the kind, and its style is the severity: blocking red and filled, with
 "· blocking" as text, so colour is never the only signal; non-blocking an
-outline. The category follows the pill as muted text, on every card. The
+outline. The aspect follows the pill as muted text, on every card. The
 package opens the location line under the title as plain text, before the
 paths.
 
@@ -381,41 +384,41 @@ republish; a report stored under the earlier "hide done" switch starts on
 under the rows says so. The GitLab list follows all four rows. All of it is
 template code: writers and the translator add nothing for it.
 
-The category is the review aspect a finding falls under: what the reviewer
+The aspect is the part of the review a finding falls under: what the reviewer
 checked, not what kind of finding it is (that is the kind, below) nor what it
 means for the merge (that is the severity). Every finding
 has exactly one; when two fit, the more specific one wins, and Functionality
-only when no other fits. "The ADR accepts it" is a status (a `note`), not a
-category. The chips list only categories that have a finding, in this order:
+only when no other fits. "The ADR accepts it" is a status (a `note`), not an
+aspect. The chips list only aspects that have a finding, in this order:
 intent first, then structure, then the non-functional qualities by how many
 changes they apply to, then the companion artifacts, then Style.
 
-| Category | Label | Covers |
+| Aspect | Label | Covers |
 | --- | --- | --- |
 | `functionality` | Functionality / Funktion | the change does what it intends, completely and without faults; concurrency, error handling |
 | `architecture` | Architecture / Architektur | fit with the system: boundaries, dependency direction, cross-cutting mechanisms, ADRs, a second mechanism; the fix reaches code the change did not write |
 | `design` | Design / Design | the inside of the change: unneeded complexity, over-engineering, dead code, misleading names, invented names; the fix stays inside the change |
 | `security` | Security / Sicherheit | access control, sessions, secrets, personal data, input validation, the attacker lens |
-| `operations` | Ops / Betrieb | deploy and deploy order, config, env, migrations, rollback, dependencies, old clients after a rollout, logging |
+| `operations` | Operations / Betrieb | deploy and deploy order, config, env, migrations, rollback, dependencies, old clients after a rollout, logging |
 | `performance` | Performance / Performance | unbounded queries, missing indexes, N+1, whole collections loaded, work repeated per request |
-| `usability` | UX / UX | visible to the user and not a fault: the design guidance, clear texts and errors, accessibility |
+| `usability` | Usability / Usability | visible to the user and not a fault: the design guidance, clear texts and errors, accessibility |
 | `tests` | Tests / Tests | presence, meaningfulness, robustness, fidelity of fakes |
-| `documentation` | Docs / Doku | comments, JSDoc, README, ADR text |
+| `documentation` | Documentation / Dokumentation | comments, JSDoc, README, ADR text |
 | `style` | Style / Stil | the written style rules of the instruction files, and naming by convention |
 
 The table decides; the fix-reach test (does the fix stay inside the change or
 reach code it did not write) only decides what the table does not name. A second
 mechanism stays Architecture. Orphans: a permanent break of an interface or
 wire format across a deploy boundary (the system's other servers included) is
-Architecture, a break only during rollout is Ops; dependency placement (peer or dependency) is Architecture, version or
-presence of a dependency is Ops; a build failure is Functionality, a lint
-failure takes the category of the broken rule. A misleading or invented name is
+Architecture, a break only during rollout is Operations; dependency placement (peer or dependency) is Architecture, version or
+presence of a dependency is Operations; a build failure is Functionality, a lint
+failure takes the aspect of the broken rule. A misleading or invented name is
 Design, a name that only breaks a convention is Style.
 
 ### Kinds
 
 The kind says what someone has to do about a finding. The orchestrator
-decides it after the severity (SKILL.md §4, step 9), like the category, from
+decides it after the severity (SKILL.md §4, step 9), like the aspect, from
 the reviewers' `Kind:` lines and the facts the check delivered. The kind is
 independent of the severity, with one exclusion: a `suggestion`, a
 `nitpick` and a `note` are never blocking.
@@ -445,7 +448,7 @@ blocking first, then by kind, then by weight. Kinds the skill does not use:
 comment shows for each is the comment convention's
 ([gitlab-comments.md](gitlab-comments.md), Labels).
 
-The category keys and labels live in `assemble.py` (`CATEGORIES`); `assemble.py` fails on
+The aspect keys and labels live in `assemble.py` (`ASPECTS`); `assemble.py` fails on
 any other key. The package is the repository's own name for it (its glossary
 or CLAUDE.md), else the short package name (`api-server`, `web-app`, `forms`,
 `shared-utils`), a string or an `[en, de]` pair. For files it is
@@ -458,7 +461,7 @@ from `data.json`, a JSON array (double-quoted keys and strings, no comments),
 one object per finding; the shape, written here with comments:
 
 ```js
-{ id: 'F1', sev: 'blocking|non-blocking', kind: 'issue|question|chore|suggestion|nitpick|note', category: '<category key>', package: '<package>' | ['<EN>', '<DE>'], file: '<path>:<line>',
+{ id: 'F1', sev: 'blocking|non-blocking', kind: 'issue|question|chore|suggestion|nitpick|note', aspect: '<aspect key>', package: '<package>' | ['<EN>', '<DE>'], file: '<path>:<line>',
   t: ['<EN title>', '<DE title>'],
   fields: { what: { text: ['<EN>', '<DE>'], more: ['<EN>', '<DE>'] | null },
             why: { text: [...], more: [...] | null }, fix: { text: [...], more: [...] | null },
@@ -524,7 +527,7 @@ reason needs (SKILL.md, Severity): the trigger in live use, the exploit path, th
 ADR or rule it breaks, or that no test exists.
 
 A card is a foldable `details.card` with the done mark, folded at the start. Its title line
-holds the id, the severity pill, the category and the title `t`: the
+holds the id, the severity pill, the aspect and the title `t`: the
 effect first, at most one technical term, no paths, no numbers. Under it
 stands the location line (package · file), then the four fields under the
 labels What, Impact, Fix, Checked (DE Was, Auswirkung, Lösung, Geprüft),
@@ -673,7 +676,7 @@ parsed, never executed, and the report carries exactly the checked array.
 - against `findings.json`: same ids F1..Fn (gaps only for ids in
   `notes.withdrawn` after publish, and a withdrawn id never reused), the order by severity and
   kind, severities, kinds (a `suggestion`, `nitpick` or `note` never blocking), `proposed`,
-  categories, packages, locations, `tickets` (Jira keys, the same in `data.json`); no
+  aspects, packages, locations, `tickets` (Jira keys, the same in `data.json`); no
   `followUp`; no finding with a `reason` field (a Blocker's `verify` states
   the proof);
 - the card shape: `t` and `fields` with exactly `what`, `why`, `fix` and
@@ -693,7 +696,7 @@ parsed, never executed, and the report carries exactly the checked array.
 - the verdict: `verdict.word` fits the open Blockers, a lead `<strong>`
   verdict word agrees with it, each language names every open Blocker in id
   order and no id that is not a finding;
-- every finding in `findings.json` with an id, a severity, a kind, a category and a package (else
+- every finding in `findings.json` with an id, a severity, a kind, an aspect and a package (else
   it stops before the other checks); `check` one of `batch`, `investigator`,
   `investigator2`, `unchecked`; `mrUrl` an `https://` URL, set only for an `mr`; `gitlab`, when
   given, matching the subject type; `meta.headAtPublish`, when given, a sha

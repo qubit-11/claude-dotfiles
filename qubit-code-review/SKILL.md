@@ -148,9 +148,9 @@ every reviewer, investigator and rater judges by that text.
   (§4); they are no field. A Blocker's `verify` states the proof its reason
   needs (the trigger, the exploit path, the ADR, the missing test), so the
   reader sees whether it rests on a fact or a judgment.
-- Reason and category are independent: the card and the list show the
-  category, a Tests finding can rest on (a), and personal data in a log in
-  live use is (a) with category Security.
+- Reason and aspect are independent: the card and the list show the
+  aspect, a Tests finding can rest on (a), and personal data in a log in
+  live use is (a) with aspect Security.
 - **Proposals.** Reviewers and raters propose one of three:
   `blocking`, `possibly-blocking` (a Blocker reason may hold but hangs on
   something the source could not settle: is the trigger reachable in live
@@ -256,7 +256,7 @@ a missing one is less likely. `deep` contains `standard`.
 
 Fixed by this skill, not by a run: the severity scale (Severity) gives every
 finding one true severity, and where it needs a judgment the investigator's
-final severity decides; severity, kind and category never depend on the depth, a
+final severity decides; severity, kind and aspect never depend on the depth, a
 deeper run only states them correctly more often; one fix at one place is
 one finding (§4.3); a finding states its severity, location, failure
 scenario and fix.
@@ -274,15 +274,15 @@ Blocker is always read, a non-blocking finding less, the less the more its
 kind asks nothing (a `nitpick` or a `note` barely); a missing finding cannot
 be corrected at all.
 
-| Aspect | Holds when | An error, recoverable by hand? |
+| Quality | Holds when | An error, recoverable by hand? |
 | --- | --- | --- |
-| A1 Completeness | no real Blocker is missing; two causes merged into one finding leave one missing | no |
-| A2 Classification | every finding has its true severity | too low: barely, a non-blocking finding is read less; too high: yes, a Blocker is always read |
-| A3 Validity | every listed finding is real at the reviewed sha, in live use (Severity) | yes |
-| A4 Accuracy | a real finding's location, failure scenario and fix are correct | yes, they are checked by hand anyway |
+| Q1 Completeness | no real Blocker is missing; two causes merged into one finding leave one missing | no |
+| Q2 Classification | every finding has its true severity | too low: barely, a non-blocking finding is read less; too high: yes, a Blocker is always read |
+| Q3 Validity | every listed finding is real at the reviewed sha, in live use (Severity) | yes |
+| Q4 Accuracy | a real finding's location, failure scenario and fix are correct | yes, they are checked by hand anyway |
 
-Only search raises A1: the region and the roster. Checking raises A2 to A4,
-and can lower A1 (a wrong refutation, a wrong merge), so nothing leaves the
+Only search raises Q1: the region and the roster. Checking raises Q2 to Q4,
+and can lower Q1 (a wrong refutation, a wrong merge), so nothing leaves the
 list without a visible trace (§4).
 
 ### Choose a depth
@@ -352,7 +352,7 @@ A lens is an actor outside the diff, inside the repository or not: it starts
 from that actor, searches inward to the change and tries to break it. Core,
 lane and architecture reviewers start from the diff, so a Blocker in unchanged code
 is found only from outside. The lenses follow the actors, not the
-categories (scope lines in [reviewer-prompt.md](reviewer-prompt.md)):
+aspects (scope lines in [reviewer-prompt.md](reviewer-prompt.md)):
 
 | Lens | The actor it starts from | Covers from the `deep` region |
 | --- | --- | --- |
@@ -439,7 +439,7 @@ The orchestrator decides only on evidence an unbiased source delivered
 (reviewer, investigator, rater). It never judges a claim by reading the code
 itself, and never sets a severity by its own reading, at any level, below the
 Blocker line included. It keeps the work that judges no code: merging
-duplicates, numbering, the category from the category table. The one
+duplicates, numbering, the aspect from the aspect table. The one
 exception is the grounding check, a check of existence, not a judgment of
 the claim.
 
@@ -546,7 +546,7 @@ The steps, in order:
    missing from the cited file may stand in another file the claim traces,
    so only an investigator refutes it.
 5. **Checks.** Checks follow severity, not agreement, at every depth and for
-   every source, foreign tools included; never the category or the kind. A
+   every source, foreign tools included; never the aspect or the kind. A
    finding only one source raised is not doubtful for that reason:
    reviewers rarely contradict each other, they miss different things.
    The check table:
@@ -653,12 +653,12 @@ The steps, in order:
    suite on the target branch. A claim only a test raised goes through steps 3 to 7 after
    the tests; its investigator works between two snapshots of its own
    ([tooling.md](tooling.md), Tests and lint).
-9. **Category, kind and package.** Only now, with the severity settled,
-   each finding gets exactly one category, its main one, one kind and its
-   package (the category table, the kind table and the package rule in
+9. **Aspect, kind and package.** Only now, with the severity settled,
+   each finding gets exactly one aspect, its main one, one kind and its
+   package (the aspect table, the kind table and the package rule in
    [report-sections.md](report-sections.md), Findings 3.2); the orchestrator
    decides all three by the tables, without reading the code; the
-   reviewers' `Category:` and `Kind:` lines are input. The kind is the one
+   reviewers' `Aspect:` and `Kind:` lines are input. The kind is the one
    the reviewers proposed, unless a fact the check delivered contradicts it
    (a failure scenario for a proposed `suggestion`, something missing, wording
    only, a problem that existed before the change, a step outside the
@@ -669,7 +669,7 @@ The steps, in order:
    one its check confirmed or named (`# Principle`), else the one a source
    named when the check failed for good, `null` when the check answered
    NONE. Only an Architecture or Design finding carries the field, always;
-   a principle the check of another category named stays in that check's
+   a principle the check of another aspect named stays in that check's
    output and never reaches the finding. The field only names the
    principles, comma-separated, each by its common acronym where one exists
    (DRY, KISS, YAGNI, SRP), else by the name a developer looks up (single
@@ -729,7 +729,7 @@ Sources: <roster, foreign runs> · <n> investigators · <n> claims refuted
 M1  <do> → <expect>
 M2  …
 ── blocking ──
-F1  issue · <file:line> · <category>
+F1  issue · <file:line> · <aspect>
     <title: the effect first>
     What:    <one sentence>
     Impact:  <one sentence>
@@ -771,7 +771,7 @@ report is the lasting record.
 ## 6. Publish the report (every run without `skip-report`, and `publish-report`)
 
 The orchestrator decides; report writer subagents write. The orchestrator
-never writes report text itself; no writer changes an id, severity, kind, category,
+never writes report text itself; no writer changes an id, severity, kind, aspect,
 package, principle, verdict or consolidated text, or reads raw reviewer outputs.
 
 1. **Complete the decision.** The orchestrator sets
@@ -820,7 +820,7 @@ package, principle, verdict or consolidated text, or reads raw reviewer outputs.
      [report-sections.md](report-sections.md), "What assemble.py checks")
      and read only its check result, never the fragments. Send each failure
      to the writer or translator it names, never fix it in place; a failure
-     that lies in `findings.json` (a consolidated text, a category, a follow-up
+     that lies in `findings.json` (a consolidated text, an aspect, a follow-up
      title) is the orchestrator's to fix there. When a fix changes English
      text after the translator ran, the translator runs again on the changed
      fields or files only, then `assemble.py` again.
@@ -878,7 +878,7 @@ while the MR's head is still the reviewed sha
 `/qubit-code-review publish-report`, or in the session of the run a request
 for the report or an explanation of the review ("make the report", "explain
 it as a page"). Reviewers, explorer, investigators, foreign runs and tests
-stay done; no id, severity, category, package, principle, verdict or
+stay done; no id, severity, aspect, package, principle, verdict or
 consolidated text changes, except through a missing check (7.2).
 
 1. **Find the run:** this session's `findings.json`; otherwise the run
@@ -975,7 +975,7 @@ One line each; the rule stands where the pointer says.
 - Dropping or investigating a finding because one source saw it (§4.5).
 - A finding checked more weakly than the check table requires for its depth, or not at all, unless its investigator failed for good and the method section (report-sections.md, 4.2) names it; a `check` that names a weaker check than the one that ran (§4.5).
 - At `deep`, a refuted or downgraded Blocker claim, or a non-blocking finding the blind rating calls blocking or possibly-blocking, without a second investigator (§4.5).
-- A finding a batch raised to blocking without its own investigator; a check picked by category or kind instead of the proposed severity (§4.5).
+- A finding a batch raised to blocking without its own investigator; a check picked by aspect or kind instead of the proposed severity (§4.5).
 - An investigator's side finding left unread, or merged into a finding whose fix does not remove it (§4.5, Side findings).
 - The orchestrator setting a severity, at any level, or keeping a finding out of a batch by its own reading of the code (§4).
 - Severity by vote count; a disagreement across the Blocker line settled against the Blocker; a claim dropped although one investigator confirmed it (§4.7).
@@ -990,9 +990,9 @@ One line each; the rule stands where the pointer says.
 - A list or verdict box without the depth's "covers" and "not searched" (§2, Regions); a report claiming no Blocker is left (§6.1).
 - A run with `skip-report` starting a writer, a translator or a publish (Commands).
 - The orchestrator writing report text, opening a fragment, or reading `review.html` or a publish file (§6); a publish by the orchestrator, publish workers in parallel, a republish that sends unchanged files, or a batch without `--mark-published` (§6.3).
-- A writer changing an id, severity, category, package, principle, verdict or the consolidated text, or reading raw outputs (§6).
+- A writer changing an id, severity, aspect, package, principle, verdict or the consolidated text, or reading raw outputs (§6).
 - A card whose visible text names a `file:line`, repeats its label, or runs as a wall of text; a Blocker card without the evidence path (`file:line`) in `fields.what.more` or without `fields.verify.more` (report-sections.md, Findings 3.2).
-- An Architecture or Design finding without `principle`; a `principle` on a finding of another category; a principle the orchestrator or a writer formed instead of copying it from a check or a source (§4, step 9).
+- An Architecture or Design finding without `principle`; a `principle` on a finding of another aspect; a principle the orchestrator or a writer formed instead of copying it from a check or a source (§4, step 9).
 - A principle as a sentence or paragraph of its own in a GitLab comment or a card's `what`, or as the reason where the finding has a concrete consequence (gitlab-comments.md, report-sections.md).
 - A principle written out where a common acronym exists ("Don't Repeat Yourself" instead of DRY), or a principle field that explains instead of naming (§4, step 9).
 - A shared fix that removes other findings written as a pointer ("see F3", "see the other comment") instead of the consequence in plain words, or findings merged because one alternative fix removes them all (§4, step 3).
