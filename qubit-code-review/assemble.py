@@ -80,7 +80,17 @@ FIELD_LABELS = {'what': ['What', 'Was'], 'why': ['Impact', 'Auswirkung'], 'fix':
                 'verify': ['Checked', 'Geprüft']}
 META = ['title', 'key', 'subject', 'subjectLine', 'state', 'author', 'reference', 'depth', 'date',
         'sources', 'lines', 'worktree', 'runDir', 'resume']
-SEVS = ['blocker', 'optional', 'nit', 'fyi']
+# the severity, the only thing the verdict depends on (SKILL.md, Severity)
+SEVERITIES = ['blocking', 'non-blocking']
+# what a source may propose; possibly-blocking is a proposal only, an investigator decides blocking or non-blocking
+PROPOSALS = ['blocking', 'possibly-blocking', 'non-blocking']
+# the kind of a finding, in report order (report-sections.md, Kinds); the GitLab prefix is the label the comment
+# convention gives it (gitlab-comments.md, Labels)
+KINDS = ['issue', 'question', 'chore', 'suggestion', 'nitpick', 'note']
+# the kinds a blocking finding may not have
+NON_BLOCKING_KINDS = ('suggestion', 'nitpick', 'note')
+# a ticket a finding refers to: a Jira key
+TICKET_KEY = re.compile(r'[A-Z][A-Z0-9]+-\d+')
 # the category filter: key and [en, de] label, in chip order
 CATEGORIES = [('functionality', ['Functionality', 'Funktion']),
               ('architecture', ['Architecture', 'Architektur']), ('design', ['Design', 'Design']),
@@ -88,22 +98,17 @@ CATEGORIES = [('functionality', ['Functionality', 'Funktion']),
               ('performance', ['Performance', 'Performance']), ('usability', ['UX', 'UX']),
               ('tests', ['Tests', 'Tests']), ('documentation', ['Docs', 'Doku']),
               ('style', ['Style', 'Stil'])]
-# weakest first: inline (the reviewer's label stands), batch, investigator (own), investigator2 (own plus a second);
+# weakest first: batch, investigator (own), investigator2 (own plus a second);
 # unchecked: an investigator failed three times (tooling.md, "Failed subagents"); 4.2 names the claim
-STRENGTHS = ['inline', 'batch', 'investigator', 'investigator2']
+STRENGTHS = ['batch', 'investigator', 'investigator2']
 CHECKS = STRENGTHS + ['unchecked']
-# a Nit in these categories may keep the reviewer's label (check inline) below deep
-WORDING_CATEGORIES = ('style', 'documentation')
 
 
-def required_check(sev, category, depth):
-    """The weakest check SKILL.md §4 allows for a finding at a depth; older runs keep their old names (high = deep,
-    medium = standard, low below both)."""
-    if depth in ('deep', 'high') or sev == 'blocker':
-        return 'investigator'
-    if sev == 'nit' and category in WORDING_CATEGORIES:
-        return 'inline'
-    if depth in ('standard', 'medium') and sev in ('optional', 'fyi'):
+def required_check(proposed, sev, depth):
+    """The weakest check SKILL.md §4 allows for a finding: the stronger of what its strongest proposal needs and what
+    its final severity needs, so a finding a batch raised to blocking still needs its own investigator. Older runs
+    keep their old depth names (high = deep, medium = standard, low below both)."""
+    if depth in ('deep', 'high') or sev == 'blocking' or proposed in ('blocking', 'possibly-blocking'):
         return 'investigator'
     return 'batch'
 
@@ -348,6 +353,64 @@ def check_verdict(root, word, blockers, known=(), ids=True):
 VERDICT_DISPLAY = {'not yet': ['Not yet fit for use', 'Noch nicht einsatzbereit']}
 
 
+# 3.4 "What works well": a few points, one line each, so they also close the review comment (report-sections.md, 3.4)
+GOOD_POINTS_MAX = 3
+REVIEW_COMMENT_MARK = '\x00reviewComment\x00'
+GOOD_POINT_WORDS_MAX = 20
+
+
+def markdown_text(node):
+    """A node's text as GitLab Markdown: code in backticks, the rest as plain text."""
+    return ''.join(x if isinstance(x, str) else '`%s`' % text_of(x) if x['tag'] == 'code' else markdown_text(x)
+                   for x in node.get('seq', []))
+
+
+def good_points(root):
+    """The 3.4 points per language: {'en': [text, ...], 'de': [...]}, one per list item, code in backticks."""
+    out = {'en': [], 'de': []}
+    for e in walk(root):
+        lang = e['attrs'].get('data-lang')
+        if lang in out:
+            out[lang] += [' '.join(markdown_text(li).split()) for li in walk(e) if li['tag'] == 'li']
+    return out
+
+
+def check_good(root):
+    """3.4 is a short list: one to GOOD_POINTS_MAX list items per language, each one line of at most
+    GOOD_POINT_WORDS_MAX words, nothing else."""
+    if any(e['tag'] in ('details', 'p', 'table', 'pre') for e in walk(root)):
+        fail('good.html: "What works well" is a list only, no paragraphs or details (report-sections.md, 3.4)')
+    for lang, points in good_points(root).items():
+        if not 1 <= len(points) <= GOOD_POINTS_MAX:
+            fail('good.html: the %s list has %d points, 1 to %d (report-sections.md, 3.4)' % (lang, len(points), GOOD_POINTS_MAX))
+        for t in points:
+            if len(t.split()) > GOOD_POINT_WORDS_MAX:
+                fail('good.html: a %s point has %d words, at most %d: one line' % (lang, len(t.split()), GOOD_POINT_WORDS_MAX))
+
+
+def review_comment(spec, points):
+    """The closing review comment to copy at the end of 3.5: the verdict, the count of blocking and non-blocking
+    findings and the 3.4 points, [en, de]; '' for a subject without GitLab comments."""
+    if not gitlab_on(spec):
+        return ''
+    word = (spec.get('verdict') or {}).get('word', '')
+    de_word = VERDICTS_DE.get(word, word)
+    verdict = VERDICT_DISPLAY.get(word, [word[:1].upper() + word[1:], de_word[:1].upper() + de_word[1:]])
+    sevs = [f.get('sev') for f in spec['findings']]
+    counts = '%d blocking, %d non-blocking' % (sevs.count('blocking'), sevs.count('non-blocking'))
+    heads = [('**%s.** %s findings.' % (verdict[0], counts)), ('**%s.** %s Findings.' % (verdict[1], counts))]
+    labels = [('What works well:', 'Copy'), ('Was gut funktioniert:', 'Kopieren')]
+    boxes = ''
+    for i, lang in enumerate(['en', 'de']):
+        text = heads[i]
+        if points.get(lang):
+            text += '\n\n' + labels[i][0] + '\n' + '\n'.join('- ' + t for t in points[lang])
+        boxes += ('<div class="glc-box" data-lang="%s"><p class="glc-text">%s</p><button type="button" class="glc-copy" '
+                  'data-copy="%s">%s</button></div>' % (lang, html.escape(text), html.escape(text), labels[i][1]))
+    return ('<div class="glc-review"><p class="glc-file">%s</p>%s</div>' % (
+        lang_pair(['Review comment, to close the review', 'Review-Kommentar zum Abschluss des Reviews']), boxes))
+
+
 def check_verdict_short(root):
     """The verdict text is an abstract under the banner: no details to open, at most VERDICT_WORDS_MAX words per
     language; the findings summary (3.2) carries the findings, what the verdict covers stands in 4.2."""
@@ -474,6 +537,27 @@ CATEGORY_TEXT = {
 }
 
 
+# what each kind means, short, from the kind table in report-sections.md (Kinds); [en, de]
+KIND_TEXT = {
+    'issue': ['something is wrong or missing in the subject; also a problem that existed before the change',
+              'etwas ist falsch oder fehlt im Gegenstand; auch ein Problem, das schon vor der Änderung bestand'],
+    'question': ['only the author can decide it; blocking when one plausible answer is a Blocker',
+                 'nur der Autor kann es entscheiden; blocking, wenn eine plausible Antwort ein Blocker ist'],
+    'chore': ['the code is right, but someone must act outside the repository (infrastructure, migration, release order)',
+              'der Code stimmt, aber jemand muss außerhalb des Repositorys handeln (Infrastruktur, Migration, '
+              'Release-Reihenfolge)'],
+    'suggestion': ['it works and is complete; another way would be better. Never blocking',
+                   'es funktioniert und ist vollständig; ein anderer Weg wäre besser. Nie blocking'],
+    'nitpick': ['wording only: names, comments, docs. Never blocking', 'nur Wortlaut: Namen, Kommentare, Doku. Nie blocking'],
+    'note': ['information only, nobody has to act. Never blocking', 'nur Information, niemand muss handeln. Nie blocking'],
+}
+
+
+def kind_legend():
+    """The kinds part of the 3.2 reference: every kind with what it means."""
+    return ''.join('<dt>%s</dt><dd>%s</dd>' % (k, lang_pair(KIND_TEXT[k])) for k in KINDS)
+
+
 def category_legend():
     """The categories part of the 3.2 reference: every category with what it covers."""
     return ''.join('<dt>%s</dt><dd>%s</dd>' % (lang_pair(label), lang_pair(CATEGORY_TEXT[k])) for k, label in CATEGORIES)
@@ -542,10 +626,10 @@ def gitlab_mismatch(spec):
 
 
 def complete_findings(spec):
-    """Every finding has an id, a severity, a category and a package; the later checks index them."""
+    """Every finding has an id, a severity, a kind, a category and a package; the later checks index them."""
     ok = True
     for i, f in enumerate(spec['findings'], 1):
-        for k in ['id', 'sev', 'category']:
+        for k in ['id', 'sev', 'kind', 'category']:
             if not isinstance(f.get(k), str) or not f[k]:
                 fail('finding %d in findings.json lacks %s' % (i, k))
                 ok = False
@@ -596,21 +680,34 @@ def check_spec(spec):
         for i in ids:
             if i in withdrawn:
                 fail('%s is withdrawn and cannot be reused' % i)
-    ranks = [SEVS.index(f['sev']) for f in fs if f.get('sev') in SEVS]
+    ranks = [(SEVERITIES.index(f['sev']), KINDS.index(f['kind'])) for f in fs
+             if f.get('sev') in SEVERITIES and f.get('kind') in KINDS]
     if ranks != sorted(ranks) and not meta.get('published'):  # once published, a re-graded finding keeps id and place
-        fail('severity order must be Blocker, Optional, Nit, FYI')
+        fail('order must be blocking before non-blocking, then by kind (%s)' % ', '.join(KINDS))
     for f in fs:
-        if f.get('sev') not in SEVS:
-            fail('%s: sev %r is not one of %s' % (f.get('id'), f.get('sev'), ', '.join(SEVS)))
+        if f.get('sev') not in SEVERITIES:
+            fail('%s: sev %r is not one of %s' % (f.get('id'), f.get('sev'), ', '.join(SEVERITIES)))
+        if f.get('kind') not in KINDS:
+            fail('%s: kind %r is not one of %s' % (f.get('id'), f.get('kind'), ', '.join(KINDS)))
+        elif f.get('sev') == 'blocking' and f['kind'] in NON_BLOCKING_KINDS:
+            fail('%s: a %s is never blocking; a blocking finding is an issue, a question or a chore '
+                 '(report-sections.md, Kinds)' % (f.get('id'), f['kind']))
+        if f.get('proposed') not in PROPOSALS:
+            fail('%s: proposed %r is not one of %s: the strongest severity any source proposed' % (
+                f.get('id'), f.get('proposed'), ', '.join(PROPOSALS)))
         if f.get('check') not in CHECKS:
             fail('%s: check is %r in findings.json (must be %s)' % (f.get('id'), f.get('check'), ', '.join(CHECKS)))
-        sev, check, depth = f.get('sev'), f.get('check'), meta.get('depth')
-        if sev in SEVS and check in STRENGTHS:
-            need = required_check(sev, f.get('category'), depth)
+        sev, proposed, check, depth = f.get('sev'), f.get('proposed'), f.get('check'), meta.get('depth')
+        if sev in SEVERITIES and proposed in PROPOSALS and check in STRENGTHS:
+            need = required_check(proposed, sev, depth)
             if STRENGTHS.index(check) < STRENGTHS.index(need):
-                what = 'nit in %s' % f.get('category') if sev == 'nit' else sev
-                fail('%s: a %s at %s needs check %s or stronger, or unchecked, not %r (dispatch the check; unchecked only after it failed for good)' % (
-                    f.get('id'), what, depth, need, check))
+                fail('%s: a %s finding proposed %s at %s needs check %s or stronger, or unchecked, not %r (dispatch the '
+                     'check; unchecked only after it failed for good)' % (f.get('id'), sev, proposed, depth, need, check))
+        if 'followUp' in f:
+            fail('%s: findings carry no followUp; a ticket that exists goes into tickets' % f.get('id'))
+        if 'tickets' in f and not tickets_of(f):
+            fail('%s: tickets must list Jira keys (["PROJ-123"]); a finding without a ticket has no tickets field'
+                 % f.get('id'))
         if 'reason' in f:
             fail("%s: findings carry no reason; a Blocker's verify states the proof" % f.get('id'))
         p = f.get('principle')
@@ -639,11 +736,7 @@ def check_spec(spec):
         if 'before' in f and not (isinstance(f['before'], str) and f['before'].strip()):
             fail('%s: before in findings.json must name the cases on the target; a finding without any has no '
                  'before field (report-sections.md, Mapping)' % f.get('id'))
-        if f.get('sev') in ('optional', 'fyi'):
-            fu = f.get('followUp')
-            if not isinstance(fu, dict) or not fu.get('title'):
-                fail('%s: followUp must be {title, key} in findings.json' % f.get('id'))
-    blockers = [f['id'] for f in fs if f.get('sev') == 'blocker']
+    blockers = [f['id'] for f in fs if f.get('sev') == 'blocking']
     if sorted((spec.get('verdict') or {}).get('openBlockers') or []) != sorted(blockers):
         fail('verdict openBlockers %s differ from the Blocker findings %s' % (
             (spec.get('verdict') or {}).get('openBlockers'), blockers))
@@ -651,6 +744,17 @@ def check_spec(spec):
 
 
 OLD_CARD_KEYS = ('plain', 'tech')
+# a comment text that already carries a label prefix (**Nit:**, **issue (blocking):**)
+PREFIX_START = re.compile(r'\s*\*\*[^*\n]{1,40}:\*\*')
+
+
+def tickets_of(f):
+    """A finding's tickets, a non-empty list of distinct Jira keys; None when the field is malformed."""
+    t = f.get('tickets')
+    if not (isinstance(t, list) and t and all(isinstance(k, str) and TICKET_KEY.fullmatch(k) for k in t)
+            and len(set(t)) == len(t)):
+        return None
+    return t
 
 
 def check_findings(spec, data):
@@ -672,7 +776,7 @@ def check_findings(spec, data):
             continue
         if 'sources' in g or 'check' in g:
             fail('%s: data.json carries sources or check; findings name no source' % fid)
-        for k in ['sev', 'category', 'package', 'file']:
+        for k in ['sev', 'kind', 'category', 'package', 'file', 'tickets']:
             if g.get(k) != w.get(k):
                 fail('%s: %s is %r, findings.json says %r' % (fid, k, g.get(k), w.get(k)))
         if not is_pair(g.get('t')):
@@ -687,8 +791,8 @@ def check_findings(spec, data):
             cards[fid] = g['fields']
             check_trigger_lists(w, g)
             check_principle(w, g)
-        if w.get('sev') in ('fyi', 'optional') and g.get('followUp') != w.get('followUp'):
-            fail('%s: followUp in data.json differs from findings.json' % fid)
+        if 'proposed' in g or 'followUp' in g:
+            fail('%s: data.json carries proposed or followUp; proposed stays in findings.json, followUp is gone' % fid)
         check_comments(spec, w, g)
     check_removes(spec, cards)
 
@@ -751,7 +855,7 @@ def check_card_fields(w, g):
                     if n > DETAIL_PARAGRAPH_MAX:
                         fail('%s: a paragraph of the %s fields.%s.more has %d words, at most %d: one short paragraph '
                              'per point' % (fid, lang, k, n, DETAIL_PARAGRAPH_MAX))
-    if ok and w.get('sev') == 'blocker':
+    if ok and w.get('sev') == 'blocking':
         what_more, verify_more = fields['what']['more'], fields['verify']['more']
         for i, lang in enumerate(['English', 'German']):
             if not (is_pair(what_more) and FILE_LINE.search(what_more[i])):
@@ -1136,8 +1240,15 @@ def check_comments(spec, w, g):
                 fail('%s: %s GitLab text at %s has %d "- " lines; a finding with %d triggers lists %d, one per trigger, '
                      'worst first (gitlab-comments.md)' % (fid, lang, at, len(comment_items(t)), len(triggers), listed))
             plain = strip_code(t)
-            if (options or isinstance(w.get('fixOpen'), str)) and (question not in plain or suggestion + ':' in plain):
-                fail('%s: %s GitLab text at %s needs "%s" and no "%s:": a finding with options or fixOpen asks instead '
+            if PREFIX_START.match(t):
+                fail('%s: %s GitLab text at %s starts with a label; the renderer adds the prefix from kind and sev '
+                     '(gitlab-comments.md, Labels)' % (fid, lang, at))
+            if w.get('kind') != 'issue':
+                if suggestion + ':' in plain:
+                    fail('%s: %s GitLab text at %s has "%s:", which only an issue has; a %s says its point directly '
+                         '(gitlab-comments.md)' % (fid, lang, at, suggestion, w.get('kind')))
+            elif (options or isinstance(w.get('fixOpen'), str)) and (question not in plain or suggestion + ':' in plain):
+                fail('%s: %s GitLab text at %s needs "%s" and no "%s:": an issue with options or fixOpen asks instead '
                      'of suggesting (gitlab-comments.md)' % (fid, lang, at, question, suggestion))
 
 
@@ -1410,12 +1521,16 @@ def fill_template(spec, data, diff, blockers):
     values = dict((k, str(meta.get(k, ''))) for k in META)
     values.update(subjectHeadingEn=heading[0], subjectHeadingDe=heading[1], blockerHoldsEn=holds[0], blockerHoldsDe=holds[1],
                   changesInEn=where[0], changesInDe=where[1])
-    values.update(nFindings=str(len(sevs)), nBlocker=str(sevs.count('blocker')), nOptional=str(sevs.count('optional')),
-                  nNit=str(sevs.count('nit')), nFyi=str(sevs.count('fyi')), verdictClass='fail' if blockers else 'ok')
+    values.update(nFindings=str(len(sevs)), nBlocking=str(sevs.count('blocking')),
+                  nNonBlocking=str(sevs.count('non-blocking')), verdictClass='fail' if blockers else 'ok')
     keys = [k for k, _ in CATEGORIES]
     for f in spec['findings']:
         if f['category'] not in keys:
             fail('%s: category %r is not one of %s' % (f['id'], f['category'], ', '.join(keys)))
+    kinds = [k for k in KINDS if any(f.get('kind') == k for f in spec['findings'])]
+    page = page.replace('        <!-- kindchips: generated by assemble.py from the findings\' kinds -->\n', ''.join(
+        '        <button type="button" class="chip" data-filter="kind" data-value="%s" aria-pressed="false">%s</button>\n'
+        % (k, k) for k in kinds))
     used = [(k, label) for k, label in CATEGORIES if any(f['category'] == k for f in spec['findings'])]
     chips = ''.join('        <button type="button" class="chip" data-filter="category" data-value="%s" aria-pressed="false">%s</button>\n'
                     % (k, lang_pair(label)) for k, label in used)
@@ -1437,7 +1552,7 @@ def fill_template(spec, data, diff, blockers):
     page = page.replace('{{stateLabel}}', lang_pair(state_label))
     page = page.replace('{{stateValue}}', state_value(meta, mr_base, suffix))
     page = page.replace('{{linesChanged}}', lines_changed(meta.get('lines')))
-    page = page.replace('{{categoryLegend}}', category_legend())
+    page = page.replace('{{categoryLegend}}', category_legend()).replace('{{kindLegend}}', kind_legend())
     page = page.replace('{{verdictLine}}', verdict_line(str((spec.get('verdict') or {}).get('word', ''))))
     ticket_row = '    <div><dt>Ticket</dt><dd>%s</dd></div>\n' % link_tickets(html.escape(ticket), ticket, base) if ticket else ''
     page = page.replace('    <!-- ticket row: assemble.py writes it when meta.ticket is set -->\n', ticket_row, 1)
@@ -1461,6 +1576,8 @@ def fill_template(spec, data, diff, blockers):
         page = re.sub(r'[ \t]*<p class="effort">\{\{effortLine\}\}</p>\n', '', page, count=1)
         if 'effort' not in meta:
             notes.append('meta.effort missing (a run older than the effort line): 4.2 shows no runs and time')
+    # filled once the 3.4 fragment is read (main)
+    page = page.replace('{{reviewComment}}', REVIEW_COMMENT_MARK)
     for left in re.findall(r'\{\{\w+\}\}', page):
         fail('template placeholder left unfilled: ' + left)
     return page, len(links), notes
@@ -1655,7 +1772,7 @@ def main():
     if spec is None:
         return result('assemble.py stopped: findings.json is needed for every check')
     if not complete_findings(spec):
-        return result('assemble.py stopped: every finding needs an id, a sev, a category and a package')
+        return result('assemble.py stopped: every finding needs an id, a sev, a kind, a category and a package')
     blockers = check_spec(spec)
 
     data_json = d / 'data.json'
@@ -1694,6 +1811,7 @@ def main():
     tokens['data'] = 'var findings = %s;\n' % script_json_lines(data)
 
     known = [f.get('id') for f in spec['findings']]
+    points = {}
     abstract = str((spec.get('meta') or {}).get('date', '')) >= VERDICT_SHORT_SINCE
     word = (spec.get('verdict') or {}).get('word', '')
     for name in SLOTS:
@@ -1720,12 +1838,16 @@ def main():
             if abstract:
                 check_summary(root)
             frag += unchecked_line(spec['findings'])
+        if name == 'good' and root:
+            check_good(root)
+            points = good_points(root)
         if name == 'method' and root:
             check_method_cold_read(root, spec)
             check_method_withdrawn(root, spec)
         frag = link_text(frag, set(known), str((spec.get('meta') or {}).get('ticket') or '').strip(),
                          ticket_base(spec.get('meta')))
         tokens[name] = frag
+    page = page.replace(REVIEW_COMMENT_MARK, review_comment(spec, points))
     tokenized = page
     page = re.sub(r'\x00slot:(\w+)\x00', lambda m: tokens.get(m.group(1), ''), page)
     toc = '  ' + build_toc(page)
@@ -1753,7 +1875,7 @@ def main():
     out.write_text(page)
     sevs = [f.get('sev') for f in spec['findings']]
     print('wrote %s: %d findings (%s), %d slots, de/en blocks %d/%d, %d GitLab links' % (
-        out, len(sevs), ', '.join('%s %d' % (s, sevs.count(s)) for s in SEVS), len(SLOTS), de, en, n_links))
+        out, len(sevs), ', '.join('%s %d' % (s, sevs.count(s)) for s in SEVERITIES), len(SLOTS), de, en, n_links))
     for n, line in enumerate(page.split('\n'), 1):
         size = len(line.encode('utf-8'))
         if size > READ_PART_BYTES:

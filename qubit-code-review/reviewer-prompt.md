@@ -69,7 +69,7 @@ they tell an agent to read apply too. A finding that rests on a rule quotes
 the rule and names its file. A rule that protects a boundary, an invariant
 or the structure (model imports through the barrel, dependency placement)
 is judged as reason (a) when it can be triggered, else (c); a style rule
-(semicolons, braces, naming) is a Nit. A rule in a code comment is judged
+(semicolons, braces, naming) is non-blocking, a `nitpick`. A rule in a code comment is judged
 like one in an instruction file. Performance and UX block only through (a).
 A rule from the design guidance counts as a style rule unless the guidance
 marks it mandatory. The
@@ -140,7 +140,7 @@ change, and try to break it.
   Name the sequence and the wrong result.">
 
 Severity, by what the finding means for the merge:
-- Blocker: the merge waits for it. Name the reason: the check that proves the
+- blocking (a Blocker): the merge waits for it. Name the reason: the check that proves the
   Blocker. The category says what you checked; the reason says how the Blocker
   is proven, so a Tests finding can have reason (a).
   (a) a defect that can be triggered in live use of the subject: either a
@@ -176,20 +176,21 @@ Severity, by what the finding means for the merge:
   infrastructure version, a migration or another release that must
   come first) counts as follows: if the description, the repository's
   docs or the ticket declare the precondition, live use means it is
-  met, and the finding is an FYI whose follow-up names the
+  met, and the finding is non-blocking, a `chore` whose text names the
   precondition for the release; if none of them does, live use is
   today's setup, and the failure is judged as it is.
   For (a): a broken intent is a Blocker whatever its harm, because the
   change claims what it does not do; quote the intent from the code, a
   comment, a test name, a commit message, the description or an ADR, never
   infer it; a limitation the author declared is no broken intent; a comment,
-  a doc or a test is no mechanism (Nit, (d) or Optional). For a gap, follow
+  a doc or a test is no mechanism (non-blocking, or (d)). For a gap, follow
   the trigger to the first wrong result, through shared resources (memory,
   a store, connections, queues, quotas: who else uses it, what happens at
   its limit); "an attacker could do that anyway" counts only at the same
   cost and the same effect. Fix effort never sets the severity.
   For (c): one broken boundary or inverted dependency is enough; only what
-  the change introduces or makes worse (an old problem it touches is FYI);
+  the change introduces or makes worse (an old problem it touches is a
+  non-blocking `issue` whose text says it existed before);
   an enforced invariant counts like a rule in a comment, whether or not a
   live path triggers it today, but only if all data and values met it
   before the change; an owned invariant is what the module exists
@@ -201,8 +202,8 @@ Severity, by what the finding means for the merge:
   consistent) breaks nothing; a consumer that merely reads a field
   enforces
   nothing; a broken existing test counts whether or not a pipeline runs
-  it, a test that already failed before the change is FYI, and a weak or
-  missing test is judged under (d) or Optional;
+  it, a test that already failed before the change is non-blocking, and a
+  weak or missing test is judged under (d), else non-blocking;
   without an ADR, the dominant pattern in the touched package is the
   architecture, and following it is no Blocker; name the concrete cost
   (which future change gets harder, or what a reader will misunderstand);
@@ -217,26 +218,42 @@ Severity, by what the finding means for the merge:
   that value. When the change routes its new case through a mechanism
   that at the merge base already rewrites the same field of a stored
   document after the save (quote it at the merge base), this reason does
-  not apply to the change: the finding is FYI with a follow-up ticket for
+  not apply to the change: the finding is a non-blocking `issue` about
   that mechanism that names the new case, since fixing it here would grow
   the scope; a copy of that pattern at a new place is the change's own. A
   defect the new case causes on a live path keeps its own reason (a).
   For (d): a new feature without any test is a Blocker; a bug fix without a
-  regression test is Optional; a refactor, config, deploy or docs-only
+  regression test is non-blocking; a refactor, config, deploy or docs-only
   change needs no new test, only the existing tests must pass. Any test
   type counts (unit, integration, e2e) if it covers the feature's
   behaviour; not every file needs one. A test that cannot fail counts as no
-  test: Blocker if it is the feature's only test, Optional otherwise.
+  test: blocking if it is the feature's only test, non-blocking otherwise.
   Personal or health data that reaches a person or place it must not (logs,
   URLs, error responses, analytics, another tenant): (a) when it happens in
   live use, (b) when an attacker has to act first; a committed secret is (b).
   Intent comes from the description (MR text, else commit messages and the
   request); the ticket is background: ticket vs. code is at most an open
-  question or FYI.
-- Optional: a change to behaviour, tests, coverage or structure, with no
-  failure in live use: additional tests, a missing case in present tests.
-- Nit: a change to wording only: names by convention, comments, docs wording.
-- FYI: no change in this subject; worth a follow-up ticket.
+  question or a non-blocking `note`.
+- possibly-blocking: a Blocker reason may hold, but it hangs on something you
+  could not settle (is the trigger reachable in live use, is it intended).
+  Name the reason and what is open. In doubt between blocking or
+  non-blocking and this, propose this: an investigator decides.
+- non-blocking: no Blocker reason holds. Whatever it asks for (a fix, a
+  better way, a wording, nothing) is its kind, not its severity.
+
+Kind, by what someone has to do (a proposal; the orchestrator decides it
+after the severity). Must someone act, and where?
+- in the subject: `issue` (something is wrong or missing, a missing test
+  included; also a problem that existed before the change), `suggestion`
+  (it works and is complete, another way would be better), `nitpick`
+  (wording only: names by convention, comments, docs wording);
+- outside the repository: `chore` (the code is right, but someone must act:
+  an infrastructure update, a migration in production, a release order, a
+  secret, a feature flag after the rollout); what can be fixed in the
+  repository is an `issue`;
+- the author must decide first: `question`;
+- nobody: `note` (information only).
+A `suggestion`, a `nitpick` and a `note` are never blocking.
 
 <Whole-review form, for core and lane reviewers and foreign whole-subject runs:>
 Your task: a thorough review. Look for the focus of your depth and of every
@@ -273,7 +290,7 @@ the change carefully):
 11. The change breaks a rule that a comment in a touched file states
     (CAUTION, "keep in sync with X", "must agree with", "do not Y"): reason
     (a) when it can be triggered; else (c) when it protects a boundary or an
-    invariant; a style rule is a Nit. Quote the comment.
+    invariant; a style rule is non-blocking. Quote the comment.
 12. New code the description calls switched off but that users already
     reach: a feature flag on by default or in a supported setup
     (feature-testing, demo), a route or entry point already linked. Name the
@@ -356,8 +373,8 @@ standard adds (what one sees by following one path through the changed code):
   to the next.
 - UI changes against the design guidance (frontend subjects only).
 - Docs and comments: updated where behaviour changed; comments explain why,
-  not what (Nit or Optional, never Blocker).
-- Convention rules and convention naming, as Style; a style rule is a Nit,
+  not what (non-blocking, never a Blocker).
+- Convention rules and convention naming, as Style; a style rule is non-blocking,
   a boundary rule is (c) (Conventions, above).
 
 deep adds (what one only sees from outside the diff, one lens each):
@@ -384,8 +401,9 @@ yet, per subject type>)
 
 # Findings
 ## F<n>: <short title>
-- Severity: Blocker | Optional | Nit | FYI
-- Blocker reason: (a) | (b) | (c) | (d) (Blocker only)
+- Severity: blocking | possibly-blocking | non-blocking
+- Blocker reason: (a) | (b) | (c) | (d) (blocking and possibly-blocking only; for possibly-blocking also what is open)
+- Kind: issue | question | chore | suggestion | nitpick | note
 - Category: Functionality | Architecture | Design | Security | Ops | Performance | UX | Tests | Docs | Style
 - Package: <package | module or file group, per subject type>
 - Location: <repo-relative path>:<line> (one or more)
@@ -541,13 +559,21 @@ named one when it applies, else the one that does; NONE when no design
 choice is behind it. A name a developer can look up, never one you form.
 (The report keeps it only for an Architecture or Design finding.)
 
-# Final label
-Blocker | Optional | Nit | FYI, then one sentence why, against the severity
-definitions above. A Blocker reason that does not hold names the label the
-claim deserves. A claim that rests on a rule whose condition does not hold
+# Final severity
+blocking | non-blocking, then one sentence why, against the severity scale
+above; possibly-blocking is no answer here: decide. A Blocker reason that
+does not hold ends in non-blocking. When only the author can say whether
+the behaviour is intended and one plausible answer is a Blocker, it is
+blocking. A claim that rests on a rule whose condition does not hold
 is REFUTED only when what it describes is untrue too; when that still
 stands (a term without a definition, a list written twice), it is
-CONFIRMED with the label the description earns without the rule.
+CONFIRMED with the severity the description earns without the rule.
+
+# Kind facts
+- Missing: YES | NO (something the subject needs is absent: a test, a case, a check)
+- Wording only: YES | NO (names, comments, docs wording; nothing else changes)
+- Outside the repository: YES | NO (the code is right; someone must act elsewhere: infrastructure, a migration in production, a release order)
+- Author decides: YES | NO (only the author can say whether it is intended)
 
 # Side findings
 (what you saw while checking that is wrong but not part of this claim: one
@@ -558,11 +584,12 @@ the single line `None.`)
 
 Batch (where the check table in SKILL.md §4 sends a candidate to a batch;
 every other check uses the single investigator variant with the same
-question and final label): at most 8 claims, mostly from the same file,
+question and final severity): at most 8 claims, mostly from the same file,
 numbered by id. Each claim carries its
-question (the four questions of the promotion check), the labels the
-sources gave and the principle a source named. The output block, principle
-and final label included, repeats once per claim,
+question (does a Blocker reason hold, and does this change create the
+trigger or make it reachable?), the severities and kinds the sources
+proposed and the principle a source named. The output block, principle,
+final severity and kind facts included, repeats once per claim,
 headed by the id; `# Side findings` comes once, after the last claim.
 
 Severity rater (`deep`, one run per foreign tool, once after consolidation;
@@ -581,7 +608,7 @@ Output format (Markdown, English), exactly, one block per claim:
 ## <id>
 - Holds: YES | NO | UNCLEAR
 - Blocker reason holds: (a) | (b) | (c) | (d) | NONE, with the evidence
-- Severity: Blocker | Optional | Nit | FYI
+- Severity: blocking | possibly-blocking | non-blocking
 - Evidence: file:line
 ```
 

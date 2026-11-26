@@ -84,12 +84,15 @@ platform's CLI (`glab` for GitLab, `gh` for GitHub) and say so in the list.
   anchor) or two findings match by place: the candidate whose comment text
   (`text[0]` or `text[1]`, without the prefix) the note contains in
   substance. Still none or still two: the thread has no finding.
-- **Severity** comes from the note's prefix, since the comment is the
-  measure: `**Optional:**`, `**Nit:**`, `**FYI:**`, none for a Blocker.
+- **Severity and kind** come from the note's prefix, since the comment is
+  the measure: `**<label> (<decoration>):**` ([gitlab-comments.md](gitlab-comments.md),
+  Labels), e.g. `**issue (blocking):**` is a blocking `issue`. A note
+  without such a prefix (posted before the convention, or edited) has an
+  unknown severity: the list names it as such, and the user decides.
 - **Not posted.** Findings without a thread are named in one line of the
   list, with their severities; they are not checked.
 - Record each match in `$SP/state/rereview.json` as it is made (thread id,
-  first note id, finding id, severity, whether someone else resolved it), so
+  first note id, finding id, severity, kind, whether someone else resolved it), so
   a compaction loses nothing.
 
 ## 4. Check, in parallel
@@ -189,12 +192,12 @@ Settled
 - F7 <title>
 
 Open or to clarify
-- [F2 · Blocker · open](<note link>): <what is missing, one or two sentences>.
+- [F2 · issue (blocking) · open](<note link>): <what is missing, one or two sentences>.
   Author: "<the reply, shortened>". <"Resolved by the author." when so>
   Reply draft: "<draft>"
 - …
 
-Not posted: F5 (Blocker), F9 (Optional)
+Not posted: F5 (issue, blocking), F9 (suggestion, non-blocking)
 New in the fix, not checked: <side finding, file:line>
 
 Verdict: mergeable | not mergeable (<reason>) · CI: <status> · Conflicts: none | yes
@@ -204,12 +207,12 @@ Verdict: mergeable | not mergeable (<reason>) · CI: <status> · Conflicts: none
   no link, no reason. FIXED threads, and ANSWER HOLDS threads that are no
   Blocker.
 - **Open or to clarify**: each with the link to its note and the details.
-  OPEN and CLARIFY threads; a Blocker whose result is ANSWER HOLDS (it
+  OPEN and CLARIFY threads; a blocking thread whose result is ANSWER HOLDS (it
   settles on the author's word, so the user sees it); a DIFFERS thread and a
   thread without a finding ("comment and finding differ: update the finding,
   then re-review"); a thread whose checker failed for good ("not checked").
   Blockers first.
-- **Verdict**: mergeable when every Blocker thread is FIXED or ANSWER HOLDS,
+- **Verdict**: mergeable when every blocking thread is FIXED or ANSWER HOLDS,
   the pipeline passed (or there is none) and there are no conflicts; a
   Blocker that is settled only by ANSWER HOLDS reads "mergeable once the
   answer on F<n> is accepted". Anything else is not mergeable, with each
@@ -237,6 +240,6 @@ approval, no merge.
 before the question and updated after the calls: `{"reviewed": "<sha>",
 "head": "<sha>", "date": "YYYY-MM-DD", "verdict": "<word and reasons>",
 "threads": [{"discussion": "<id>", "note": <id>, "finding": "F<n>" | null,
-"severity": "…", "result": "…", "resolved": true | false, "replied": true |
+"severity": "…", "kind": "…", "result": "…", "resolved": true | false, "replied": true |
 false}]}`. It stays beside `report/`, never inside it. A second re-review at
 the same head overwrites it.

@@ -4,9 +4,40 @@ For a branch, MR or PR, every finding gets the comment a team member will post
 on the MR: the finding's `gitlab` field (format in
 [report-sections.md](report-sections.md)). The findings writer writes it in
 step 6, from the settled finding in `findings.json`, after its severity is set.
-Posting happens only when asked. The renderer adds the severity prefix
-(`**Nit:**`, `**Optional:**`, `**FYI:**`; a Blocker none), so a reader can skip
-Nits.
+Posting happens only when asked. The renderer adds the prefix from the
+finding's kind and severity (`**issue (blocking):**`,
+`**nitpick (non-blocking):**`; Labels, below), so a reader sees at once what
+holds the merge and what can be skipped.
+
+## Labels
+
+The comments follow [Conventional Comments](https://conventionalcomments.org):
+`**<label> (<decoration>):** <subject>`, then the discussion. This section
+and the two maps in the template are the convention's only place: the
+review decides severity and kind (SKILL.md §4), and a change of convention
+changes only the maps below and the renderer's `LABEL` and `DECORATION` in
+`review-report-template.html`; `test_assemble.py` keeps them the same.
+Conventional Comments labels a comment; the skill labels a finding, and
+each of its comments carries the finding's label.
+
+| Kind | Label |
+| --- | --- |
+| `issue` | `issue` |
+| `question` | `question` |
+| `chore` | `chore` |
+| `suggestion` | `suggestion` |
+| `nitpick` | `nitpick` |
+| `note` | `note` |
+
+| Severity | Decoration |
+| --- | --- |
+| `blocking` | `blocking` |
+| `non-blocking` | `non-blocking` |
+
+The prefix always carries the decoration, and it stays English in the
+German text too: label and decoration are the convention's keywords, and a
+re-review reads them back ([re-review.md](re-review.md)). `text` never
+starts with a prefix; `assemble.py` fails one that does.
 
 ## Where it goes
 
@@ -58,16 +89,31 @@ reads it), and the German gender of a loanword (das Literal, das Array).
 
 The comment is generated, not written by the person who posts it, so it
 describes and never speaks for anyone, in either language. Short, precise,
-on point and neutral: the code is the subject of every sentence ("`x` resets
-…", "The route responds …"; "`x` setzt … zurück", "Die Route antwortet …").
+on point and neutral: the code is the subject of every sentence that
+describes it ("`x` resets …", "The route responds …"; "`x` setzt … zurück",
+"Die Route antwortet …"); the change a `suggestion`, a `chore` or a
+`nitpick` names, and the change after `Suggestion:`, is an infinitive
+("Read the limit from …"; DE "Das Limit aus … lesen"), never an address.
 No word addresses the reader or includes the writer (the forbidden words in
-"Check before publishing"). The renderer adds the prefix from the severity,
-after Google's code review guide and GitLab's own: a Blocker stays unlabeled (an unlabeled comment is a
-required change), an Optional gets `**Optional:**`, a Nit `**Nit:**`, an FYI `**FYI:**`. `text`
-starts directly with the finding.
+"Check before publishing"). The renderer adds the prefix (Labels, above);
+`text` starts directly with the subject.
 
-A comment is these parts, in this order, 100 words at most in all (code
-blocks do not count):
+The parts follow the kind. Each starts with its subject, the point in one
+sentence, then the discussion:
+
+| Kind | Subject | Then |
+| --- | --- | --- |
+| `issue` | the finding: what goes wrong | the effect, then `Suggestion:` or `Question:` (the parts below) |
+| `suggestion` | the improvement itself ("Read the limit from `config.maxRetries`.") | its benefit, one sentence |
+| `question` | the question, ending in "?" | its basis: what in the code or the description raises it |
+| `chore` | the step outside the repository ("Update Redis to 7.2 before this release.") | why: what fails without it |
+| `nitpick` | the change ("`cnt` → `count`.") | nothing, or the rule it follows |
+| `note` | the information | nothing |
+
+`Suggestion:` (DE `Vorschlag:`) stands only in an `issue`: there it marks
+the way out after the problem, while a `suggestion` is the way out itself.
+100 words at most in all (code blocks do not count). An `issue` is these
+parts, in this order:
 
 1. **Finding** (DE Befund): what the commented code does and where that
    goes wrong, the identifier in backticks; where the cause lies in another
@@ -90,7 +136,7 @@ blocks do not count):
    already happened with `LANG=en`."; DE "Auf dem Zielbranch trat das
    bereits mit `LANG=en` auf."), so the author sees that the fix covers those cases too.
 2. **Effect** (DE Folge), one sentence: the concrete case in which it goes
-   wrong and what then happens. For an Optional, that case is when it starts
+   wrong and what then happens. For a non-blocking issue, that case is when it starts
    to hurt: "Once `X` is enabled, …" (DE "Sobald `X` aktiv ist, …").
    A finding with `triggers` (two or more) has a list here instead: a blank
    line, then one line per trigger, each starting with "- ", the case and
@@ -103,11 +149,13 @@ blocks do not count):
    finding another one removes names that change as the alternative ("the
    error disappears when the planned timer is replaced by the 30 s
    `setInterval`"). Never a finding id, never "see the other comment": the
-   author reads each comment alone. When the
-   change only rewords the commented lines (a comment, docs, a string) and
-   replaces them exactly, a GitLab `suggestion` block instead of the
-   sentence; on a range it holds every line from `startLine` to `endLine`.
-   A change to code logic is always a sentence.
+   author reads each comment alone. The change is a sentence, or a plain
+   example code block (```` ```ts ````) the author checks and adapts. A GitLab
+   `suggestion` block, which the author can apply with one click, only when
+   the change is tiny and certain and only rewords the commented lines (a
+   comment, docs, a string, a `nitpick`) and replaces them exactly; on a
+   range it holds every line from `startLine` to `endLine`. A change to code
+   logic is never a `suggestion` block.
    A finding with `fixLeaves` adds one sentence after the suggestion: the
    cases the change leaves ("The login page keeps the browser language.").
    A finding with `options` or `fixOpen` has **`Question:`** (DE
@@ -122,7 +170,9 @@ blocks do not count):
    removes the other error. With `fixOpen`, one question on what is open,
    from `fixOpen`. These two labels, `Suggestion:` (always one fix) and
    `Question:`, are the only ones of this part; they name its content, not
-   the severity.
+   the severity. An `issue` with an open fix stays an `issue`: the problem
+   is certain, only the way out is open. A `question` is one where only the
+   author can say whether there is a problem at all.
 
 The comment uses the author's words, so the author understands it without
 the report. Every noun that names a thing of the code or the domain is one
@@ -171,18 +221,17 @@ suggested change is the right one: with one trigger named, the author can
 fix that case and close the thread. The trigger lines count towards the 100
 words. Further callers, numbers, second effects of one trigger and
 alternatives stay in the report. Every identifier and path in
-backticks. A finding no investigator could settle (`unchecked`) is a question
-instead: the observed fact, then one sentence starting with "Why" or
-"Should" (DE "Warum" or "Sollte").
+backticks. The comment of a finding no investigator could settle
+(`unchecked`) asks instead of stating: the observed fact, then one sentence
+starting with "Why" or "Should" (DE "Warum" or "Sollte"); its kind and
+severity, and so its prefix, stay as decided.
 
-An FYI comment has no `Suggestion:`; its last part is the follow-up, which
-the renderer writes as `Follow-up ticket: <key>` (DE `Folgeticket: <key>`)
-from the finding's `followUp`.
-Until the ticket exists, the report withholds the comment from copying.
+A finding with `tickets` gets `Ticket: <keys>` as the comment's last line,
+which the renderer appends; the writer never writes it.
 
 ## Example
 
-A Blocker, so the renderer adds no prefix:
+A blocking `issue`, posted as `**issue (blocking):** ` and the text:
 
 ```text
 `retryCount` is reset to `0` in the `catch` instead of incremented. If the target server stays unreachable, the loop in `sendWithRetry` never ends and blocks the queue.
@@ -196,7 +245,7 @@ Suggestion: increment `retryCount` in the `catch` and stop at `MAX_RETRIES`.
 Vorschlag: `retryCount` im `catch` erhöhen und ab `MAX_RETRIES` abbrechen.
 ```
 
-A Design Blocker with two `triggers` and a `principle`; the principle is the
+A blocking Design `issue` with two `triggers` and a `principle`; the principle is the
 reason inside the first sentence:
 
 ```text
@@ -217,6 +266,28 @@ Suggestion: drop `openSeats` and count the bookings of the course when it is rea
 Vorschlag: `openSeats` entfernen und die Buchungen des Kurses beim Lesen zählen.
 ```
 
+A non-blocking `suggestion`, posted as `**suggestion (non-blocking):** ` and the text;
+the subject is the improvement, no `Suggestion:`:
+
+```text
+Read the retry limit from `config.maxRetries` instead of the literal `3` in `sendWithRetry`. The queue's other senders already take it from there, so one setting tunes all of them.
+```
+
+```text
+Das Retry-Limit aus `config.maxRetries` lesen statt aus dem Literal `3` in `sendWithRetry`. Die anderen Sender der Queue nehmen es schon von dort, so stellt eine Einstellung alle ein.
+```
+
+A non-blocking `nitpick` on a comment line, a tiny and certain rewording, so a
+GitLab `suggestion` block:
+
+````text
+The comment names the old limit.
+
+```suggestion
+// retries up to MAX_RETRIES times, then gives up
+```
+````
+
 ## Check before publishing
 
 `assemble.py` checks the mechanical rules and fails the report: `line` and
@@ -224,8 +295,10 @@ Vorschlag: `openSeats` entfernen und die Buchungen des Kurses beim Lesen zählen
 `startLine` and on a `line` comment only, the place fields each anchor needs, at most two entries, the word limit,
 forbidden words, finding ids and tool names. For a finding with `triggers`,
 each language has one "- " line per trigger, three at most, and the trigger
-lines count towards the word limit. A finding with `options` or `fixOpen`
-has `Question:` (DE `Frage:`) in each language and no `Suggestion:`. With GitLab comments, `notes.coldRead`
+lines count towards the word limit. No text starts with a prefix
+(`**…:**`). `Suggestion:` (DE `Vorschlag:`) stands only in an `issue`; an
+`issue` with `options` or `fixOpen` has `Question:` (DE `Frage:`) in each
+language and no `Suggestion:`. With GitLab comments, `notes.coldRead`
 records the cold read (below), its counts adding up. The forbidden words, as whole
 words:
 

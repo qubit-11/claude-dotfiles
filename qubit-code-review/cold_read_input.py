@@ -9,7 +9,7 @@ once the reader's English notes <SP>/state/<name>-en.md exist and are not empty.
 <name> defaults to cold-read. --since <name> keeps only the comments whose text that round's labels file does not
 hold, compared by text, so a card dropped since then shifts no comment back in (the second round,
 gitlab-comments.md, Cold read). Labels are C1, C2, … in data.json
-order and carry no finding id and no severity. The packet holds the place, the code around it (CONTEXT lines before
+order and carry no finding id, no severity and no kind. The packet holds the place, the code around it (CONTEXT lines before
 and after, the commented lines marked; a removed line from the diff's old side) and the text, nothing else.
 Prints the paths written; exit 1 on a missing input, 2 on wrong usage.
 """

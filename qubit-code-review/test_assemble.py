@@ -5,6 +5,7 @@ Each test builds a small valid report directory, changes one thing and runs asse
 """
 import contextlib
 import io
+import html
 import json
 import os
 import re
@@ -64,14 +65,12 @@ def verdict(word_en='not mergeable', word_de='nicht mergebar', ids=('F1',)):
     return para('Text %s.' % named, 'Text %s.' % named)
 
 
-def finding(fid='F1', sev='blocker', **kw):
-    f = {'id': fid, 'sev': sev, 'category': 'functionality', 'package': 'server', 'file': 'src/a.ts:11',
-         'what': 'What happens.', 'why': 'Why it matters.', 'fix': 'The fix.', 'verify': 'Checked inline.',
-         'sources': ['core'], 'check': 'inline' if sev == 'nit' else 'investigator'}
-    if sev == 'nit':
+def finding(fid='F1', sev='blocking', kind='issue', **kw):
+    f = {'id': fid, 'sev': sev, 'kind': kind, 'proposed': sev, 'category': 'functionality', 'package': 'server',
+         'file': 'src/a.ts:11', 'what': 'What happens.', 'why': 'Why it matters.', 'fix': 'The fix.',
+         'verify': 'Checked.', 'sources': ['core'], 'check': 'investigator'}
+    if kind == 'nitpick':
         f['category'] = 'style'
-    if sev in ('optional', 'fyi'):
-        f['followUp'] = {'title': 'Follow-up title', 'key': None}
     f.update(kw)
     return f
 
@@ -84,13 +83,20 @@ def card(f, gitlab=None):
     fields['verify']['more'] = ['Read `src/a.ts:11` again.', '`src/a.ts:11` erneut gelesen.']
     if isinstance(f.get('principle'), str) and f['principle'].strip():
         fields['what']['text'] = ['Card what, against %s.' % f['principle'], 'Karte what, gegen %s.' % f['principle']]
-    c = {'id': f['id'], 'sev': f['sev'], 'category': f['category'], 'package': f['package'], 'file': f['file'],
-         't': ['Title', 'Titel'], 'fields': fields}
-    if 'followUp' in f:
-        c['followUp'] = dict(f['followUp'])
+    c = {'id': f['id'], 'sev': f['sev'], 'kind': f['kind'], 'category': f['category'], 'package': f['package'],
+         'file': f['file'], 't': ['Title', 'Titel'], 'fields': fields}
+    if 'tickets' in f:
+        c['tickets'] = list(f['tickets'])
     if gitlab is not None:
         c['gitlab'] = gitlab
     return c
+
+
+def comment_for(f):
+    """The default comment of a finding: an issue states the problem and a Suggestion, any other kind its point."""
+    if f.get('kind', 'issue') == 'issue':
+        return comment()
+    return comment(en='Name `x` after what it counts, e.g. `retries`.', de='`x` nach dem benennen, was es zählt, z. B. `retries`.')
 
 
 def comment(path='src/a.ts', startLine=11, anchor='line', en='`x` resets the counter. The loop never ends.\n\nSuggestion: increment `x`.',
@@ -206,7 +212,7 @@ class Report:
         self.spec['findings'] = self.findings
         if self.data is None:
             cards = self.cards if self.cards is not None else [
-                card(f, [comment()] if self.spec.get('gitlab') else None) for f in self.findings]
+                card(f, [comment_for(f)] if self.spec.get('gitlab') else None) for f in self.findings]
             raw = json.dumps(cards, ensure_ascii=False)
         else:
             raw = self.data
@@ -270,7 +276,7 @@ class AssembleTest(unittest.TestCase):
         self.assertIn('{{customerName}}', self.p.page)
 
     def test_interpolation_in_fragment_survives(self):
-        self.p.frags['good'] = twin('<p>Binds {{date}}.</p>', '<p>Bindet {{date}}.</p>')
+        self.p.frags['questions'] = twin('<p>Binds {{date}}.</p>', '<p>Bindet {{date}}.</p>')
         self.ok()
         self.assertIn('Binds {{date}}.', self.p.page)
 
@@ -336,12 +342,12 @@ class AssembleTest(unittest.TestCase):
 
     def test_slot_over_a_part_is_cut_and_restores(self):
         big = '<ul>\n%s\n</ul>' % '\n'.join('<li>Item %d %s.</li>' % (i, 'word ' * 40) for i in range(1000))
-        self.p.frags['good'] = twin(big, '<ul><li>Gut.</li></ul>')
+        self.p.frags['questions'] = twin(big, '<ul><li>Gut.</li></ul>')
         self.ok()
         files = self.publish_files()
-        self.assertIn('slots/good-1.js', files)
-        self.assertIn('slots/good-2.js', files)
-        self.assertNotIn('slots/good.js', files)
+        self.assertIn('slots/questions-1.js', files)
+        self.assertIn('slots/questions-2.js', files)
+        self.assertNotIn('slots/questions.js', files)
         self.assertEqual(restore_split(self.p.dir / 'publish'), self.p.page)
         pub = self.p.dir / 'publish'
         for f in files:
@@ -349,12 +355,47 @@ class AssembleTest(unittest.TestCase):
         # the parts run in order and insert the whole slot once, at the last part
         probe = ("var inserted = []; global.window = global; global.document = {currentScript: {insertAdjacentHTML: "
                  "function (w, h) { inserted.push(h); }}};\n")
-        js = probe + ''.join((pub / f).read_text() for f in ['slots/good-1.js', 'slots/good-2.js']) + \
+        js = probe + ''.join((pub / f).read_text() for f in ['slots/questions-1.js', 'slots/questions-2.js']) + \
             '\nprocess.stdout.write(JSON.stringify(inserted));'
         run = subprocess.run([NODE, '-e', js], capture_output=True, text=True)
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(len(json.loads(run.stdout)), 1)
         self.assertIn('Item 999', json.loads(run.stdout)[0])
+
+    # 3.4 and the closing review comment
+    def test_good_is_a_short_list(self):
+        four = ''.join('<li>Point %d.</li>' % i for i in range(4))
+        long = '<li>%s</li>' % ' '.join(['word'] * 21)
+        for en, want in [('<ul>%s</ul>' % four, 'good.html: the en list has 4 points, 1 to 3'),
+                         ('<ul>%s</ul>' % long, 'good.html: a en point has 21 words, at most 20'),
+                         ('<p>Good.</p>', 'good.html: "What works well" is a list only'),
+                         ('<ul></ul>', 'good.html: the en list has 0 points')]:
+            with self.subTest(want=want):
+                self.tearDown()
+                self.setUp()
+                self.p.frags['good'] = twin(en, '<ul><li>Gut.</li></ul>')
+                self.fails(want)
+
+    def test_review_comment_closes_3_5(self):
+        self.p.findings = [finding(), finding('F2', sev='non-blocking', kind='nitpick')]
+        self.p.frags['good'] = twin('<ul><li>The retry is <code>bounded</code>.</li><li>Tests cover it.</li></ul>',
+                                    '<ul><li>Der Retry ist begrenzt.</li><li>Tests decken es ab.</li></ul>')
+        self.ok()
+        en = ('**Not mergeable.** 1 blocking, 1 non-blocking findings.\n\nWhat works well:\n'
+              '- The retry is `bounded`.\n- Tests cover it.')
+        de = ('**Nicht mergebar.** 1 blocking, 1 non-blocking Findings.\n\nWas gut funktioniert:\n'
+              '- Der Retry ist begrenzt.\n- Tests decken es ab.')
+        self.assertIn('data-copy="%s"' % html.escape(en), self.p.page)
+        self.assertIn('data-copy="%s"' % html.escape(de), self.p.page)
+        self.assertLess(self.p.page.index('id="gitlab-empty"'), self.p.page.index('class="glc-review"'))
+
+    def test_no_review_comment_without_gitlab(self):
+        self.p.spec['meta']['subjectType'] = 'files'
+        self.p.spec['gitlab'] = False
+        self.p.spec['verdict'] = {'word': 'not yet', 'openBlockers': ['F1']}
+        self.p.frags['verdict'] = verdict('not yet', 'noch nicht', ids=('F1',))
+        self.ok()
+        self.assertNotIn('class="glc-review"', self.p.page)
 
     # title: name, subject, ticket
     def test_title_has_name_and_ticket(self):
@@ -518,7 +559,7 @@ class AssembleTest(unittest.TestCase):
         del self.p.spec['manual']
         self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
-        self.p.findings = [finding(sev='nit')]
+        self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
         self.p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
         self.ok()
@@ -553,8 +594,8 @@ class AssembleTest(unittest.TestCase):
         self.fails('publish/index.html is')
 
     def test_publish_file_line_over_read_part_fails(self):
-        self.p.frags['good'] = twin('<ul><li>%s</li></ul>' % ('<b class="x">"q"</b>' * 2200), '<ul><li>Gut.</li></ul>')
-        self.fails('publish/slots/good.js line')
+        self.p.frags['questions'] = twin('<ul><li>%s</li></ul>' % ('<b class="x">"q"</b>' * 2200), '<ul><li>Gut.</li></ul>')
+        self.fails('publish/slots/questions.js line')
 
     def test_manual_twins_required(self):
         self.p.manual = manual_json(self.p.spec['manual'])
@@ -592,7 +633,7 @@ class AssembleTest(unittest.TestCase):
         del self.p.spec['manual']
         self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
-        self.p.findings = [finding(sev='nit')]
+        self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
         self.p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
         self.ok()
@@ -706,10 +747,10 @@ class AssembleTest(unittest.TestCase):
         self.fails('F1: a Blocker needs fields.verify.more')
 
     def test_non_blocker_needs_no_details(self):
-        self.p.findings = [finding(sev='nit')]
+        self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
         self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
-        self.p.cards = [card(self.p.findings[0], [comment()])]
+        self.p.cards = [card(self.p.findings[0], [comment_for(self.p.findings[0])])]
         for k in CARD_FIELDS:
             self.p.cards[0]['fields'][k]['more'] = None
         self.ok()
@@ -800,7 +841,7 @@ class AssembleTest(unittest.TestCase):
         self.assertIn('<p data-lang="en">The MR lets customers book again.', self.p.page)
 
     def test_positive_verdict_needs_its_abstract_too(self):
-        self.p.findings = [finding(sev='nit')]
+        self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
         self.p.frags['verdict'] = ''
         self.fails('verdict.html is empty')
@@ -854,7 +895,7 @@ class AssembleTest(unittest.TestCase):
         self.fails('summary.html: the en text has an id range')
 
     def test_summary_line_with_many_ids_fails(self):
-        self.p.findings = [finding()] + [finding('F%d' % i, sev='nit') for i in range(2, 6)]
+        self.p.findings = [finding()] + [finding('F%d' % i, sev='non-blocking', kind='nitpick') for i in range(2, 6)]
         self.p.spec['meta']['date'] = '2026-11-06'
         self.p.frags['verdict'] = para('The MR does not work yet.', 'Der MR funktioniert noch nicht.')
         self.p.frags['summary'] = twin('<ul><li>Nit: wording (F2, F3, F4, F5).</li></ul>', '<ul><li>Nit: Wortlaut.</li></ul>')
@@ -885,7 +926,7 @@ class AssembleTest(unittest.TestCase):
 
     def test_legend_is_a_closed_reference_with_categories(self):
         self.ok()
-        self.assertIn('<details class="legend"><summary><span data-lang="en">What severities and categories mean</span>', self.p.page)
+        self.assertIn('<details class="legend"><summary><span data-lang="en">What severities, kinds and categories mean</span>', self.p.page)
         self.assertIn('<dt><span data-lang="en">Architecture</span><span data-lang="de">Architektur</span></dt><dd><span data-lang="en">'
                       'fit with the rest of the system', self.p.page)
         self.assertNotIn('One consolidated list', self.p.page)
@@ -903,7 +944,7 @@ class AssembleTest(unittest.TestCase):
         self.p.spec['meta']['ticket'] = 'PROJ-1'
         self.ok()
         self.assertIn('var JIRA = {"base": "https://example.atlassian.net/browse/", "project": "PROJ"};', self.p.page)
-        self.assertIn('jira(esc(ticketKey(f)))', self.p.page)
+        self.assertIn("jira(esc(tickets(f).join(', ')))", self.p.page)
 
     def test_no_ticket_no_jira_config(self):
         self.ok()
@@ -964,13 +1005,13 @@ class AssembleTest(unittest.TestCase):
         self.fails('verdict')
 
     def test_positive_verdict_without_blocker_passes(self):
-        self.p.findings = [finding(sev='nit')]
+        self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
         self.p.frags['verdict'] = verdict('mergeable', 'mergebar')
         self.ok()
 
     def test_positive_verdict_with_negative_phrase_elsewhere_passes(self):
-        self.p.findings = [finding(sev='nit')]
+        self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
         self.p.cards = [card(self.p.findings[0])]
@@ -1135,7 +1176,7 @@ class AssembleTest(unittest.TestCase):
     # language twins and required structure
     def test_unpaired_language_blocks_fail_even_when_counts_match(self):
         self.p.frags['questions'] = '<div data-lang="en"><p>Only English.</p></div>'
-        self.p.frags['good'] = '<div data-lang="de"><p>Nur Deutsch.</p></div>'
+        self.p.frags['questions'] = '<div data-lang="de"><p>Nur Deutsch.</p></div>'
         self.fails('twin')
 
     def test_empty_fragment_fails(self):
@@ -1147,7 +1188,7 @@ class AssembleTest(unittest.TestCase):
         self.fails('today')
 
     def test_line_over_one_read_part_fails(self):
-        self.p.frags['good'] = twin('<ul><li>%s</li></ul>' % ('word ' * 10000), '<ul><li>%s</li></ul>' % ('Wort ' * 10000))
+        self.p.frags['questions'] = twin('<ul><li>%s</li></ul>' % ('word ' * 10000), '<ul><li>%s</li></ul>' % ('Wort ' * 10000))
         self.fails('over the 45 KB one Read part holds')
 
     def test_fixed_subsections_come_first(self):
@@ -1221,23 +1262,23 @@ class AssembleTest(unittest.TestCase):
         self.fails('anchor')
 
     def test_id_gap_fails(self):
-        self.p.findings = [finding('F1'), finding('F3', sev='nit')]
+        self.p.findings = [finding('F1'), finding('F3', sev='non-blocking', kind='nitpick')]
         self.fails('F1..F')
 
     def test_withdrawn_gap_after_publish(self):
-        self.p.findings = [finding('F1'), finding('F3', sev='nit')]
+        self.p.findings = [finding('F1'), finding('F3', sev='non-blocking', kind='nitpick')]
         self.p.spec['meta']['published'] = True
         self.fails('F2 is missing')
         self.p.spec['notes']['withdrawn'] = ['F2: refuted by the author after publish']
         self.ok()
 
     def test_severity_order_fails(self):
-        self.p.findings = [finding('F1', sev='nit'), finding('F2')]
+        self.p.findings = [finding('F1', sev='non-blocking', kind='nitpick'), finding('F2')]
         self.p.spec['verdict']['openBlockers'] = ['F2']
         self.fails('order')
 
     def test_regrade_after_publish_keeps_id_and_place(self):
-        self.p.findings = [finding('F1'), finding('F2', sev='nit'), finding('F3')]
+        self.p.findings = [finding('F1'), finding('F2', sev='non-blocking', kind='nitpick'), finding('F3')]
         self.p.spec['verdict']['openBlockers'] = ['F1', 'F3']
         self.p.spec['meta']['published'] = True
         self.ok()
@@ -1269,29 +1310,29 @@ class AssembleTest(unittest.TestCase):
 
     # active content in fragments
     def test_script_in_fragment_fails(self):
-        self.p.frags['good'] = twin('<p>x</p><script src="https://e.example/w.js"></script>', '<p>x</p>')
+        self.p.frags['questions'] = twin('<p>x</p><script src="https://e.example/w.js"></script>', '<p>x</p>')
         self.fails('active content')
 
     def test_event_handler_in_fragment_fails(self):
-        self.p.frags['good'] = twin('<img src="x" onerror="alert(1)">', '<p>x</p>')
+        self.p.frags['questions'] = twin('<img src="x" onerror="alert(1)">', '<p>x</p>')
         self.fails('active content')
 
     def test_javascript_in_prose_passes(self):
-        self.p.frags['good'] = twin('<p><code>javascript:</code> URLs are rejected.</p>', '<p><code>javascript:</code>-URLs werden abgelehnt.</p>')
+        self.p.frags['questions'] = twin('<p><code>javascript:</code> URLs are rejected.</p>', '<p><code>javascript:</code>-URLs werden abgelehnt.</p>')
         self.ok()
 
     def test_javascript_word_in_plain_attributes_passes(self):
         self.p.frags['glossary'] = twin('<dl><dt><abbr title="JavaScript Object Notation">JSON</abbr></dt><dd>x</dd></dl>',
                                         '<dl><dt><abbr title="JavaScript Object Notation">JSON</abbr></dt><dd>x</dd></dl>')
-        self.p.frags['good'] = twin('<p data-term="javascript-bundle">x</p>', '<p data-term="javascript-bundle">x</p>')
+        self.p.frags['questions'] = twin('<p data-term="javascript-bundle">x</p>', '<p data-term="javascript-bundle">x</p>')
         self.ok()
 
     def test_encoded_javascript_link_fails(self):
-        self.p.frags['good'] = twin('<a href="java&#115;cript:alert(1)">x</a>', '<p>x</p>')
+        self.p.frags['questions'] = twin('<a href="java&#115;cript:alert(1)">x</a>', '<p>x</p>')
         self.fails('active content')
 
     def test_style_import_fails(self):
-        self.p.frags['good'] = twin('<style>@import url(https://e.example/x.css);</style><p>x</p>', '<p>x</p>')
+        self.p.frags['questions'] = twin('<style>@import url(https://e.example/x.css);</style><p>x</p>', '<p>x</p>')
         self.fails('active content')
 
     def test_escaped_or_other_css_url_functions_fail(self):
@@ -1308,11 +1349,11 @@ class AssembleTest(unittest.TestCase):
                      '<svg><style>rect{fill:&#117;rl(https://e.example/x.svg#g)}</style><rect/></svg><p>x</p>',
                      '<svg><style>&#64;import "https://e.example/x.css";</style></svg><p>x</p>']:
             with self.subTest(frag=frag):
-                self.p.frags['good'] = twin(frag, '<p>x</p>')
+                self.p.frags['questions'] = twin(frag, '<p>x</p>')
                 self.fails('active content')
 
     def test_css_fragment_reference_and_plain_style_pass(self):
-        self.p.frags['good'] = twin('<svg><path d="M0 0" style="marker-end:url(#arrow)" fill="url(#g)"/></svg><p style="color:red">x</p>'
+        self.p.frags['questions'] = twin('<svg><path d="M0 0" style="marker-end:url(#arrow)" fill="url(#g)"/></svg><p style="color:red">x</p>'
                                     '<style>p { fill: url( "#grad" ) }</style>', '<p>x</p>')
         self.ok()
 
@@ -1360,7 +1401,7 @@ class AssembleTest(unittest.TestCase):
 
     # follow-up is copied, key included
     def test_follow_up_key_must_match(self):
-        self.p.findings = [finding(), finding('F2', sev='fyi', followUp={'title': 'T', 'key': 'PROJ-1'})]
+        self.p.findings = [finding(), finding('F2', sev='non-blocking', kind='note', followUp={'title': 'T', 'key': 'PROJ-1'})]
         cards = [card(self.p.findings[0], [comment()]), card(self.p.findings[1], [comment()])]
         cards[1]['followUp'] = {'title': 'T', 'key': None}
         self.p.cards = cards
@@ -1385,11 +1426,11 @@ class AssembleTest(unittest.TestCase):
         del self.p.findings[0]['category']
         self.p.findings[0]['area'] = 'server'
         self.p.cards = [card(dict(self.p.findings[0], category='functionality'), [comment()])]
-        self.fails('every finding needs an id, a sev, a category and a package')
+        self.fails('every finding needs an id, a sev, a kind, a category and a package')
         self.assertNotIn('Traceback', self.p.out)
 
     def test_category_chips_only_used_in_fixed_order(self):
-        self.p.findings = [finding('F1', category='tests'), finding('F2', 'optional', category='functionality')]
+        self.p.findings = [finding('F1', category='tests'), finding('F2', 'non-blocking', kind='suggestion', category='functionality')]
         self.ok()
         chips = re.findall(r'data-filter="category" data-value="(\w+)"', self.p.page)
         self.assertEqual(chips, ['all', 'functionality', 'tests'])
@@ -1414,11 +1455,19 @@ class AssembleTest(unittest.TestCase):
 
     # one failing case per check of data.json against findings.json
     def test_sev_category_package_file_mismatch_fails(self):
-        for k, v in [('sev', 'nit'), ('category', 'documentation'), ('package', 'other'), ('file', 'src/b.ts:1')]:
+        for k, v in [('sev', 'non-blocking'), ('kind', 'question'), ('category', 'documentation'), ('package', 'other'),
+                     ('file', 'src/b.ts:1')]:
             with self.subTest(k=k):
                 self.p.cards = [card(self.p.findings[0], [comment()])]
                 self.p.cards[0][k] = v
                 self.fails('%s is %r' % (k, v))
+
+    def test_data_json_carries_no_proposed_or_follow_up(self):
+        for k, v in [('proposed', 'blocking'), ('followUp', {'title': 'T', 'key': None})]:
+            with self.subTest(k=k):
+                self.p.cards = [card(self.p.findings[0], [comment()])]
+                self.p.cards[0][k] = v
+                self.fails('F1: data.json carries proposed or followUp')
 
     def test_ids_or_order_differ_fails(self):
         self.p.findings = [finding('F1'), finding('F2')]
@@ -1431,10 +1480,27 @@ class AssembleTest(unittest.TestCase):
         self.p.cards[0]['sources'] = ['core']
         self.fails('carries sources or check')
 
-    def test_follow_up_missing_in_findings_fails(self):
-        self.p.findings = [finding(), finding('F2', sev='fyi')]
-        del self.p.findings[1]['followUp']
-        self.fails('followUp must be {title, key}')
+    def test_follow_up_is_gone(self):
+        self.p.findings = [finding(), finding('F2', sev='non-blocking', kind='note', followUp={'title': 'T', 'key': None})]
+        self.p.spec['verdict']['openBlockers'] = ['F1']
+        self.fails('F2: findings carry no followUp; a ticket that exists goes into tickets')
+
+    def test_tickets_are_jira_keys(self):
+        for bad in ([], ['proj-1'], 'PROJ-1', ['PROJ-1', 'PROJ-1'], [None]):
+            with self.subTest(tickets=bad):
+                self.tearDown()
+                self.setUp()
+                self.p.findings = [finding(tickets=bad)]
+                self.fails('F1: tickets must list Jira keys')
+        self.tearDown()
+        self.setUp()
+        self.p.findings = [finding(tickets=['PROJ-1', 'OPS-22'])]
+        self.ok()
+
+    def test_tickets_in_data_json_match(self):
+        self.p.findings = [finding(tickets=['PROJ-1'])]
+        self.p.cards = [card(dict(self.p.findings[0], tickets=['PROJ-2']), [comment()])]
+        self.fails("F1: tickets is ['PROJ-2'], findings.json says ['PROJ-1']")
 
     def test_missing_meta_key_fails(self):
         del self.p.spec['meta']['resume']
@@ -1442,7 +1508,7 @@ class AssembleTest(unittest.TestCase):
 
     # GitLab comment rules
     def test_nit_without_comment_fails(self):
-        self.p.findings = [finding(sev='nit')]
+        self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
         self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
         self.p.cards = [card(self.p.findings[0], [])]
@@ -1578,32 +1644,105 @@ class AssembleTest(unittest.TestCase):
                 self.fails('mrUrl belongs to a GitLab MR')
 
     def test_checks_follow_severity_and_depth(self):
-        # (depth, sev, category, weakest allowed check)
-        cases = [('low', 'blocker', 'functionality', 'investigator'), ('low', 'optional', 'functionality', 'batch'),
-                 ('low', 'fyi', 'functionality', 'batch'), ('low', 'nit', 'functionality', 'batch'),
-                 ('low', 'nit', 'style', 'inline'), ('medium', 'blocker', 'functionality', 'investigator'),
-                 ('medium', 'optional', 'functionality', 'investigator'), ('medium', 'fyi', 'functionality', 'investigator'),
-                 ('medium', 'nit', 'functionality', 'batch'), ('medium', 'nit', 'documentation', 'inline'),
-                 ('high', 'nit', 'style', 'investigator'), ('high', 'optional', 'functionality', 'investigator'),
-                 ('standard', 'optional', 'functionality', 'investigator'), ('standard', 'nit', 'functionality', 'batch'),
-                 ('standard', 'nit', 'documentation', 'inline'), ('deep', 'nit', 'style', 'investigator'),
-                 ('deep', 'optional', 'functionality', 'investigator'), ('deep', 'fyi', 'functionality', 'investigator')]
-        strengths = ['inline', 'batch', 'investigator', 'investigator2']
-        for depth, sev, cat, need in cases:
+        # (depth, proposed, final sev, weakest allowed check): the stronger of what the proposal and the final severity need
+        cases = [('standard', 'blocking', 'blocking', 'investigator'),
+                 ('standard', 'blocking', 'non-blocking', 'investigator'),
+                 ('standard', 'possibly-blocking', 'non-blocking', 'investigator'),
+                 ('standard', 'possibly-blocking', 'blocking', 'investigator'),
+                 ('standard', 'non-blocking', 'non-blocking', 'batch'),
+                 ('standard', 'non-blocking', 'blocking', 'investigator'),  # a batch raised it: its own investigator
+                 ('medium', 'non-blocking', 'non-blocking', 'batch'), ('low', 'non-blocking', 'non-blocking', 'batch'),
+                 ('low', 'possibly-blocking', 'non-blocking', 'investigator'),
+                 ('deep', 'non-blocking', 'non-blocking', 'investigator'),
+                 ('high', 'non-blocking', 'non-blocking', 'investigator')]
+        strengths = ['batch', 'investigator', 'investigator2']
+        for depth, proposed, sev, need in cases:
             for check in strengths + ['unchecked']:
-                with self.subTest(depth=depth, sev=sev, cat=cat, check=check):
+                with self.subTest(depth=depth, proposed=proposed, sev=sev, check=check):
                     self.tearDown()
                     self.setUp()
                     self.p.spec['meta']['depth'] = depth
-                    self.p.findings = [finding(sev=sev, category=cat, check=check)]
-                    if sev != 'blocker':
+                    kind = 'issue' if sev == 'blocking' else 'suggestion'
+                    self.p.findings = [finding(sev=sev, kind=kind, proposed=proposed, check=check)]
+                    if sev != 'blocking':
                         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
                         self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
                     if check == 'unchecked' or strengths.index(check) >= strengths.index(need):
                         self.ok()
                     else:
-                        what = 'nit in %s' % cat if sev == 'nit' else sev
-                        self.fails("F1: a %s at %s needs check %s or stronger, or unchecked, not '%s'" % (what, depth, need, check))
+                        self.fails("F1: a %s finding proposed %s at %s needs check %s or stronger, or unchecked, not '%s'"
+                                   % (sev, proposed, depth, need, check))
+
+    def test_inline_check_is_gone(self):
+        self.p.findings = [finding(sev='non-blocking', kind='nitpick', check='inline')]
+        self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
+        self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
+        self.fails("F1: check is 'inline' in findings.json")
+
+    def test_proposed_is_required(self):
+        for bad in (None, 'Blocker', 'unclear'):
+            with self.subTest(proposed=bad):
+                self.tearDown()
+                self.setUp()
+                self.p.findings = [finding(proposed=bad)]
+                self.fails('F1: proposed %r is not one of blocking, possibly-blocking, non-blocking' % bad)
+
+    def test_kind_must_be_known(self):
+        self.p.findings = [finding(kind='praise')]
+        self.fails("F1: kind 'praise' is not one of issue, question, chore, suggestion, nitpick, note")
+
+    def test_old_severity_fails(self):
+        for old in ('blocker', 'optional', 'nit', 'fyi'):
+            with self.subTest(sev=old):
+                self.tearDown()
+                self.setUp()
+                self.p.findings = [finding(sev=old)]
+                self.fails("F1: sev %r is not one of blocking, non-blocking" % old)
+
+    def test_some_kinds_are_never_blocking(self):
+        for kind in ('suggestion', 'nitpick', 'note'):
+            with self.subTest(kind=kind):
+                self.tearDown()
+                self.setUp()
+                self.p.findings = [finding(kind=kind)]
+                self.fails('F1: a %s is never blocking' % kind)
+        for kind in ('issue', 'question', 'chore'):
+            with self.subTest(kind=kind):
+                self.tearDown()
+                self.setUp()
+                self.p.findings = [finding(kind=kind)]
+                self.ok()
+
+    def test_every_kind_may_be_non_blocking(self):
+        self.p.findings = [finding('F%d' % i, sev='non-blocking', kind=k) for i, k in enumerate(assemble.KINDS, 1)]
+        self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
+        self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
+        self.ok()
+
+    def test_order_is_severity_then_kind(self):
+        self.p.findings = [finding('F1'), finding('F2', sev='non-blocking', kind='note'),
+                           finding('F3', sev='non-blocking', kind='issue')]
+        self.fails('order must be blocking before non-blocking, then by kind')
+        self.tearDown()
+        self.setUp()
+        self.p.findings = [finding('F1', kind='question'), finding('F2', kind='issue')]
+        self.p.spec['verdict']['openBlockers'] = ['F1', 'F2']
+        self.fails('order must be blocking before non-blocking, then by kind')
+
+    def test_suggestion_line_only_in_an_issue(self):
+        self.p.findings = [finding(sev='non-blocking', kind='suggestion')]
+        self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
+        self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
+        self.p.cards = [card(self.p.findings[0], [comment()])]
+        self.fails('F1: English GitLab text at src/a.ts:11 has "Suggestion:", which only an issue has')
+
+    def test_comment_text_carries_no_prefix(self):
+        for en in ('**Nit:** Rename `x`.', '**issue (blocking):** `x` resets the counter.'):
+            with self.subTest(en=en):
+                self.tearDown()
+                self.setUp()
+                self.p.cards = [card(self.p.findings[0], [comment(en=en, de='`x` setzt den Zähler zurück.')])]
+                self.fails('F1: English GitLab text at src/a.ts:11 starts with a label')
 
     def test_finding_without_check_key_fails_without_traceback(self):
         self.p.findings = [finding()]
@@ -1615,10 +1754,10 @@ class AssembleTest(unittest.TestCase):
         self.p.findings = [finding(check='unchecked')]
         self.ok()
         self.p.findings = [finding(check='failed')]
-        self.fails("check is 'failed' in findings.json (must be inline, batch, investigator, investigator2, unchecked)")
+        self.fails("check is 'failed' in findings.json (must be batch, investigator, investigator2, unchecked)")
 
     def test_void_element_twins_need_no_text(self):
-        self.p.frags['good'] = twin('<p>Good.</p>', '<p>Gut.</p>') + '<img data-lang="en" alt="" src="#a"><img data-lang="de" alt="" src="#b">'
+        self.p.frags['questions'] = twin('<p>Good.</p>', '<p>Gut.</p>') + '<img data-lang="en" alt="" src="#a"><img data-lang="de" alt="" src="#b">'
         self.ok()
 
     def test_data_payload_has_one_finding_per_line(self):
@@ -1630,7 +1769,7 @@ class AssembleTest(unittest.TestCase):
         self.assertEqual([f['id'] for f in json.loads(payload)], ['F1', 'F2'])
 
     def test_single_quoted_duplicate_id_fails(self):
-        self.p.frags['good'] = twin("<p id='goal'>x</p>", '<p>x</p>')
+        self.p.frags['questions'] = twin("<p id='goal'>x</p>", '<p>x</p>')
         self.fails('id "goal" occurs more than once')
 
     def test_detail_with_cite_passes(self):
@@ -1638,14 +1777,14 @@ class AssembleTest(unittest.TestCase):
         self.ok()
 
     def test_fragment_quoting_a_slot_marker_survives(self):
-        self.p.frags['good'] = twin('<p>The marker <code>/* slot:data */</code> and <code>&lt;!-- slot:good --&gt;</code>.</p>',
+        self.p.frags['questions'] = twin('<p>The marker <code>/* slot:data */</code> and <code>&lt;!-- slot:good --&gt;</code>.</p>',
                                     '<p>Der Marker <code>/* slot:data */</code> und <code>&lt;!-- slot:good --&gt;</code>.</p>')
         self.ok()
         self.assertIn('<code>/* slot:data */</code>', self.p.page)
 
     def test_quoted_markup_is_no_language_block_or_id(self):
         # quoted in a code sample or an attribute value, markup is text: it counts as no block and no id
-        self.p.frags['good'] = twin('<p>Each block is <code>&lt;div data-lang="en" id="goal"&gt;</code>.</p>',
+        self.p.frags['questions'] = twin('<p>Each block is <code>&lt;div data-lang="en" id="goal"&gt;</code>.</p>',
                                     '<p>Jeder Block ist <code>&lt;div data-lang="en" id="goal"&gt;</code>.</p>')
         self.p.frags['glossary'] = twin('<dl><dt title=\'data-lang="en" id="today"\'>A</dt><dd>B</dd></dl>', '<dl><dt>A</dt><dd>B</dd></dl>')
         self.ok()
@@ -1734,13 +1873,13 @@ class AssembleTest(unittest.TestCase):
     def test_duplicate_attribute_fails(self):
         for frag in ['<a href="javascript:alert(1)" href="#goal">x</a>', '<p class="a" class="b">x</p>']:
             with self.subTest(frag=frag):
-                self.p.frags['good'] = twin(frag, '<p>x</p>')
+                self.p.frags['questions'] = twin(frag, '<p>x</p>')
                 self.fails('duplicate attribute')
 
     def test_svg_animation_fails(self):
         for tag in ['set', 'animate', 'animateMotion', 'animateTransform']:
             with self.subTest(tag=tag):
-                self.p.frags['good'] = twin('<svg><%s attributeName="href" to="javascript:alert(1)"/></svg><p>x</p>' % tag, '<p>x</p>')
+                self.p.frags['questions'] = twin('<svg><%s attributeName="href" to="javascript:alert(1)"/></svg><p>x</p>' % tag, '<p>x</p>')
                 self.fails('active content')
 
     def test_external_resource_fails(self):
@@ -1749,15 +1888,15 @@ class AssembleTest(unittest.TestCase):
                      '<table><tr><td background="https://e.example/b.png">x</td></tr></table>',
                      '<img srcset="a.png 1x, https://e.example/b.png 2x">', '<div data="https://e.example/x">x</div>']:
             with self.subTest(frag=frag):
-                self.p.frags['good'] = twin(frag + '<p>x</p>', '<p>x</p>')
+                self.p.frags['questions'] = twin(frag + '<p>x</p>', '<p>x</p>')
                 self.fails('active content')
 
     def test_link_to_an_outside_page_passes(self):
-        self.p.frags['good'] = twin('<p><a href="https://example.org/doc">doc</a></p>', '<p><a href="https://example.org/doc">Doku</a></p>')
+        self.p.frags['questions'] = twin('<p><a href="https://example.org/doc">doc</a></p>', '<p><a href="https://example.org/doc">Doku</a></p>')
         self.ok()
 
     def test_attribute_without_value_does_not_crash(self):
-        self.p.frags['good'] = twin('<p class>x</p>', '<p class>x</p>')
+        self.p.frags['questions'] = twin('<p class>x</p>', '<p class>x</p>')
         self.ok()
         assemble.check_structure('background', assemble.parse_html('<div id="today" class><p>x</p></div>'))
 
@@ -1856,7 +1995,7 @@ class AssembleTest(unittest.TestCase):
 
     def test_reserved_ids_fail(self):
         base = dict(self.p.frags)
-        for name, frag in [('background', subsec('today') + subsec('F1')), ('good', twin('<p id="glc-F1">x</p>', '<p>x</p>'))]:
+        for name, frag in [('background', subsec('today') + subsec('F1')), ('questions', twin('<p id="glc-F1">x</p>', '<p>x</p>'))]:
             with self.subTest(frag=frag[:40]):
                 self.p.frags = dict(base, **{name: frag})
                 self.fails('reserved for the cards and the GitLab list')
@@ -1994,18 +2133,18 @@ class AssembleTest(unittest.TestCase):
     # subject type: fixed template wording follows it
     def test_default_subject_type_is_branch(self):
         self.ok()
-        self.assertIn('A change in this branch', self.p.page)
+        self.assertIn('what to do in this branch', self.p.page)
         self.assertIn('holds the merge', self.p.page)
 
     def test_files_subject_wording_and_no_gitlab_line(self):
-        self.p.findings = [finding(sev='nit')]
+        self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
         self.p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
         self.p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
         self.ok()
-        self.assertIn('A change in these files', self.p.page)
-        self.assertNotIn('A change in this MR', self.p.page)
+        self.assertIn('what to do in these files', self.p.page)
+        self.assertNotIn('what to do in this MR', self.p.page)
         self.assertNotIn('holds the merge', self.p.page)
         self.assertIn('No GitLab comments for this subject type.', self.p.page)
         self.assertIn('Keine GitLab-Kommentare für diese Art von Gegenstand.', self.p.page)
@@ -2014,8 +2153,8 @@ class AssembleTest(unittest.TestCase):
     def test_pr_subject_type(self):
         self.p.spec['meta']['subjectType'] = 'pr'
         self.ok()
-        self.assertIn('A change in this PR', self.p.page)
-        self.assertIn('Eine Änderung in diesem PR', self.p.page)
+        self.assertIn('what to do in this PR', self.p.page)
+        self.assertIn('was in diesem PR zu tun ist', self.p.page)
         self.assertIn('holds the merge', self.p.page)
 
     def test_unknown_subject_type_fails(self):
@@ -2065,6 +2204,43 @@ def trigger_comment(n_en, n_de=None, item_en='The server is down and the loop ne
     de = ('`x` setzt den Zähler in mehreren Fällen zurück:\n\n' + '\n'.join('- Der Server ist weg und die Schleife endet nie.' for _ in range(n_de))
           + '\n\nVorschlag: `x` erhöhen.')
     return comment(en=en, de=de)
+
+
+class LabelsTest(unittest.TestCase):
+    """The comment convention stands in one place: the Labels tables in gitlab-comments.md and the renderer's LABEL and
+    DECORATION maps say the same, for exactly the kinds and severities assemble.py knows; the kind table in
+    report-sections.md and the legend texts cover the same kinds."""
+
+    @staticmethod
+    def doc_map(head):
+        text = (HERE / 'gitlab-comments.md').read_text()
+        section = text[text.index('## Labels'):text.index('## Where it goes')]
+        table = section[section.index('| %s |' % head):]
+        rows = re.findall(r'^\| `([\w-]+)` \| `([\w-]+)` \|$', table.split('\n\n')[0], re.M)
+        return dict(rows)
+
+    @staticmethod
+    def js_map(name):
+        page = (HERE / 'review-report-template.html').read_text()
+        body = re.search(r'var %s = \{([^}]*)\};' % name, page).group(1)
+        return dict(re.findall(r"'?([\w-]+)'?: '([\w-]+)'", body))
+
+    def test_labels_table_is_the_code(self):
+        labels, decorations = self.doc_map('Kind'), self.doc_map('Severity')
+        self.assertEqual(list(labels), assemble.KINDS)
+        self.assertEqual(list(decorations), assemble.SEVERITIES)
+        self.assertEqual(self.js_map('LABEL'), labels)
+        self.assertEqual(self.js_map('DECORATION'), decorations)
+
+    def test_kind_table_and_legend_cover_the_kinds(self):
+        text = (HERE / 'report-sections.md').read_text()
+        rows = re.findall(r'^\| `([\w-]+)` \| .* \| (either|non-blocking) \|$', text, re.M)
+        self.assertEqual([k for k, _ in rows], assemble.KINDS)
+        self.assertEqual(sorted(k for k, sev in rows if sev == 'non-blocking'), sorted(assemble.NON_BLOCKING_KINDS))
+        self.assertEqual(list(assemble.KIND_TEXT), assemble.KINDS)
+        page = (HERE / 'review-report-template.html').read_text()
+        rank = re.search(r'var KIND_RANK = \{([^}]*)\};', page).group(1)
+        self.assertEqual(re.findall(r'([\w-]+): \d+', rank), assemble.KINDS)
 
 
 class TriggersTest(unittest.TestCase):
@@ -2472,7 +2648,7 @@ class ManualTestsTest(unittest.TestCase):
             del p.spec['manual']
             p.spec['meta']['subjectType'] = 'files'
             p.spec['gitlab'] = False
-            p.findings = [finding(sev='nit')]
+            p.findings = [finding(sev='non-blocking', kind='nitpick')]
             p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
             p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
         self.assertEqual(p.run(), 0, p.out)
@@ -2531,7 +2707,7 @@ class SplitPublishRenderTest(unittest.TestCase):
 
     def test_split_page_renders_like_the_single_file(self):
         p = Report()
-        p.findings = [finding('F1'), finding('F2', 'optional')]
+        p.findings = [finding('F1'), finding('F2', 'non-blocking', kind='suggestion')]
         self.assertEqual(p.run(), 0, p.out)
         with tempfile.TemporaryDirectory() as tmp:
             single = Path(tmp, 'single.html')
@@ -2568,9 +2744,10 @@ class DoneMarkTest(unittest.TestCase):
              "document.documentElement.setAttribute('data-probe',JSON.stringify(r))})()</script>")
     FACETS = ("<script>(function(){" + HELP +
               "chip('category','tests').click();"
-              "r.sev={all:n('sev','all'),blocker:n('sev','blocker'),optional:n('sev','optional')};"
-              "r.blockerZero=chip('sev','blocker').classList.contains('zero');"
-              "chip('category','all').click();chip('sev','blocker').click();"
+              "r.sev={all:n('sev','all'),blocking:n('sev','blocking'),nonBlocking:n('sev','non-blocking')};"
+              "r.kind={all:n('kind','all'),issue:n('kind','issue'),suggestion:n('kind','suggestion'),note:n('kind','note')};"
+              "r.blockerZero=chip('sev','blocking').classList.contains('zero');"
+              "chip('category','all').click();chip('sev','blocking').click();"
               "r.category={all:n('category','all'),functionality:n('category','functionality'),tests:n('category','tests')};"
               "document.documentElement.setAttribute('data-probe',JSON.stringify(r))})()</script>")
     EMPTY = ("<script>(function(){" + HELP +
@@ -2600,7 +2777,7 @@ class DoneMarkTest(unittest.TestCase):
 
     def build(self, f2_category='functionality'):
         p = Report()
-        p.findings = [finding('F1'), finding('F2', 'optional', category=f2_category)]
+        p.findings = [finding('F1'), finding('F2', 'non-blocking', kind='suggestion', category=f2_category)]
         p.spec['verdict']['openBlockers'] = ['F1']
         self.assertEqual(p.run(), 0, p.out)
         p.tmp.cleanup()
@@ -2623,9 +2800,37 @@ class DoneMarkTest(unittest.TestCase):
         self.assertEqual(r['unticked'], [False, False, '0'])
         self.assertEqual(r['label'], [False, True, '1'])
 
+    LABELS = ("<script>(function(){" + HELP +
+              "var copies=function(id){return Array.prototype.map.call(document.querySelectorAll('#'+id+' .glc-copy'),function(b){return b.dataset.copy})};"
+              "r.copyF1=copies('F1');r.copyF2=copies('F2');r.locked=document.querySelectorAll('.glc-copy[disabled]').length;"
+              "r.pill=[q('#F1 .pill').textContent,q('#F2 .pill').textContent,q('#F1 .pill').className,q('#F2 .pill').className];"
+              "chip('kind','suggestion').click();r.afterKind=[!!q('#F1'),!!q('#F2')];"
+              "document.documentElement.setAttribute('data-probe',JSON.stringify(r))})()</script>")
+
+    def test_prefix_ticket_line_pill_and_kind_filter(self):
+        p = Report()
+        p.findings = [finding('F1'), finding('F2', 'non-blocking', kind='suggestion', tickets=['PROJ-7', 'OPS-2'])]
+        p.spec['verdict']['openBlockers'] = ['F1']
+        self.assertEqual(p.run(), 0, p.out)
+        p.tmp.cleanup()
+        r = self.probe(p.page, self.LABELS)
+        self.assertEqual(len(r['copyF1']), 2)
+        self.assertTrue(r['copyF1'][0].startswith('**issue (blocking):** `x` resets the counter.'), r['copyF1'][0])
+        self.assertTrue(r['copyF1'][1].startswith('**issue (blocking):** `x` setzt'), r['copyF1'][1])
+        self.assertNotIn('Ticket:', r['copyF1'][0])
+        self.assertTrue(r['copyF2'][0].startswith('**suggestion (non-blocking):** Name `x`'), r['copyF2'][0])
+        self.assertTrue(r['copyF2'][0].endswith('\n\nTicket: PROJ-7, OPS-2'), r['copyF2'][0])
+        self.assertTrue(r['copyF2'][1].endswith('\n\nTicket: PROJ-7, OPS-2'), r['copyF2'][1])
+        self.assertEqual(r['locked'], 0)
+        self.assertEqual(r['pill'][:2], ['issue · blocking', 'suggestion'])
+        self.assertIn('pill-blocking', r['pill'][2])
+        self.assertIn('pill-non-blocking', r['pill'][3])
+        self.assertEqual(r['afterKind'], [False, True])
+
     def test_counts_follow_the_other_rows(self):
         r = self.probe(self.build('tests'), self.FACETS)
-        self.assertEqual(r['sev'], {'all': '1', 'blocker': '0', 'optional': '1'})
+        self.assertEqual(r['sev'], {'all': '1', 'blocking': '0', 'nonBlocking': '1'})
+        self.assertEqual(r['kind'], {'all': '1', 'issue': '0', 'suggestion': '1', 'note': None})  # chips only for used kinds
         self.assertTrue(r['blockerZero'])
         self.assertEqual(r['category'], {'all': '1', 'functionality': '1', 'tests': '0'})
 
@@ -2684,7 +2889,7 @@ class CardRenderTest(unittest.TestCase):
              "q('#toggle-all').click();"
              "r.allOpen=Array.prototype.every.call(document.querySelectorAll('#cards details.pt'),function(x){return x.open});"
              "r.whatMoreOpen=d[0].querySelector('.more-body').checkVisibility();r.pressed=q('#toggle-all').getAttribute('aria-pressed');"
-             "q('.chip[data-filter=\"sev\"][data-value=\"blocker\"]').click();"
+             "q('.chip[data-filter=\"sev\"][data-value=\"blocking\"]').click();"
              "r.afterFilter=[q('#F1 details.pt').open,q('#toggle-all').getAttribute('aria-pressed')];"
              "q('#F1 details.pt').open=false;"
              "setTimeout(function(){r.byHand=[q('#toggle-all').getAttribute('aria-pressed'),q('#toggle-all').innerText];"
@@ -2692,8 +2897,8 @@ class CardRenderTest(unittest.TestCase):
 
     def test_card_fields_details_and_expand_all(self):
         p = Report()
-        p.findings = [finding('F1'), finding('F2', 'optional')]
-        p.cards = [card(f, [comment()]) for f in p.findings]
+        p.findings = [finding('F1'), finding('F2', 'non-blocking', kind='suggestion', tickets=['PROJ-7'])]
+        p.cards = [card(f, [comment_for(f)]) for f in p.findings]
         p.cards[0]['fields']['fix']['text'] = ['**Two steps.** In this order:\n\n1. Stop the job.\n2. Start it again.',
                                                '**Zwei Schritte.** In dieser Reihenfolge:\n\n1. Job anhalten.\n2. Neu starten.']
         self.assertEqual(p.run(), 0, p.out)
@@ -2711,7 +2916,7 @@ class CardRenderTest(unittest.TestCase):
         self.assertIn('server', r['file'])
         self.assertIn('src/a.ts:11', r['file'])
         self.assertIn('Functionality', r['category'])
-        self.assertIn('Follow-up title', r['followUp'])
+        self.assertIn('PROJ-7', r['followUp'])
         self.assertTrue(r['glc'], 'the GitLab comment is not visible inside the card')
         self.assertTrue(r['allOpen'])
         self.assertTrue(r['whatMoreOpen'])
@@ -3448,7 +3653,7 @@ class MethodWithdrawnTest(unittest.TestCase):
 
     def setUp(self):
         self.p = Report()
-        self.p.findings = [finding('F1'), finding('F3', sev='nit')]
+        self.p.findings = [finding('F1'), finding('F3', sev='non-blocking', kind='nitpick')]
         self.p.spec['meta']['published'] = True
         self.p.spec['notes']['withdrawn'] = ['F2: merged into F1 after the first publish']
         self.p.method_withdrawn = False
@@ -3476,7 +3681,7 @@ class MethodWithdrawnTest(unittest.TestCase):
         self.assertIn('method.html: the de text does not name F2, withdrawn after publish', self.p.out)
 
     def test_no_check_without_withdrawn(self):
-        self.p.findings = [finding('F1'), finding('F2', sev='nit')]
+        self.p.findings = [finding('F1'), finding('F2', sev='non-blocking', kind='nitpick')]
         self.p.spec['notes']['withdrawn'] = []
         self.assertEqual(self.p.run(), 0, self.p.out)
 
@@ -3553,9 +3758,9 @@ class ColdReadInputTest(unittest.TestCase):
         (self.sp / 'inputs' / 'change.diff').write_text(COLD_DIFF)
         self.cards = [
             card(finding('F1'), [comment(startLine=11, endLine=12, en='EN one `x`.', de='DE eins `x`.')]),
-            card(finding('F2', sev='optional'), [comment(startLine=11, side='old', en='EN old.', de='DE alt.'),
+            card(finding('F2', sev='non-blocking', kind='suggestion'), [comment(startLine=11, side='old', en='EN old.', de='DE alt.'),
                                                  comment(anchor='file', startLine=30, en='EN file.', de='DE Datei.')]),
-            card(finding('F3', sev='nit'), [comment(path=None, startLine=None, anchor='mr', en='EN mr.', de='DE MR.')]),
+            card(finding('F3', sev='non-blocking', kind='nitpick'), [comment(path=None, startLine=None, anchor='mr', en='EN mr.', de='DE MR.')]),
         ]
         self.write()
 
@@ -3581,7 +3786,7 @@ class ColdReadInputTest(unittest.TestCase):
         self.build()
         en = self.state('cold-read-input-en.md')
         self.assertEqual(re.findall(r'^## (C\d+)', en, flags=re.M), ['C1', 'C2', 'C3', 'C4'])
-        for word in ('F1', 'F2', 'F3', 'blocker', 'optional', 'nit', 'Blocker', 'Optional', 'Nit'):
+        for word in ('F1', 'F2', 'F3', 'blocking', 'non-blocking', 'issue', 'suggestion', 'nitpick', '**'):
             self.assertNotIn(word, en)
         labels = json.loads(self.state('cold-read-labels.json'))
         self.assertEqual([labels[k]['finding'] for k in ('C1', 'C2', 'C3', 'C4')], ['F1', 'F2', 'F2', 'F3'])

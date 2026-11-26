@@ -111,7 +111,9 @@ files, the system or process they describe.
   "manual": null | { "setup": "<one shared setup: stack, URL, accounts>",
               "steps": [ { "id": "M1", "do": "…", "expect": "…", "flow": "<trace flow it comes from>" } ],
               "withdrawn": ["M<n>: <reason, after publish only>"] },
-  "findings": [ { "id": "F1", "sev": "blocker | optional | nit | fyi", "category": "<category key>",
+  "findings": [ { "id": "F1", "sev": "blocking | non-blocking", "kind": "issue | question | chore | suggestion | nitpick | note",
+                  "proposed": "blocking | possibly-blocking | non-blocking" /* the strongest proposal of any source; picks the check */,
+                  "category": "<category key>",
                   "package": "<package>" | ["<EN>", "<DE>"], "file": "<path>:<line>",
                   "what": "…", "why": "…", "fix": "…", "verify": "…",
                   "principle": "<names, comma-separated: DRY, KISS>" | null /* architecture and design only: required there, null when the check named none; never on another category; acronym where one exists */,
@@ -121,8 +123,8 @@ files, the system or process they describe.
                   "options": ["<option>: <the cases it fixes or leaves, its cost>"] /* two or more, the recommended one first, when the checks answered OPTIONS; else left out */,
                   "fixLeaves": "<the cases the fix leaves>" /* when the checks answered PARTIAL; else left out */,
                   "fixOpen": "<what is open about the fix>" /* when the checks answered OPEN; else left out */,
-                  "followUp": { "title": "<FYI and Optional: ticket title>", "key": null },
-                  "sources": ["<reviewer run>"], "check": "pending | running | inline | batch | investigator | investigator2 | unchecked" } ] }
+                  "tickets": ["PROJ-1234"] /* Jira keys of tickets that exist for the finding, added after the review; else left out */,
+                  "sources": ["<reviewer run>"], "check": "pending | running | batch | investigator | investigator2 | unchecked" } ] }
 ```
 
 `assemble.py` requires the `meta` keys `title`, `key`, `subject`,
@@ -137,8 +139,8 @@ name use them. The Ticket row links `ticket` to Jira at `ticketBrowseUrl` (from 
 [_profiles/README.md](../_profiles/README.md)); without it, ticket keys stay
 plain text everywhere. Every key of its project is a Jira link in all report text:
 `reference`, the fragments (`assemble.py` `link_text`, outside tags, links,
-`code` and `pre`) and the cards (the template's `jira()`, follow-up keys
-included); the GitLab comment texts stay plain, since they are copied into
+`code` and `pre`) and the cards (the template's `jira()`, the `tickets`
+line included); the GitLab comment texts stay plain, since they are copied into
 GitLab. A key inside a branch name or path stays text. The ids of known
 findings in the fragments link to their cards, as in the cards.
 `effort` records how much ran and how long, for the first line of 4.2, which
@@ -169,10 +171,12 @@ The orchestrator starts the file in step 4 and writes each decision as it
 falls, so a compaction loses nothing. `sources` and `check` are its working
 state: `sources` feeds the method table's counts and never reaches a card;
 `assemble.py` fails while a finding's `check` is still `pending` or
-`running`. A final `check` names the strongest check that ran: `inline` (the
-reviewer's label stands), `batch`, `investigator` (one of its own),
+`running`. A final `check` names the strongest check that ran: `batch`,
+`investigator` (one of its own),
 `investigator2` (one of its own and a second); `unchecked` records an
-investigator that failed for good, and 4.2 names that claim. `notes.processed` names each raw output whose findings are
+investigator that failed for good, and 4.2 names that claim. `assemble.py`
+fails when the check is weaker than the stronger of what `proposed` and the
+final severity need (SKILL.md §4, step 5). `notes.processed` names each raw output whose findings are
 recorded, so a compaction never leads to reading an output twice or not at
 all. Until every check has returned, ids are drafts (`D<n>`); one step then
 numbers them `F<n>` and rewrites every draft id in `verdict` and `notes`.
@@ -234,7 +238,7 @@ row: the MR on GitLab has it. No internal words such as "consolidated" or
 MR or ticket. The subject row ends with the size of the change ("1,428
 lines changed", without lockfiles and generated code, from `meta.lines`).
 Then the verdict and a stats row that counts the findings only: findings,
-Blocker, Optional, Nit, FYI; the number of review runs (`meta.sources`)
+blocking, non-blocking; the number of review runs (`meta.sources`)
 stands in 4.2, not at the top. The subject type comes from `meta.subjectType` (`branch`,
 `mr` for a GitLab MR, `pr` for a GitHub PR, `patch`, `files`;
 `branch` when missing) and sets the
@@ -303,10 +307,12 @@ template code.
 
 It opens with the findings summary (`summary.html`, written by the findings
 writer): an overview of all findings in seconds, shorter than reading the
-cards. A list by severity, always all four in this order: Blocker,
-Optional, Nit, FYI; each line says in a few words what those findings are
-about in this review, or "none". Every line is an overview, the Blocker line
-included: the folded cards below are the complete list, Blockers first. An
+cards. A list by severity, always both in this order: blocking,
+non-blocking; each line says in a few words what those findings are
+about in this review, naming their kinds where that helps ("two issues
+about …, wording nitpicks"), or "none". Every line is an overview, the
+blocking line included: the folded cards below are the complete list,
+Blockers first. An
 id stands in a line only when the line singles out one finding the reader
 should not miss, above all an `architecture` or `design` one ("the bar's
 logic spread over three places (F9)"); no id lists, no ranges. "Related"
@@ -317,7 +323,7 @@ one finding solved by the fix of another, two with the same fix, two
 addressing the same thing; ids only, no reasons ("F2 is solved by the fix
 of F1"). Then, only when the review has one, a line "Hint:" / "Hinweis:",
 one or two short sentences with ids: what a reader would not see from the
-order and the severities, such as an Optional or FYI that matters more
+order and the severities, such as a non-blocking finding that matters more
 than its severity says, a finding where the sources disagreed or the
 severity was a close call, or a decision only the author can make. Never
 filler: without such a point the line is left out. No reasons, fix
@@ -330,21 +336,24 @@ no unknown id, and requires the file from
 `assemble.py` adds the line "Not fully checked: …" for findings whose
 `check` is `unchecked`, from findings.json.
 
-Under it a closed reference, "What severities and categories mean": each
-severity by what it means for the merge, then the skill's definition in
-short (SKILL.md severity table), and each category with what it covers
-(`assemble.py` `CATEGORY_TEXT`, from the category table below).
+Under it a closed reference, "What severities, kinds and categories mean":
+each severity by what it means for the merge, then the skill's definition in
+short (SKILL.md severity table), each kind with what it means (`assemble.py`
+`KIND_TEXT`, from the kind table below), and each category with what it
+covers (`assemble.py` `CATEGORY_TEXT`, from the category table below).
 
-The cards form one list. Three filter rows of plain chips: Severity, Category,
-Status. Each row works the same way: pick one value, `All` / `Alle` first.
-Every chip label is sentence case in both languages. Every chip shows its
-count: the number of cards it would show together with the other two rows'
-current choice; a chip whose count is 0 stays in place, dimmed, so the rows
-never jump while filtering. The severity pill is the only pill on a card,
-coloured by group: Blocker red and filled (holds the merge); Optional and Nit
-one blue (changes in this MR, not blocking), Optional with a soft fill, Nit as
-an outline; FYI violet with a dashed border (no change here, follow-up). The
-category follows the pill as muted text, on every card. The
+The cards form one list. Four filter rows of plain chips: Severity, Kind,
+Category, Status. Each row works the same way: pick one value, `All` / `Alle`
+first. Every chip label is sentence case in both languages, except the
+severity and kind chips, which show the lowercase keywords of the comment
+convention (`blocking`, `issue`). The kind row and the category row show
+only the values some finding has, in table order (`assemble.py`). Every chip
+shows its count: the number of cards it would show together with the other
+rows' current choice; a chip whose count is 0 stays in place, dimmed, so the
+rows never jump while filtering. The pill is the only pill on a card: it
+names the kind, and its style is the severity: blocking red and filled, with
+"· blocking" as text, so colour is never the only signal; non-blocking an
+outline. The category follows the pill as muted text, on every card. The
 package opens the location line under the title as plain text, before the
 paths.
 
@@ -364,18 +373,19 @@ card is coloured by its severity, a done card is grey with a green mark (a red
 pill beside a green edge would say danger and done at once). The ticks live in
 the reader's browser only, so the grey card is the reader's own to-do mark
 (handled, for example posted on GitLab) and no other reader takes it for fixed. The handled cards
-of one severity are found with the Status and Severity filters together. The Status row (`All`, `Open`, `Done` / `Alle`, `Offen`,
+of one severity or kind are found with the Status filter and the Severity or Kind filter together. The Status row (`All`, `Open`, `Done` / `Alle`, `Offen`,
 `Erledigt`) filters by those ticks. The ticks and the status choice are saved
 in the viewer's browser only (localStorage under `meta.key`, so they survive a
 republish; a report stored under the earlier "hide done" switch starts on
 `Open`). They change neither the verdict nor what other viewers see; one line
-under the rows says so. The GitLab list follows all three rows. All of it is
+under the rows says so. The GitLab list follows all four rows. All of it is
 template code: writers and the translator add nothing for it.
 
 The category is the review aspect a finding falls under: what the reviewer
-checked, not what kind of finding it is (that is the severity). Every finding
+checked, not what kind of finding it is (that is the kind, below) nor what it
+means for the merge (that is the severity). Every finding
 has exactly one; when two fit, the more specific one wins, and Functionality
-only when no other fits. "The ADR accepts it" is a status (FYI), not a
+only when no other fits. "The ADR accepts it" is a status (a `note`), not a
 category. The chips list only categories that have a finding, in this order:
 intent first, then structure, then the non-functional qualities by how many
 changes they apply to, then the companion artifacts, then Style.
@@ -402,7 +412,40 @@ presence of a dependency is Ops; a build failure is Functionality, a lint
 failure takes the category of the broken rule. A misleading or invented name is
 Design, a name that only breaks a convention is Style.
 
-The keys and labels live in `assemble.py` (`CATEGORIES`); `assemble.py` fails on
+### Kinds
+
+The kind says what someone has to do about a finding. The orchestrator
+decides it after the severity (SKILL.md §4, step 9), like the category, from
+the reviewers' `Kind:` lines and the facts the check delivered. The kind is
+independent of the severity, with one exclusion: a `suggestion`, a
+`nitpick` and a `note` are never blocking.
+
+```
+blocking      → issue | question | chore
+non-blocking  → issue | question | chore | suggestion | nitpick | note
+```
+
+The test: must someone act, and where? In the subject: `issue`,
+`suggestion` or `nitpick`; outside the repository: `chore`; the author must
+decide first: `question`; nobody: `note`.
+
+| Kind | Means | Severity |
+| --- | --- | --- |
+| `issue` | something is wrong or missing in the subject (a missing test included); also a problem that existed before the change, and its text says so | either |
+| `question` | only the author can decide it: blocking when one plausible answer is a Blocker (SKILL.md, Severity, open question), else non-blocking | either |
+| `chore` | the code is right, but someone must act outside the repository: an infrastructure update, a migration in production, a release order, a secret, a feature flag after the rollout. Blocking for an undeclared release precondition, non-blocking for a declared one. What can be fixed in the repository is an `issue` | either |
+| `suggestion` | it works and is complete; another way would be better | non-blocking |
+| `nitpick` | wording only, by taste or by a written rule: names by convention, comments, docs wording | non-blocking |
+| `note` | information only; nobody has to act | non-blocking |
+
+The order of this table is the order of the list within a severity:
+blocking first, then by kind, then by weight. Kinds the skill does not use:
+`praise` (3.4 says what works well), `todo`, `thought`, `typo`, `polish`,
+`quibble`. The keys live in `assemble.py` (`KINDS`); the label a GitLab
+comment shows for each is the comment convention's
+([gitlab-comments.md](gitlab-comments.md), Labels).
+
+The category keys and labels live in `assemble.py` (`CATEGORIES`); `assemble.py` fails on
 any other key. The package is the repository's own name for it (its glossary
 or CLAUDE.md), else the short package name (`api-server`, `web-app`, `forms`,
 `shared-utils`), a string or an `[en, de]` pair. For files it is
@@ -415,7 +458,7 @@ from `data.json`, a JSON array (double-quoted keys and strings, no comments),
 one object per finding; the shape, written here with comments:
 
 ```js
-{ id: 'F1', sev: 'blocker|optional|nit|fyi', category: '<category key>', package: '<package>' | ['<EN>', '<DE>'], file: '<path>:<line>',
+{ id: 'F1', sev: 'blocking|non-blocking', kind: 'issue|question|chore|suggestion|nitpick|note', category: '<category key>', package: '<package>' | ['<EN>', '<DE>'], file: '<path>:<line>',
   t: ['<EN title>', '<DE title>'],
   fields: { what: { text: ['<EN>', '<DE>'], more: ['<EN>', '<DE>'] | null },
             why: { text: [...], more: [...] | null }, fix: { text: [...], more: [...] | null },
@@ -423,29 +466,25 @@ one object per finding; the shape, written here with comments:
   gitlab: [{ path: '<path>', startLine: 11, endLine: 13 /* a range, line comment only */,
              anchor: 'line|file|mr', side: 'old' /* removed lines only */,
              text: ['<English comment, no prefix>', '<German comment, no prefix>'] }],
-  followUp: { title: '<ticket title>', key: null | 'PROJ-1234' } /* FYI and Optional */ }
+  tickets: ['PROJ-1234'] /* only when tickets exist */ }
 ```
 
 `gitlab` is filled only when the subject is a branch, MR or PR, and for every
-finding of it, Nits included. One entry per
+finding of it, every kind included. One entry per
 place a comment goes, usually one; written by the findings writer under the rules
 in [gitlab-comments.md](gitlab-comments.md). The renderer adds the bold
-severity prefix, puts the block at the end of the card and builds the GitLab
+prefix from kind and severity (`**issue (blocking):**`), puts the block at the end of the card and builds the GitLab
 comments section from the same entries, so the two cannot drift. `text` is an
 `[en, de]` pair like every other text: the report shows the language of the
 switch, and Copy copies the one on screen, which is what gets posted.
 
-`followUp` belongs to every FYI and every Optional finding: the draft title
-of the follow-up ticket, and its key once the ticket exists. The title is the
-literal ticket title, in the language the ticket will have, so it is one
-string, shown the same in both languages after a translated label. The orchestrator
-writes both into `findings.json`; the findings writer copies the object
-unchanged. An Optional's
-ticket is created only when the author does not fix it here, so its comment
-stays copyable without a key. For an FYI, until then the card shows "Ticket
-missing" (DE "Ticket fehlt") and the FYI comment's copy button stays disabled;
-with a key, the renderer appends `Follow-up ticket: <key>` (DE
-`Folgeticket: <key>`) to the comment.
+`tickets` lists the Jira keys of tickets that exist for a finding; most
+findings have none. No ticket is part of the review: the user creates any
+after reading the report (`qubit-jira-ticket` where wanted), the orchestrator
+writes the keys into `findings.json`, the findings writer copies them into
+`data.json`, and the report is assembled and republished. The card shows a
+line "Ticket" with the keys, and the renderer appends `Ticket: <keys>` as the
+last line of the finding's GitLab comment.
 
 Mapping from a reviewer's output: Description becomes `what`, Failure scenario
 becomes `why`, Suggested fix becomes `fix`; `verify` states what the
@@ -489,7 +528,7 @@ holds the id, the severity pill, the category and the title `t`: the
 effect first, at most one technical term, no paths, no numbers. Under it
 stands the location line (package · file), then the four fields under the
 labels What, Impact, Fix, Checked (DE Was, Auswirkung, Lösung, Geprüft),
-then the follow-up line (FYI and Optional), then the GitLab comments. All of
+then the ticket line (only with `tickets`), then the GitLab comments. All of
 it is visible without a switch. Each field is `{"text": [en, de], "more":
 [en, de] | null}`:
 
@@ -535,18 +574,23 @@ marked as an example ("e.g. 01.01.2027", DE "z. B. 01.01.2027"); a value from a
 reproduction is named as that ("the reproduction's date 2026-01-01"). A key
 combination names every platform the code binds ("Ctrl+Z / Cmd+Z").
 
-Order: Blocker, Optional, Nit, FYI; within a group by weight. Ids are `F<n>`
-in that order, severity-free, and never change on a republish. After the
+Order: blocking, then non-blocking; within a severity by kind (issue,
+question, chore, suggestion, nitpick, note); within a kind by weight. Ids
+are `F<n>` in that order, free of severity and kind, and never change on a republish. After the
 first publish the orchestrator sets `meta.published: true`; a finding
 re-graded after that keeps its id and its place in `findings.json`, and
 `assemble.py` then skips the order check; the report still shows the cards
-by severity, within a group in list order. No value from a secret file in any field; a closing
+by severity and kind, within a group in list order. No value from a secret file in any field; a closing
 `script` tag in a string is safe, since `assemble.py` escapes every `<` in the
 data it writes into the report.
 
 ## Open questions for the author, what works well (3.3, 3.4)
 
 Bullets, as EN/DE pairs. Praise names the concrete mechanism, not "good tests".
+3.4 is one list of 1 to 3 points (`GOOD_POINTS_MAX`), each one line of at most
+20 words (`GOOD_POINT_WORDS_MAX`), no paragraphs or details; `assemble.py`
+checks it. The points also close the review comment at the end of 3.5, so
+each reads on its own. Praise stays here: no finding has a `praise` kind.
 
 ## GitLab comments (3.5)
 
@@ -555,8 +599,13 @@ Subsection 3.5, the last of the assessment, always visible. Every
 file in path order (the MR's file list), by line within a file, general MR
 comments last. Each entry links back to its finding and has a copy button that
 copies the prefixed text; where the viewer blocks the clipboard, the button
-selects the text for Cmd/Ctrl+C. It follows the three filter rows, so
-"Blocker" with "Open" shows exactly the comments still to be posted before a merge.
+selects the text for Cmd/Ctrl+C. It follows the four filter rows, so
+"blocking" with "Open" shows exactly the comments still to be posted before a merge.
+The subsection ends with the review comment, to post once when the review is
+done (GitLab's review summary or a general MR comment), copyable in both
+languages: the verdict in bold, the count of blocking and non-blocking
+findings, then "What works well:" with the 3.4 points. `assemble.py` builds
+it from `verdict.word`, `findings.json` and `good.html`; no writer writes it.
 For a subject without GitLab comments the subsection holds one line instead: "No GitLab
 comments for this subject type." / "Keine GitLab-Kommentare für diese Art von
 Gegenstand."
@@ -590,10 +639,10 @@ truncated or skipped after its quota or auth failed). One paragraph on
 consolidation: same root cause equals one finding, checks by severity as the
 check table in SKILL.md §4 sets them for the run's depth (every Blocker
 checked by its own investigator, or `unchecked` after it failed for good;
-severity from the investigators' final labels, a Blocker standing when two
+severity from the investigators' final severities, a Blocker standing when two
 disagree across the Blocker line; a claim refuted only when every
 investigator refuted it),
-refuted claims named here, every id withdrawn after publish (`notes.withdrawn`, "fixed in <sha>" after an update at a new sha), for an updated report each run in `meta.runs` with its date and sha and which findings each raised, severity from the investigators' final labels; how many side findings the investigators named and how many became findings (`notes.sideFindings`); for GitLab comments, the cold read (`notes.coldRead`): how many comments a reader without the report read, in how many rounds, how many unclear references, translated German sentences and differences between the languages it named, how many were fixed, and each one left with its reason. This is the only place a
+refuted claims named here, every id withdrawn after publish (`notes.withdrawn`, "fixed in <sha>" after an update at a new sha), for an updated report each run in `meta.runs` with its date and sha and which findings each raised, severity from the investigators' final severities; how many side findings the investigators named and how many became findings (`notes.sideFindings`); for GitLab comments, the cold read (`notes.coldRead`): how many comments a reader without the report read, in how many rounds, how many unclear references, translated German sentences and differences between the languages it named, how many were fixed, and each one left with its reason. This is the only place a
 source is named; the findings below carry no attribution.
 
 The consolidation paragraph also names what no run covered: failed runs,
@@ -622,8 +671,10 @@ parsed, never executed, and the report carries exactly the checked array.
 `test_assemble.py` holds a failing case for each check listed here:
 
 - against `findings.json`: same ids F1..Fn (gaps only for ids in
-  `notes.withdrawn` after publish, and a withdrawn id never reused), severity order, categories, packages, locations,
-  follow-ups; no finding with a `reason` field (a Blocker's `verify` states
+  `notes.withdrawn` after publish, and a withdrawn id never reused), the order by severity and
+  kind, severities, kinds (a `suggestion`, `nitpick` or `note` never blocking), `proposed`,
+  categories, packages, locations, `tickets` (Jira keys, the same in `data.json`); no
+  `followUp`; no finding with a `reason` field (a Blocker's `verify` states
   the proof);
 - the card shape: `t` and `fields` with exactly `what`, `why`, `fix` and
   `verify`, each `{"text": [en, de], "more": [en, de] | null}`; no
@@ -642,19 +693,20 @@ parsed, never executed, and the report carries exactly the checked array.
 - the verdict: `verdict.word` fits the open Blockers, a lead `<strong>`
   verdict word agrees with it, each language names every open Blocker in id
   order and no id that is not a finding;
-- every finding in `findings.json` with an id, a severity, a category and a package (else
-  it stops before the other checks); `check` one of `inline`, `batch`, `investigator`,
+- every finding in `findings.json` with an id, a severity, a kind, a category and a package (else
+  it stops before the other checks); `check` one of `batch`, `investigator`,
   `investigator2`, `unchecked`; `mrUrl` an `https://` URL, set only for an `mr`; `gitlab`, when
   given, matching the subject type; `meta.headAtPublish`, when given, a sha
   next to a sha in `meta.state`; `meta.effort`, when given, both phases with
   ISO times (time zone included, `ended` not before `started`) and run counts
   per model under known roles; no "foreign" or "Fremd…" in the method section;
-- the check a finding needs at `meta.depth` by the check table in SKILL.md
-  §4, or a stronger one, or `unchecked` (`required_check` in `assemble.py`;
-  the exemption's conditions beyond the category it cannot see, so they
-  stay the orchestrator's);
+- the check a finding needs by the check table in SKILL.md §4 (the stronger
+  of what `proposed`, the final severity and `meta.depth` need), or a
+  stronger one, or `unchecked` (`required_check` in `assemble.py`);
 - for a branch, MR or PR subject, every finding has 1 or 2 GitLab comments,
-  Nits included;
+  every kind included; no comment text starts with a label prefix, and
+  `Suggestion:` / `Vorschlag:` stands only in an `issue`;
+- 3.4 one list of 1 to 3 points per language, each at most 20 words;
 - every text inside a language block, every block a complete EN/DE twin
   whose German text is no copy of the English one (the same text with three
   or more words that are not code, a name or `file:line`, one of them in

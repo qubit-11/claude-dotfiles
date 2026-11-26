@@ -114,15 +114,28 @@ file), so a later round, or the same round after a context compaction, picks up 
      claim that holds in part, a check that could not be finished, two candidates, a
      fix with findings, an agent that disagrees with the direct reading) is **Needs a
      look**.
-   - Kind per thread: a **defect** (triggerable in this change: wrong behaviour, a
-     failing test or build), a **suggestion** (anything else that asks for a change),
-     or **Info** (asks for no change here: a confirmation, an announced follow-up). The
-     kind sets the reply (step 6); the reviewer's own label (Optional, Nit) does not.
+   - Kind per thread, from the check, in the kinds of
+     [Conventional Comments](https://conventionalcomments.org) that
+     `qubit-code-review` uses: an **issue** (something is wrong or missing in this
+     change: wrong behaviour, a failing test or build, a missing test or case), a
+     **suggestion** (the code works; another way would be better), a **nitpick**
+     (wording only), a **question** (the reviewer asks what only the author can
+     answer), a **chore** (a step outside the repository: an infrastructure update, a
+     migration in production, a release order) or a **note** (asks for nothing: a
+     confirmation, information). The kind sets the reply (step 6). The reviewer's
+     prefix (`**issue (blocking):**`, or another convention's `Nit:`) is a hint, never
+     the result: a claimed issue that does not hold is answered as one that does not
+     hold. A thread the reviewer marked `blocking` is recorded as such, since it holds
+     the merge until it is settled.
+   - A **question** or a **chore** is never Clean: the answer and the step outside the
+     repository are the user's. The item names the facts the check found (for a
+     question, what the code and the description say; for a chore, whether the
+     description already declares the step).
 4. **Report, then stop.** Write the round's run file first. The report is ordered by
    group, not by the threads' order on the platform. It is a numbered list, never a
    table: the terminal may be a third of a screen wide. Items are numbered straight
    through all groups (1, 2, 3, …), so the user can answer "do 1–4 and 6"; within a
-   group, defects come first. Each item's title links its thread. In a later round,
+   group, threads marked `blocking` come first, then issues. Each item's title links its thread. In a later round,
    the report says which round it is. The groups, in this order:
    - **Clean** (step 3's definition): three lines per item, no sources and no
      description of the checks; the user asks for them when needed. A fourth line,
@@ -151,8 +164,8 @@ file), so a later round, or the same round after a context compaction, picks up 
      With one candidate, a single `Fix:` line replaces the two, and `Plan:` names the
      fixes added to it.
 
-   - **Info (no reply)** (no change asked here): one line per item; a fact worth
-     passing to the reviewer is named in the line, for the user to decide.
+   - **Notes (no reply)** (kind `note`, nothing asked here): one line per item; a fact
+     worth passing to the reviewer is named in the line, for the user to decide.
 
    End with the recommended set ("recommended: 1–5") and ask which items to do. Wait
    for the answer, then record the picks in the run file.
@@ -173,11 +186,13 @@ file), so a later round, or the same round after a context compaction, picks up 
      | Outcome | Reply |
      | --- | --- |
      | the reviewer's fix, also with different names or formatting, or with only the cleanup it makes necessary (an import or attribute it leaves unused) | `Addressed in <hash>.` |
-     | a real defect, fixed | `Fixed in <hash>.` |
+     | an issue that holds, fixed (not with the reviewer's fix as written) | `Fixed in <hash>.` |
+     | a question, answered | two sentences: the answer; where it now stands (the description, or the commit with its hash) |
+     | a chore, done by the user | `Done: <the step, in a few words>.` |
      | the comment is settled, but the commit alone does not show which approach was taken: we took one of several options the reviewer offered (keeping the code counts as one); the reviewer named no remedy and the comment does not make the fix obvious; or the commit, however trivial, changes files beyond the commented file and its companions (as in rank 3) | the `Addressed` or `Fixed` reply plus half a sentence that names the approach, not the steps: `Addressed in <hash>: moved to the sibling entry point <path>.` |
      | another fix, or the comment settled in part | two sentences: what was done instead (with the hash); why the suggestion as written was not taken, or how its goal is still met |
      | not done | two sentences: what stays; the technical reason |
-     | Info | no reply |
+     | a note | no reply |
 
    - Post the `Addressed` and `Fixed` replies right away. Show the two-sentence replies
      to the user first and post them after the user's OK.
@@ -211,8 +226,9 @@ context compaction, read it before anything else.
       "thread": "<thread id>",
       "url": "<link to the note>",
       "title": "<short title>",
-      "group": "clean | needs-a-look | info",
-      "kind": "defect | suggestion | info",
+      "group": "clean | needs-a-look | note",
+      "kind": "issue | suggestion | nitpick | question | chore | note",
+      "blocking": true,
       "claim": { "verdict": "holds | in part | does not hold", "evidence": "<file:line, run>" },
       "candidates": [
         { "name": "A", "from": "design | reviewer", "diff": "<diff>",
@@ -239,6 +255,7 @@ context compaction, read it before anything else.
 | Agreeing with a claim because the reviewer sounds sure, or quoting the reviewer's numbers | check it against the source and recompute |
 | Refactoring or tidying up beside the fix | the smallest change that settles the comment; the rest goes into `Also:` |
 | Fixing every comment straight away | report, stop, fix what the user picked |
-| Replying to an Info thread to pass on a fact | name the fact in the report; the user decides |
+| Replying to a note to pass on a fact | name the fact in the report; the user decides |
+| Taking the reviewer's label as the kind, or answering a `question` or a `chore` without the user | the check sets the kind; questions and chores go to Needs a look |
 | Replying before the push | push first, so the hash resolves |
 | Starting a later round from scratch | read the run files of the earlier rounds first |

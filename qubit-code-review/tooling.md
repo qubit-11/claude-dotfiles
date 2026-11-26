@@ -286,18 +286,21 @@ package, else the area with the most changed lines.
 ### Promotion checks (every depth)
 
 A promotion candidate is a finding that the check table in SKILL.md §4 sends
-to a check for its label. Which candidate gets a batch and which its own
+to a check for its proposed severity. Which candidate gets a batch and which its own
 investigator, per depth, stands in that table only. Batches group by shared
 files: the same `file` together; files of one area join the batch up to the
 limit of 8 claims; a file with more claims splits in list order. No
 candidates, no batch. Output names: `investigator-batch-<n>` for a
 batch, `investigator-<draft id>` for an own investigator,
 `investigator2-<draft id>` for the second (at `deep`, after a refuted or
-downgraded Blocker claim or a blind rating that says Blocker; at most one
-per finding). Every investigator ends with a
-final label per claim. The finding's `check` records the strongest check
-that ran: `batch`, `investigator` (its own) or `investigator2` (its own and
-a second); `assemble.py` compares it with what the depth needs.
+downgraded Blocker claim or a blind rating that says blocking or
+possibly-blocking for a non-blocking finding; at most one per finding).
+Every investigator ends with a final severity and the kind facts per claim.
+A claim a batch decides blocking gets its own investigator afterwards. The
+finding's `proposed` records the strongest proposal of any source, its
+`check` the strongest check that ran: `batch`, `investigator` (its own) or
+`investigator2` (its own and a second); `assemble.py` compares the check
+with the stronger of what `proposed`, the final severity and the depth need.
 
 ## Running the CLIs (every depth)
 
@@ -370,11 +373,11 @@ one more run: the severity-rater variant of the prompt with the consolidated
 claims appended (draft ids), in `$SP/inputs/review-prompt.<tool>.rating.md`,
 output `$SP/reviews/<tool>.rating.md`. Same commands; its completeness check
 is its own (below). A tool that fails here leaves the other tools' ratings
-standing. This is an audit of labels, not a review, so it may see the
-claims. A rating that says Blocker for a finding labelled lower gets that
-finding a second investigator, unless one already ran (SKILL.md step 4, check
-table); a rating below the label triggers nothing, since a Blocker stands
-when checks disagree. Agreement skips no Claude check, and a missing rating
+standing. This is an audit of severities, not a review, so it may see the
+claims. A rating that says blocking or possibly-blocking for a non-blocking
+finding gets that finding a second investigator, unless one already ran
+(SKILL.md step 4, check table); a rating below the finding's severity
+triggers nothing, since a Blocker stands when checks disagree. Agreement skips no Claude check, and a missing rating
 changes nothing.
 
 A new foreign tool joins with this strategy; it needs only its command,
@@ -528,10 +531,12 @@ real tool set.
   `report-sections.md`, `gitlab-comments.md`, `$SP/inputs/change.diff` (for
   the anchors) and `$SP/inputs/sources/glossary/`, and returns the findings array (`data.json`, shape in `report-sections.md`) with the
   card fields and the GitLab comments, the verdict text, and sections 3.3, 3.4,
-  4.1 and 4.2 as HTML fragments, all in English. Every text in `data.json`
+  4.1 and 4.2 as HTML fragments, all in English. 3.4 (`good.html`) is one
+  list of 1 to 3 points, one line each (at most 20 words): `assemble.py`
+  closes 3.5 with them in the review comment. Every text in `data.json`
   is an `[en, de]` pair from the start, written as `["<English>", ""]`; the
-  translator fills index 1. `followUp` is copied unchanged: its title is the
-  literal ticket title, the same in both languages. A finding with
+  translator fills index 1. `sev`, `kind` and `tickets` are copied
+  unchanged. A finding with
   `triggers` lists them in each `what` and in its GitLab comment, in
   `triggers` order (`report-sections.md`, `gitlab-comments.md`). It writes
   each card's `fields.what`, `.why`, `.fix` and `.verify` from the
@@ -551,8 +556,8 @@ real tool set.
   language, no details, no ids, no code, no verdict word: what the subject
   is for, then the gist of why it is or is not fit (report-sections.md,
   Header). The findings summary (`summary.html`) opens 3.2: a list by
-  severity (Blocker, Optional, Nit, FYI, "none" when empty), a few words
-  each, the Blocker line included (the folded cards are the full list), an
+  severity (blocking, non-blocking, "none" when empty), a few words
+  each, naming the kinds where they help, the blocking line included (the folded cards are the full list), an
   id only where a line singles out one finding, above all architecture or
   design (no lists, no ranges), then
   "Related:" with the dependencies that are not obvious,
@@ -647,7 +652,7 @@ real tool set.
   ```
 - Investigator: `general-purpose` with the investigator or batch variant,
   read-only, every depth, as the check table in SKILL.md §4 says. One
-  verdict per claim, each ending in a final label. It may build fixtures only under
+  verdict per claim, each ending in a final severity and the kind facts. It may build fixtures only under
   `$SP/investigate/<draft id>/`.
 - Publish worker (SKILL.md §6.3, one per line "batch <n>:" of `assemble.py`):
   `general-purpose` with `model: sonnet`, never `fork`. Reading its batch
@@ -758,8 +763,9 @@ the change. A passing suite is read for its console lines too: `grep -E
 'console\.(error|warn)|Error:' "$SP/checks/<suite>.txt"`, one claim per
 distinct message ("the suite prints <message> at <spec file>"), each
 through steps 3 to 7 like any claim only a test raised. Its investigator's
-`# Before the change` decides: printed on the target too, FYI; new with the
-change, Optional. Lockfile sync with `pnpm install --frozen-lockfile --prefer-offline`,
+`# Before the change` decides: printed on the target too, a non-blocking
+`issue` that says it existed before; new with the change, a non-blocking
+`issue`. Lockfile sync with `pnpm install --frozen-lockfile --prefer-offline`,
 which fails loudly when the lockfile is stale and writes only `node_modules`;
 never `--lockfile-only` in the worktree, it rewrites a tracked file. This
 install takes precedence over a non-frozen install in the repository's

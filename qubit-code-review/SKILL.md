@@ -8,7 +8,7 @@ argument-hint: "[standard|deep] [skip-report] | publish-report | re-review"
 
 Reviewers read the same subject without knowing each other, each other's
 findings, or any earlier review. The orchestrator consolidates their output
-into one list, has every Blocker and every factual contradiction
+into one list, has every possible Blocker and every factual contradiction
 investigated, and every other finding checked as its depth requires (§4),
 runs what can be run, and prints a short findings list in chat. Then, unless told to skip it,
 it publishes one report in English and German. The reviewers' own lists are
@@ -96,16 +96,16 @@ Files:
 
 ## Severity
 
-Every finding has one true severity. Reviewers propose it, investigators
-decide it (§4; an exempt Nit keeps the reviewer's label), and the
-orchestrator never sets it.
+Every finding has one true severity, `blocking` or `non-blocking`, and the
+verdict depends on nothing else. Reviewers propose it, investigators decide
+it (§4), and the orchestrator never sets it. A blocking finding is a
+Blocker in prose. What a non-blocking finding asks for is not part of the
+severity; its kind says it (§4, step 9).
 
 | Severity | Definition | Merge |
 | --- | --- | --- |
-| Blocker | (a) a defect that can be triggered in live use of the subject: a broken intent (a mechanism the change adds fails on a live path to do what its quoted intent says, whatever the harm) or a gap (an unhandled case with no stated intent whose live trigger gives a user, stored data or availability a wrong result); (b) a vulnerability; (c) a change that makes the code health worse: it breaks an accepted ADR or an enforced boundary, inverts a dependency direction, adds a second mechanism next to an existing one, adds complexity or generality the change does not need, leaves an invariant its module owns to the callers (an input that the module's own types and checks accept breaks the invariant the module exists to keep), or breaks an invariant the code enforces (a schema validator or required field, a unique index, a type, a consumer's strict check of a value it receives) by writing data or handing over a value that breaks it, instead of changing the invariant or migrating the consumer, changes after the save a value a user edits and saves in this system, in what the system returns as that value or stores, beyond a technical form that a load and a save leave the same, or leaves an existing test failing that passed before the change, without fixing it or disabling it visibly with a ticket; (d) a missing test: a new feature with no test at all | waits for it |
-| Optional | a change to behaviour, tests, coverage or structure, something a user, a test or a later change to the code depends on, with no failure in live use: additional tests, a missing case in otherwise present tests | allowed |
-| Nit | a change to wording only: names by convention, comments, docs wording | allowed |
-| FYI | no change in this subject; worth a follow-up ticket | allowed |
+| blocking | (a) a defect that can be triggered in live use of the subject: a broken intent (a mechanism the change adds fails on a live path to do what its quoted intent says, whatever the harm) or a gap (an unhandled case with no stated intent whose live trigger gives a user, stored data or availability a wrong result); (b) a vulnerability; (c) a change that makes the code health worse: it breaks an accepted ADR or an enforced boundary, inverts a dependency direction, adds a second mechanism next to an existing one, adds complexity or generality the change does not need, leaves an invariant its module owns to the callers (an input that the module's own types and checks accept breaks the invariant the module exists to keep), or breaks an invariant the code enforces (a schema validator or required field, a unique index, a type, a consumer's strict check of a value it receives) by writing data or handing over a value that breaks it, instead of changing the invariant or migrating the consumer, changes after the save a value a user edits and saves in this system, in what the system returns as that value or stores, beyond a technical form that a load and a save leave the same, or leaves an existing test failing that passed before the change, without fixing it or disabling it visibly with a ticket; (d) a missing test: a new feature with no test at all | waits for it |
+| non-blocking | no Blocker reason holds | allowed |
 
 Live use, per subject type (the reviewer prompt's placeholder line is filled
 from this):
@@ -123,8 +123,8 @@ built by an attacker or another tenant is judged under (b). A failure that
 occurs only when a release precondition is unmet (an infrastructure
 version, a migration or another release that must come first) counts as
 follows: if the description, the repository's docs or the ticket declare
-the precondition, live use means it is met, and the finding is an FYI
-whose follow-up names the precondition for the release; if none of them
+the precondition, live use means it is met, and the finding is a
+non-blocking `chore` whose text names the precondition for the release; if none of them
 does, live use is today's setup, and the failure is judged as it is.
 
 The rules for (c) and (d), for rules in instruction files and code comments,
@@ -133,10 +133,10 @@ and for personal data stand in the shared prompt only
 every reviewer, investigator and rater judges by that text.
 
 - The verdict is mergeable (applicable, fit for use) exactly when
-  no Blocker is open.
+  no blocking finding is open.
 - **Open question.** When only the author can say whether a behaviour is
-  intended, and one plausible answer makes it a Blocker, the finding is a
-  Blocker; its `fix` is the question with both ways out (state it in the
+  intended, and one plausible answer makes it a Blocker, the finding is
+  blocking, of kind `question`; its `fix` is the question with both ways out (state it in the
   description, or change the code). It covers a contradiction with the
   ticket that the description leaves unaddressed, and behaviour someone
   outside the change sees that neither description nor ticket covers and
@@ -151,9 +151,15 @@ every reviewer, investigator and rater judges by that text.
 - Reason and category are independent: the card and the list show the
   category, a Tests finding can rest on (a), and personal data in a log in
   live use is (a) with category Security.
-- An Optional's `why` says when it starts to hurt, when such a condition
-  exists. Every FYI and every Optional carries a follow-up ticket draft whose
-  text carries that condition; the drafts stand in the report (step 5).
+- **Proposals.** Reviewers and raters propose one of three:
+  `blocking`, `possibly-blocking` (a Blocker reason may hold but hangs on
+  something the source could not settle: is the trigger reachable in live
+  use, is it intended; in doubt, this one) or `non-blocking`. The strongest
+  proposal of any source is the finding's `proposed` and picks its check
+  (§4, step 5); investigators decide only `blocking` or `non-blocking`.
+- A non-blocking finding's `why` says when it starts to hurt, when such a
+  condition exists. A ticket is no part of the review: tickets are created
+  after it where wanted, and their keys go into the finding's `tickets` (§5).
 
 ## 1. Frame the subject
 
@@ -218,7 +224,8 @@ findings.json).
   description, or without an MR the commit messages and the user's framing in
   the request. The ticket is background: ticket vs. code is a Blocker only
   as an open question the description leaves unaddressed (Severity, open
-  question); a deviation the description explains is at most an FYI. A
+  question); a deviation the description explains is at most a non-blocking
+  `note`. A
   contradiction between sources is a finding candidate, never a fact. A
   ticket that says "merged" or cites another ticket is checked against git
   and Jira.
@@ -249,7 +256,7 @@ a missing one is less likely. `deep` contains `standard`.
 
 Fixed by this skill, not by a run: the severity scale (Severity) gives every
 finding one true severity, and where it needs a judgment the investigator's
-final label decides; severity and category never depend on the depth, a
+final severity decides; severity, kind and category never depend on the depth, a
 deeper run only states them correctly more often; one fix at one place is
 one finding (§4.3); a finding states its severity, location, failure
 scenario and fix.
@@ -262,14 +269,15 @@ At every depth, or the report is broken, not less sure:
 - every rendering of a finding says what `findings.json` says.
 
 What a depth makes more likely, in order of weight. The user corrects by hand
-only what gets their attention, and attention follows the label: a Blocker is
-always read, an Optional mostly, a Nit or FYI barely; a missing finding
-cannot be corrected at all.
+only what gets their attention, and attention follows the severity: a
+Blocker is always read, a non-blocking finding less, the less the more its
+kind asks nothing (a `nitpick` or a `note` barely); a missing finding cannot
+be corrected at all.
 
 | Aspect | Holds when | An error, recoverable by hand? |
 | --- | --- | --- |
 | A1 Completeness | no real Blocker is missing; two causes merged into one finding leave one missing | no |
-| A2 Classification | every finding has its true severity | too low: barely, the lower the label the less it is read; too high: yes, a Blocker is always read |
+| A2 Classification | every finding has its true severity | too low: barely, a non-blocking finding is read less; too high: yes, a Blocker is always read |
 | A3 Validity | every listed finding is real at the reviewed sha, in live use (Severity) | yes |
 | A4 Accuracy | a real finding's location, failure scenario and fix are correct | yes, they are checked by hand anyway |
 
@@ -313,7 +321,7 @@ depth.
 | Depth | Adds | Trace for the report |
 | --- | --- | --- |
 | standard | 1 core reviewer (a fresh Claude subagent on the whole subject, never the orchestrator, which has read the description and the ticket and would judge its own findings); + 1 architecture reviewer, always, on the whole subject, reading beyond the diff (imports and importers of the changed files, existing mechanisms that do the same job, the relevant ADRs in `inputs/sources/`); + 1 lane reviewer per area, each with the `standard` focus (an area is a package when the subject spans 2 or more packages, else a top-level directory; at most 4; with one area no lane runs, since the core reviewer already reads the whole subject; split in [tooling.md](tooling.md)); + 1 requirements reviewer on the whole subject (the MR description first, the ticket only where it says nothing; not the ADRs, which the architecture reviewer covers; scope line in [reviewer-prompt.md](reviewer-prompt.md)) | 1 explorer subagent |
-| deep | + 3 lens reviewers, all three every time, never picked by topic, each on the whole subject and each run twice (two independent runs on the same prompt, outputs `lens-<x>` and `lens-<x>-2`): attacker, consumers, production (Lenses, below). The foreign tools rate every finding's severity blind (§4); every finding gets its own investigator, exempt Nits included, and a second one after a refuted or downgraded Blocker claim or a blind rating that says Blocker (§4); + 1 follow-up agent per Blocker that holds (§4.6, Follow-up) | 1 explorer subagent |
+| deep | + 3 lens reviewers, all three every time, never picked by topic, each on the whole subject and each run twice (two independent runs on the same prompt, outputs `lens-<x>` and `lens-<x>-2`): attacker, consumers, production (Lenses, below). The foreign tools rate every finding's severity blind (§4); every finding gets its own investigator, and a second one after a refuted or downgraded Blocker claim or a blind rating that says Blocker (§4); + 1 follow-up agent per Blocker that holds (§4.6, Follow-up) | 1 explorer subagent |
 
 Every Blocker is checked alone at every depth. `deep` runs every check of
 `standard` or a stronger one (the check table, §4), never a weaker one.
@@ -356,7 +364,7 @@ categories (scope lines in [reviewer-prompt.md](reviewer-prompt.md)):
 
 Codex runs at every depth on the shared prompt, for another model family,
 not more effort. Gemini is out of the roster since 2026-11-16: in about
-seven runs it raised one finding no other source had, an FYI, and no prompt
+seven runs it raised one finding no other source had, a non-blocking `note`, and no prompt
 changed that. It is checked again against the answer keys when a new version
 comes out. The Claude roster and every Claude-side check stand
 on their own, as if the foreign tools did not exist: foreign output adds
@@ -445,10 +453,11 @@ The steps, in order:
    as it falls: a new or merged finding with its `sources`; each raw output
    in `notes.processed` once its findings are recorded; a check as `running`
    while its investigator works, then the strength of the check that ran:
-   `inline` (the reviewer's label stands), `batch`, `investigator` (one of
+   `batch`, `investigator` (one of
    its own), `investigator2` (one of its own and a second), or `unchecked`
    when the investigator failed for good ([tooling.md](tooling.md), Failed
-   subagents); a severity; a refuted claim into `notes.refuted`. After a
+   subagents); the strongest proposal as `proposed`; a severity; a refuted
+   claim into `notes.refuted`. After a
    compaction, re-read `findings.json` and `$SP/state/dispatch.txt` (after a
    resume whose scratchpad is gone, first restore them from the run folder:
    [tooling.md](tooling.md), Hygiene) and continue from the files, never
@@ -458,7 +467,9 @@ The steps, in order:
    After dispatch, `findings.json` starts as the earlier run's, not empty:
    copy only `report/findings.json` and `report/publish/manifest.json` from
    the earlier run folder into `$SP/report/`, never its `state/` or
-   `inputs/` (they belong to the new run). Its ids, `meta.published`,
+   `inputs/` (they belong to the new run). An earlier report whose findings
+   carry the old severities (Blocker, Optional, Nit, FYI) cannot be updated:
+   the run reviews from scratch. Its ids, `meta.published`,
    `meta.artifactUrl`, `meta.run` and `meta.runName` stay; `meta.state`
    becomes the new sha; `meta.runs` gets `{"run": <this run id>, "sha":
    <new sha>, "date": <today>}` appended (a run without `meta.runs` first
@@ -474,7 +485,7 @@ The steps, in order:
    batches of at most 8 with the question "does it still hold at
    `<sha>`?"; a refuted one moves to `notes.withdrawn` as
    `"F<n>: fixed in <short sha>"`, and its id stays unused. An earlier
-   Blocker the batch refutes or labels lower first gets an investigator of
+   Blocker the batch refutes or rates non-blocking first gets an investigator of
    its own, and at `deep` a second one, as any Blocker (step 5); it is
    withdrawn only when every one of them refutes it. The re-check also
    returns each kept finding's current `file:line`. New findings
@@ -531,25 +542,32 @@ The steps, in order:
    passes `python3 <skill dir>/ground_check.py "$SP/report/findings.json"
    <worktree, or the subject's root>`: file, line and every name exist in the
    real file. A failure flags the finding, never drops it: the finding goes
-   to its investigator with the failure, an exempt Nit included. A name
+   to its investigator with the failure. A name
    missing from the cited file may stand in another file the claim traces,
    so only an investigator refutes it.
 5. **Checks.** Checks follow severity, not agreement, at every depth and for
-   every source, foreign tools included. A finding only one source raised is
-   not doubtful for that reason: reviewers rarely contradict each other, they
-   miss different things. The check table:
+   every source, foreign tools included; never the category or the kind. A
+   finding only one source raised is not doubtful for that reason:
+   reviewers rarely contradict each other, they miss different things.
+   The check table:
 
    | Trigger | Check |
    | --- | --- |
-   | any source rates it Blocker | investigator: does it hold, and does its Blocker reason hold (questions below)? |
+   | any source proposes `blocking` | investigator: does it hold, and does its Blocker reason hold (questions below)? |
+   | any source proposes `possibly-blocking`, none `blocking` | investigator: does a Blocker reason hold, and does this change create the trigger or make it reachable? |
+   | every source proposes `non-blocking` | `standard`: a batch investigator, same question (grouping: [tooling.md](tooling.md), Promotion checks). `deep`: an own investigator per claim |
+   | a check decides `blocking` for a finding no investigator checked alone (a batch raised it) | its own investigator with the Blocker question for its reason |
    | sources contradict each other on a fact | investigator |
-   | `deep`: a Blocker investigator refutes the claim or labels it below Blocker | a second investigator, fresh, with the claim and without the first verdict |
-   | `deep`: the blind foreign severity rating says Blocker and the finding's label is lower | a second investigator, as in the row above; none when one already ran |
-   | any source rates it Optional or FYI; a Nit that cites a rule; a Nit any source filed outside Style and Docs | `standard`: an own investigator per Optional and per FYI, a batch investigator for the Nits (grouping: [tooling.md](tooling.md), Promotion checks). `deep`: an own investigator per candidate. Questions per the claim's kind: Optional, does a Blocker reason hold (for a defect: can it be triggered in live use?); FYI, does this change create the trigger, or make it reachable; a Nit that cites a rule, is it a boundary rule or a style rule; any other Nit, is it wording only. Every claim's answer ends in its final label (Blocker, Optional, Nit, FYI) |
-   | a Nit that cites no rule, every source filed as Style or Docs, no source rated higher, and whose assigned category is Style or Docs | `standard`: none; the reviewer's label stands (`check: inline`). `deep`: an own investigator, question: is it wording only? (at `deep` every finding is checked alone) |
+   | `deep`: a Blocker investigator refutes a claim proposed `blocking` or decides `non-blocking` | a second investigator, fresh, with the claim and without the first verdict |
+   | `deep`: the blind foreign severity rating says `blocking` or `possibly-blocking` and the finding is non-blocking | a second investigator, as in the row above; none when one already ran |
 
-   The category the orchestrator assigns can remove an exemption, never grant
-   one.
+   Every investigator, a batch included, ends with `# Final severity`
+   (`blocking` or `non-blocking`) per claim, and states the facts the kind
+   is chosen from (step 9). A `possibly-blocking` claim decided
+   non-blocking gets no second investigator at `deep`. `proposed` in
+   `findings.json` is the strongest proposal of any source; `assemble.py`
+   checks the check against the stronger of what `proposed` and the final
+   severity need.
 
    An investigator is a fresh subagent with the exact claim, its suggested
    fix, the file, and the investigator variant of the shared prompt. A fix it
@@ -558,13 +576,13 @@ The steps, in order:
    `# Before the change` other than NONE becomes `before` ([report-sections.md](report-sections.md), Mapping). Its
    `# Failure scenario` replaces a source's case when the two differ in
    their conditions. A Blocker reason
-   that does not hold names the label the claim deserves; the orchestrator
-   never sets it. The question per Blocker reason:
+   that does not hold ends in `non-blocking`; the orchestrator never sets
+   the severity. The question per Blocker reason:
 
    | Blocker reason | Investigator question |
    | --- | --- |
    | (a) broken intent | does the change add the mechanism, where does its intent stand (quote), does it fail on a live path, and did the author not declare it a limitation? |
-   | unmet release precondition (any reason) | does the failure need a precondition outside the code (an infrastructure version, a migration, another release first), and do the description, the repository's docs or the ticket declare it (quote it)? Declared: FYI; not declared: judged with today's setup |
+   | unmet release precondition (any reason) | does the failure need a precondition outside the code (an infrastructure version, a migration, another release first), and do the description, the repository's docs or the ticket declare it (quote it)? Declared: non-blocking; not declared: judged with today's setup |
    | (a) gap | does it hold, and what is the first wrong result in live use, following shared resources, and who gets it? |
    | (b) vulnerability | can it be exploited on a path live use takes? |
    | (c) ADR or boundary | does the ADR exist, is it accepted, does it apply to this code, and does the subject leave it unchanged? Does the import or dependency really point the wrong way? |
@@ -572,7 +590,7 @@ The steps, in order:
    | (c) unneeded complexity | does the code use the flexibility it adds? Would a simpler version meet the description? Which concrete cost does the complexity bring by itself (which future change gets harder, what a reader will misunderstand), apart from defects other findings already name (the orchestrator lists the findings located in the same mechanism, one line each, so the investigator can leave them out)? A defect inside the mechanism that is its own finding counts there, not here |
    | (c) owned invariant | is the invariant what the module exists for (quote its name, docs or the description), do the module's own types and checks accept the input, and does the module's state break the invariant after it? |
    | (c) enforced invariant | does the code enforce it, did all data meet it before the change, and does the change write data that breaks it, write around it (a raw update, validators switched off), or hand an unchanged consumer a value its check rejects? |
-   | (c) user-owned value | is it a value a user edits and saves in this system (quote the edit and the save path), not one a stated rule gives to another system; does the change, not the target, alter what the system returns as that value or stores, after the save (a display derived from it does not count); does a load plus a save change the stored value; is it neither a default before the first save nor a one-time reset written to storage at the event that ends what the value depends on; does the change route its new case through a mechanism that at the merge base already rewrites the same field of a stored document after the save (quote it at the merge base: then FYI with a follow-up ticket for that mechanism that names the new case), or add its own (a copy of that pattern counts as its own)? |
+   | (c) user-owned value | is it a value a user edits and saves in this system (quote the edit and the save path), not one a stated rule gives to another system; does the change, not the target, alter what the system returns as that value or stores, after the save (a display derived from it does not count); does a load plus a save change the stored value; is it neither a default before the first save nor a one-time reset written to storage at the event that ends what the value depends on; does the change route its new case through a mechanism that at the merge base already rewrites the same field of a stored document after the save (quote it at the merge base: then non-blocking, an `issue` about that existing mechanism that names the new case), or add its own (a copy of that pattern counts as its own)? |
    | (c) broken existing test | did the test pass on the target before the change, does it fail on the subject because of the change, and does the change leave it neither fixed nor disabled with a ticket? |
    | (c) repo rule | does the quoted rule stand in the named instruction file, does it apply to this path, and does the change break it? |
    | (a) or (c) rule in a comment | does the quoted comment stand in the touched file, and does the change break what it demands? |
@@ -580,10 +598,8 @@ The steps, in order:
    | (a) open question | does only the author's answer decide (quote the description and the ticket on the point, or show they are silent)? For a ticket contradiction: does the description leave it unaddressed? For behaviour outside the goal: which user, caller, stored data or module sees it, and why does it not follow from the quoted goal? Would the plausible unwanted answer be a Blocker? Any proof missing: not a Blocker |
    | (d) missing test | is there really no test covering the feature, of any type? |
 
-   Every investigator ends with the final label; a disagreement between
-   sources below the Blocker line is settled there, never by the
-   orchestrator. A finding a batch labels Blocker then gets its own
-   investigator with the Blocker question for its reason. A check says in
+   A disagreement between sources below the Blocker line is settled by the
+   check, never by the orchestrator. A check says in
    the finding what was checked. Every Blocker in the list was checked by an
    investigator that checked it alone, or is `unchecked` after that
    investigator failed for good.
@@ -591,8 +607,8 @@ The steps, in order:
    **Side findings.** Every investigator output (a batch's too) is read to
    its `# Side findings` section. Each bullet becomes a draft finding with
    the source `side:<output name>`, goes through the grounding check and
-   gets its check by the table above, with the question of an Optional when
-   the bullet names no label. A side finding merges into an existing finding
+   gets its check by the table above; a bullet that names no severity counts
+   as `possibly-blocking`. A side finding merges into an existing finding
    only when the same change at the same place removes it (step 3); the
    same cause that needs a change at another place is a new finding. Side findings of a side finding's
    investigator are followed once more; a third generation goes to
@@ -600,8 +616,8 @@ The steps, in order:
    goes to `notes.sideFindings`.
 6. **Blind rating** (`deep`). After consolidation and before the
    numbering, start the blind severity rating ([tooling.md](tooling.md),
-   "Which runs"). The rater may see the claims: it audits labels, it does
-   not review. A rating raises a check (the table above), never counts as
+   "Which runs"). The rater may see the claims: it audits severities, it
+   does not review. A rating raises a check (the table above), never counts as
    one.
 
    **Follow-up** (`deep`). Every Blocker that holds after its check gets one
@@ -617,16 +633,16 @@ The steps, in order:
    investigator confirms it; a second place is a new finding, checked like
    any claim. Follow-up agents start in one turn, once the last Blocker
    check has returned; their claims are not followed up again.
-7. **Severity** comes from the investigators: the final label of the
+7. **Severity** comes from the investigators: the final severity of the
    investigator that checked the finding, never a vote count, never the
    orchestrator's reading; reviewers have tended to rate too low. A claim is
    refuted only when every investigator that checked it refuted it. With two
    investigators (at most two per finding, a batch included):
-   - Blocker when one says Blocker, and its `verify` names both
+   - blocking when one says blocking, and its `verify` names both
      verdicts: a false Blocker is read and corrected by hand, a hidden one
      is not;
-   - else the label of the confirming one that checked it alone, of two such
-     the later.
+   - else the severity of the confirming one that checked it alone, of two
+     such the later.
 8. **Tests, lint and the build** run once, by the orchestrator, only when the
    subject has something to run, after the last reviewer and the last
    investigator have returned, at `deep` also those started after
@@ -637,10 +653,19 @@ The steps, in order:
    suite on the target branch. A claim only a test raised goes through steps 3 to 7 after
    the tests; its investigator works between two snapshots of its own
    ([tooling.md](tooling.md), Tests and lint).
-9. **Category and package.** Each finding gets exactly one category, its main
-   one, and its package (the category table and the package rule in
+9. **Category, kind and package.** Only now, with the severity settled,
+   each finding gets exactly one category, its main one, one kind and its
+   package (the category table, the kind table and the package rule in
    [report-sections.md](report-sections.md), Findings 3.2); the orchestrator
-   decides both, the reviewers' lines are input. Then the principle: the
+   decides all three by the tables, without reading the code; the
+   reviewers' `Category:` and `Kind:` lines are input. The kind is the one
+   the reviewers proposed, unless a fact the check delivered contradicts it
+   (a failure scenario for a proposed `suggestion`, something missing, wording
+   only, a problem that existed before the change, a step outside the
+   repository, a decision only the author can make). The severity stands
+   first: the kind is chosen among those its severity allows, so a proposed
+   `suggestion` that its check decided blocking becomes an `issue`, a
+   `question` or a `chore`. Then the principle: the
    one its check confirmed or named (`# Principle`), else the one a source
    named when the check failed for good, `null` when the check answered
    NONE. Only an Architecture or Design finding carries the field, always;
@@ -650,14 +675,14 @@ The steps, in order:
    (DRY, KISS, YAGNI, SRP), else by the name a developer looks up (single
    source of truth, an ADR by its title); when two checks name different
    ones, it names all of them. The orchestrator copies the names, never
-   forms one. An Architecture or Design finding always went
-   through an investigator (the check table exempts only Style and Docs), so
-   its `# Principle` exists.
+   forms one. Every finding went through a check, so an Architecture or
+   Design finding's `# Principle` exists.
 10. **Refuted claims** are dropped from the list and named, each with who
     raised it and what refuted it, in the chat list and the method section.
 11. **Ids.** Ids stay drafts (`D<n>`) until every check has returned, the
-    rating's investigators included. Then one step numbers them `F<n>` in
-    list order and rewrites every draft id in `verdict` and `notes`. Ids are
+    rating's investigators included. Then one step orders the list (blocking
+    first, then by kind: issue, question, chore, suggestion, nitpick, note),
+    numbers them `F<n>` in list order and rewrites every draft id in `verdict` and `notes`. Ids are
     severity-free and never change on a republish. A finding withdrawn after
     the first publish (refuted later, answered by the author, or merged into
     another, step 3) leaves its
@@ -703,19 +728,16 @@ Sources: <roster, foreign runs> · <n> investigators · <n> claims refuted
 ── Manual tests ──  (run first; setup: <the setup, one line>)
 M1  <do> → <expect>
 M2  …
-── Blocker ──
-F1  <file:line> · <category>
+── blocking ──
+F1  issue · <file:line> · <category>
     <title: the effect first>
     What:    <one sentence>
     Impact:  <one sentence>
     Fix:     <one sentence>
     Checked: <one sentence: investigator, or unchecked and why, and the proof that decided it>
-── Optional ──
-F2  … the same lines
-── Nit ──
-F3  <file:line>  <one line>
-── FYI ──
-F4  <file:line>  <one line>
+── non-blocking ──
+F2  issue · … the same lines (issue, question, chore)
+F3  suggestion · <file:line>  <one line> (suggestion, nitpick, note)
 
 Tests/lint: <summary line per suite; failures by name>
 Refuted:    <claim> (raised by <source>; refuted by <what>), one per line
@@ -730,10 +752,10 @@ Full report: being built (step 6)
   comments.
 - With `skip-report` the last line reads `Full report: /qubit-code-review
   publish-report` instead.
-- The list asks nothing, and the run never offers follow-up tickets: the
-  drafts stand in the report, and the user creates tickets after reading it.
-  When the user later names the created tickets, the orchestrator writes the
-  keys into `followUp.key` in `findings.json`; when a report exists, the
+- The list asks nothing, and the run never offers tickets: the user creates
+  any after reading the report (`qubit-jira-ticket` where wanted). When the
+  user later names the created tickets, the orchestrator writes the keys
+  into the finding's `tickets` in `findings.json`; when a report exists, the
   findings writer copies them into `data.json` and the report is assembled
   and republished (step 6).
 - "F2 in detail" prints that finding's `what` and `verify` from
@@ -749,7 +771,7 @@ report is the lasting record.
 ## 6. Publish the report (every run without `skip-report`, and `publish-report`)
 
 The orchestrator decides; report writer subagents write. The orchestrator
-never writes report text itself; no writer changes an id, severity, category,
+never writes report text itself; no writer changes an id, severity, kind, category,
 package, principle, verdict or consolidated text, or reads raw reviewer outputs.
 
 1. **Complete the decision.** The orchestrator sets
@@ -871,8 +893,8 @@ consolidated text changes, except through a missing check (7.2).
    table in §4 needs (`assemble.py` names them): before publishing, dispatch
    the missing investigators as in §4. A finding is `unchecked` only after
    its investigator failed for good, and the method section
-   ([report-sections.md](report-sections.md), 4.2) names it. The final label sets
-   the severity, and the verdict follows; ids are renumbered only while no
+   ([report-sections.md](report-sections.md), 4.2) names it. The final severity
+   stands, and the verdict follows; ids are renumbered only while no
    report of the run is published. This checks claims; it reviews nothing.
 3. **Publish:** step 6 from 6.2 on, with the run's `$SP/state/trace.md`. A
    run whose report is already published (`meta.published`) is republished
@@ -891,7 +913,7 @@ then:
    causes the observed result, can it be triggered in live use, and does an
    existing finding already describe this trigger and wrong result?
 2. Confirmed and new: the next free `F<n>` (after the highest id, withdrawn
-   ones included), source `manual:M<n>`, checked as its label requires
+   ones included), source `manual:M<n>`, checked as its proposed severity requires
    (§4.5), its side findings followed. Covered by a finding: `manual:M<n>`
    joins that finding's `sources`, and its `verify` names the observation.
    Refuted: the investigator's reason goes to the user, nothing changes.
@@ -952,18 +974,19 @@ One line each; the rule stands where the pointer says.
 - A finding no grounding check ran on; a finding refuted or dropped by a failed grounding check without an investigator (§4.4).
 - Dropping or investigating a finding because one source saw it (§4.5).
 - A finding checked more weakly than the check table requires for its depth, or not at all, unless its investigator failed for good and the method section (report-sections.md, 4.2) names it; a `check` that names a weaker check than the one that ran (§4.5).
-- At `deep`, a refuted or downgraded Blocker claim, or a finding the blind rating calls Blocker, without a second investigator (§4.5).
+- At `deep`, a refuted or downgraded Blocker claim, or a non-blocking finding the blind rating calls blocking or possibly-blocking, without a second investigator (§4.5).
+- A finding a batch raised to blocking without its own investigator; a check picked by category or kind instead of the proposed severity (§4.5).
 - An investigator's side finding left unread, or merged into a finding whose fix does not remove it (§4.5, Side findings).
 - The orchestrator setting a severity, at any level, or keeping a finding out of a batch by its own reading of the code (§4).
 - Severity by vote count; a disagreement across the Blocker line settled against the Blocker; a claim dropped although one investigator confirmed it (§4.7).
-- A severity outside the four; a Blocker whose reason does not hold; a Blocker whose `verify` does not state the proof; a positive verdict with a Blocker open (Severity).
+- A severity other than blocking or non-blocking (possibly-blocking is a proposal only); a `suggestion`, `nitpick` or `note` that is blocking; a Blocker whose reason does not hold; a Blocker whose `verify` does not state the proof; a positive verdict with a Blocker open (Severity).
 - A severity lowered because the code is behind a flag, not linked or in a draft MR (Severity, live use).
-- A rule or comment finding without the quoted rule; a style rule rated above Nit; a code-health (c) Blocker for a problem the change did not introduce or worsen (reviewer-prompt.md, Conventions and Severity).
+- A rule or comment finding without the quoted rule; a style rule rated blocking; a code-health (c) Blocker for a problem the change did not introduce or worsen (reviewer-prompt.md, Conventions and Severity).
 
 ### List and report
 
 - A run that ends without the list, or a report that starts before it; fields longer than one sentence (§5).
-- A run without `skip-report` whose list is printed in a response without a tool call; a list or run end that asks the user anything, follow-up tickets included (§5).
+- A run without `skip-report` whose list is printed in a response without a tool call; a list or run end that asks the user anything, tickets included (§5).
 - A list or verdict box without the depth's "covers" and "not searched" (§2, Regions); a report claiming no Blocker is left (§6.1).
 - A run with `skip-report` starting a writer, a translator or a publish (Commands).
 - The orchestrator writing report text, opening a fragment, or reading `review.html` or a publish file (§6); a publish by the orchestrator, publish workers in parallel, a republish that sends unchanged files, or a batch without `--mark-published` (§6.3).

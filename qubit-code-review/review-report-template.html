@@ -187,7 +187,7 @@ figcaption { font-size: .86rem; color: var(--muted); margin-top: 8px; max-width:
 .done-box { margin-left: auto; display: inline-flex; align-items: center; padding: 4px; cursor: pointer; }
 .card .id { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); }
 .card .file { font-family: var(--font-mono); font-size: .78rem; color: var(--muted); overflow-wrap: anywhere; margin: 0 0 8px; }
-/* the package opens the location line as plain text: the pill shape stays reserved for the severity */
+/* the package opens the location line as plain text: the pill shape stays reserved for kind and severity */
 .card .file .package { font-family: var(--font-body); font-size: .82rem; font-weight: 500; color: var(--fg); }
 .card dl { margin: 0; display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 4px 12px; font-size: .93rem; }
 .card dt { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; padding-top: 3px; align-self: start; }
@@ -203,11 +203,9 @@ figcaption { font-size: .86rem; color: var(--muted); margin-top: 8px; max-width:
 .card dd > div > :last-child, .card dd > :last-child, .card dd .ptxt > :last-child, .card .more-body > div > :last-child { margin-bottom: 0; }
 @media (max-width: 600px) { .card dl { grid-template-columns: minmax(0, 1fr); } .card dt { padding-top: 6px; } }
 .pill { display: inline-block; font-size: .74rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
-.pill-blocker { background: var(--warn); color: var(--accent-fg); border-color: var(--warn); }
-/* three groups: Blocker holds the verdict; Optional and Nit are changes in the subject (one blue, by weight); FYI is no change here */
-.pill-optional { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
-.pill-nit { background: transparent; color: var(--accent); border-color: var(--accent); }
-.pill-fyi { background: transparent; color: var(--info); border: 1px dashed var(--info); }
+/* the pill names the kind; its style is the severity: blocking holds the verdict, non-blocking does not */
+.pill-blocking { background: var(--warn); color: var(--accent-fg); border-color: var(--warn); }
+.pill-non-blocking { background: transparent; color: var(--accent); border-color: var(--accent); }
 .pill-ok { background: var(--new-soft); color: var(--new); border-color: var(--new); }
 .pill-fail { background: var(--warn-soft); color: var(--warn); border-color: var(--warn); }
 .head .category { font-size: .78rem; color: var(--muted); white-space: nowrap; }
@@ -224,11 +222,11 @@ figcaption { font-size: .86rem; color: var(--muted); margin-top: 8px; max-width:
 .glc-anchor { color: var(--muted); }
 .glc-at a.glc-anchor { font-family: inherit; }
 .glc-box { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.glc-review { margin-top: 18px; }
 .glc-text { margin: 0; font-family: var(--font-body); font-size: .9rem; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 70ch; }
 .glc-copy { border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: inherit; font-size: .78rem; padding: 3px 10px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
 .glc-copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .glc-copy:disabled { color: var(--muted); cursor: not-allowed; }
-.glc-ticket { color: var(--warn); font-weight: 600; }
 .glc-copy.done { background: var(--new-soft); color: var(--new); border-color: var(--new); }
 .mts { display: grid; gap: 10px; margin: 14px 0; }
 .mt { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
@@ -308,10 +306,8 @@ html, body { overflow-anchor: none; }
   </div>
   <div class="stats">
     <div class="stat"><b>{{nFindings}}</b><span>Findings</span></div>
-    <div class="stat"><b>{{nBlocker}}</b><span><span data-lang="en">Blockers</span><span data-lang="de">Blocker</span></span></div>
-    <div class="stat"><b>{{nOptional}}</b><span>Optional</span></div>
-    <div class="stat"><b>{{nNit}}</b><span>Nit</span></div>
-    <div class="stat"><b>{{nFyi}}</b><span>FYI</span></div>
+    <div class="stat"><b>{{nBlocking}}</b><span>blocking</span></div>
+    <div class="stat"><b>{{nNonBlocking}}</b><span>non-blocking</span></div>
   </div>
 
   <!-- explanation from qubit-explanation-page: background, the MR; visible paragraphs, each with its details where they pay off
@@ -399,26 +395,27 @@ html, body { overflow-anchor: none; }
     </div>
     <div id="findings" class="subsec">
       <h3>Findings</h3>
-      <!-- slot:summary: summary.html, written by the findings writer: a short list by severity (Blocker, Optional, Nit, FYI, "none" when empty), a few words each, an id only where a line singles out one finding, no ranges; then "Related:" with the dependencies that are not obvious, ids only; "Hint:" only for a point the order and severities do not show; at most 120 words; assemble.py adds "Not fully checked" -->
-      <div data-lang="en"><ul><li><b>Blocker:</b> what they are about, in a few words.</li><li><b>Optional:</b> …, and one fix that stands out (F3).</li><li><b>Nit:</b> ….</li><li><b>FYI:</b> none.</li></ul><p><b>Related:</b> F2 is solved by the fix of F1 · F3 and F4 address the same thing.</p><p><b>Hint:</b> only when there is one, e.g. F5 is an Optional that decides whether the feature is usable on phones.</p></div><div data-lang="de"><ul><li><b>Blocker:</b> worum es geht, in wenigen Worten.</li><li><b>Optional:</b> …, und ein Fix, der heraussticht (F3).</li><li><b>Nit:</b> ….</li><li><b>FYI:</b> keine.</li></ul><p><b>Zusammenhänge:</b> F2 löst sich mit dem Fix von F1 · F3 und F4 betreffen dasselbe.</p><p><b>Hinweis:</b> nur wenn es einen gibt, z. B. F5 ist ein Optional, das entscheidet, ob das Feature auf Smartphones nutzbar ist.</p></div>
+      <!-- slot:summary: summary.html, written by the findings writer: a short list by severity (blocking, non-blocking, "none" when empty), a few words each, naming the kinds where they help, an id only where a line singles out one finding, no ranges; then "Related:" with the dependencies that are not obvious, ids only; "Hint:" only for a point the order and severities do not show; at most 120 words; assemble.py adds "Not fully checked" -->
+      <div data-lang="en"><ul><li><b>blocking:</b> what they are about, in a few words.</li><li><b>non-blocking:</b> two issues about …, one suggestion that stands out (F3), wording nitpicks.</li></ul><p><b>Related:</b> F2 is solved by the fix of F1 · F3 and F4 address the same thing.</p><p><b>Hint:</b> only when there is one, e.g. F5 is non-blocking but decides whether the feature is usable on phones.</p></div><div data-lang="de"><ul><li><b>blocking:</b> worum es geht, in wenigen Worten.</li><li><b>non-blocking:</b> zwei issues zu …, eine suggestion, die heraussticht (F3), nitpicks am Wortlaut.</li></ul><p><b>Zusammenhänge:</b> F2 löst sich mit dem Fix von F1 · F3 und F4 betreffen dasselbe.</p><p><b>Hinweis:</b> nur wenn es einen gibt, z. B. F5 ist non-blocking, entscheidet aber, ob das Feature auf Smartphones nutzbar ist.</p></div>
       <!-- /slot:summary -->
-      <details class="legend"><summary><span data-lang="en">What severities and categories mean</span><span data-lang="de">Was Schweregrade und Kategorien bedeuten</span></summary>
+      <details class="legend"><summary><span data-lang="en">What severities, kinds and categories mean</span><span data-lang="de">Was Schweregrade, Arten und Kategorien bedeuten</span></summary>
         <dl>
-          <dt>Blocker</dt><dd><span data-lang="en">Must be resolved; it {{blockerHoldsEn}}. A defect that can be triggered in live use (the change fails at what it promises, or an unhandled case gives a wrong result), a security hole, worse code health (breaks an ADR or a boundary, inverts a dependency, adds a second mechanism or needless complexity, breaks an invariant, leaves a test failing), or a new feature without any test.</span><span data-lang="de">Muss gelöst werden; {{blockerHoldsDe}}. Ein im Live-Betrieb auslösbarer Defekt (die Änderung verfehlt, was sie verspricht, oder ein unbehandelter Fall liefert ein falsches Ergebnis), eine Sicherheitslücke, schlechtere Codequalität (bricht ein ADR oder eine Grenze, kehrt eine Abhängigkeit um, fügt einen zweiten Mechanismus oder unnötige Komplexität hinzu, bricht eine Invariante, lässt einen Test fehlschlagen) oder ein neues Feature ohne jeden Test.</span></dd>
-          <dt>Optional</dt><dd><span data-lang="en">Can be left out; the author decides. A change {{changesInEn}} to behaviour, tests or structure without a failure in live use, e.g. a missing test case.</span><span data-lang="de">Kann entfallen; der Autor entscheidet. Eine Änderung {{changesInDe}} an Verhalten, Tests oder Struktur ohne Fehler im Live-Betrieb, z. B. ein fehlender Testfall.</span></dd>
-          <dt>Nit</dt><dd><span data-lang="en">Like Optional, wording only: names, comments, docs.</span><span data-lang="de">Wie Optional, nur Formulierung: Namen, Kommentare, Doku.</span></dd>
-          <dt>FYI</dt><dd><span data-lang="en">Nothing to change {{changesInEn}}; worth a follow-up ticket.</span><span data-lang="de">Nichts zu ändern {{changesInDe}}; ein Folgeticket wert.</span></dd>
+          <dt>blocking</dt><dd><span data-lang="en">Must be resolved; it {{blockerHoldsEn}}. A defect that can be triggered in live use (the change fails at what it promises, or an unhandled case gives a wrong result), a security hole, worse code health (breaks an ADR or a boundary, inverts a dependency, adds a second mechanism or needless complexity, breaks an invariant, leaves a test failing), or a new feature without any test.</span><span data-lang="de">Muss gelöst werden; {{blockerHoldsDe}}. Ein im Live-Betrieb auslösbarer Defekt (die Änderung verfehlt, was sie verspricht, oder ein unbehandelter Fall liefert ein falsches Ergebnis), eine Sicherheitslücke, schlechtere Codequalität (bricht ein ADR oder eine Grenze, kehrt eine Abhängigkeit um, fügt einen zweiten Mechanismus oder unnötige Komplexität hinzu, bricht eine Invariante, lässt einen Test fehlschlagen) oder ein neues Feature ohne jeden Test.</span></dd>
+          <dt>non-blocking</dt><dd><span data-lang="en">No Blocker reason holds; the author decides. The kind says what to do {{changesInEn}}, if anything.</span><span data-lang="de">Kein Blocker-Grund greift; der Autor entscheidet. Die Art sagt, was {{changesInDe}} zu tun ist, falls etwas.</span></dd>
         </dl>
+        <dl>{{kindLegend}}</dl>
         <dl>{{categoryLegend}}</dl>
-        <p class="note"><span data-lang="en">Cards are ordered by severity, then by weight.</span><span data-lang="de">Karten sind nach Schweregrad, dann nach Gewicht geordnet.</span></p>
+        <p class="note"><span data-lang="en">Cards are ordered by severity, then by kind, then by weight.</span><span data-lang="de">Karten sind nach Schweregrad, dann nach Art, dann nach Gewicht geordnet.</span></p>
       </details>
       <div class="filters">
       <div class="chips" id="chips-sev"><span class="lbl"><span data-lang="en">Severity</span><span data-lang="de">Schweregrad</span></span><div class="chip-set">
         <button type="button" class="chip" data-filter="sev" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
-        <button type="button" class="chip" data-filter="sev" data-value="blocker" aria-pressed="false">Blocker</button>
-        <button type="button" class="chip" data-filter="sev" data-value="optional" aria-pressed="false">Optional</button>
-        <button type="button" class="chip" data-filter="sev" data-value="nit" aria-pressed="false">Nit</button>
-        <button type="button" class="chip" data-filter="sev" data-value="fyi" aria-pressed="false">FYI</button>
+        <button type="button" class="chip" data-filter="sev" data-value="blocking" aria-pressed="false">blocking</button>
+        <button type="button" class="chip" data-filter="sev" data-value="non-blocking" aria-pressed="false">non-blocking</button>
+      </div></div>
+      <div class="chips" id="chips-kind"><span class="lbl"><span data-lang="en">Kind</span><span data-lang="de">Art</span></span><div class="chip-set">
+        <button type="button" class="chip" data-filter="kind" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
+        <!-- kindchips: generated by assemble.py from the findings' kinds -->
       </div></div>
       <div class="chips" id="chips-category"><span class="lbl"><span data-lang="en">Category</span><span data-lang="de">Kategorie</span></span><div class="chip-set">
         <button type="button" class="chip" data-filter="category" data-value="all" aria-pressed="true"><span data-lang="en">All</span><span data-lang="de">Alle</span></button>
@@ -443,16 +440,18 @@ html, body { overflow-anchor: none; }
     </div>
     <div id="good" class="subsec">
       <h3><span data-lang="en">What works well</span><span data-lang="de">Was gut funktioniert</span></h3>
-      <!-- slot:good: good.html, from the findings writer -->
+      <!-- slot:good: good.html, from the findings writer: one list per language, 1 to 3 points, one line each (at most 20 words); they also close the review comment in 3.5 -->
       <div data-lang="en"><ul><li>…</li></ul></div>
       <div data-lang="de"><ul><li>…</li></ul></div>
       <!-- /slot:good -->
     </div>
     <div id="gitlab" class="subsec">
       <h3><span data-lang="en">GitLab comments by file</span><span data-lang="de">GitLab-Kommentare nach Datei</span></h3>
-      <p class="note"><span data-lang="en">The same comments as in the findings, here sorted for posting on the MR by file and line as in the MR's file list, general comments last. Follows the filters on the findings. The text follows the language switch, and Copy copies the one shown; the prefix comes from the severity.</span><span data-lang="de">Dieselben Kommentare wie bei den Findings, hier zum Posten im MR sortiert nach Datei und Zeile wie in der Dateiliste des MR, allgemeine Kommentare am Ende. Folgt den Filtern bei den Findings. Der Text folgt dem Sprachschalter, Kopieren kopiert den angezeigten; das Präfix kommt aus dem Schweregrad.</span></p>
+      <p class="note"><span data-lang="en">The same comments as in the findings, here sorted for posting on the MR by file and line as in the MR's file list, general comments last. Follows the filters on the findings. The text follows the language switch, and Copy copies the one shown; the prefix comes from kind and severity.</span><span data-lang="de">Dieselben Kommentare wie bei den Findings, hier zum Posten im MR sortiert nach Datei und Zeile wie in der Dateiliste des MR, allgemeine Kommentare am Ende. Folgt den Filtern bei den Findings. Der Text folgt dem Sprachschalter, Kopieren kopiert den angezeigten; das Präfix kommt aus Art und Schweregrad.</span></p>
       <div id="gitlab-list"></div>
       <p class="empty" id="gitlab-empty" hidden><span data-lang="en">No comment matches this selection.</span><span data-lang="de">Kein Kommentar passt zu dieser Auswahl.</span></p>
+      <!-- reviewComment: the closing review comment, generated by assemble.py from the verdict, the counts and 3.4 -->
+      {{reviewComment}}
     </div>
   </section>
 
@@ -506,7 +505,7 @@ html, body { overflow-anchor: none; }
             <tr><td>Earlier review</td><td>none | path, read by the orchestrator only</td><td></td><td class="num">–</td><td class="num">–</td></tr>
           </tbody>
         </table></div>
-        <p>Consolidation: the same root cause yields one finding. Checks by severity: every Blocker confirmed by its own investigator (&lt;n&gt;); every promotion candidate and every factual contradiction to an investigator, in a batch or on its own (&lt;m&gt;), whose final label stands. Sources are named only here.</p>
+        <p>Consolidation: the same root cause yields one finding. Checks by severity: every finding proposed blocking or possibly-blocking, and every finding a check raised to blocking, confirmed by its own investigator (&lt;n&gt;); every other claim and every factual contradiction to an investigator, in a batch or on its own (&lt;m&gt;), whose final severity stands. Sources are named only here.</p>
         <p><b>Refuted and dropped:</b> …</p>
       </div>
       <div data-lang="de">
@@ -525,7 +524,7 @@ html, body { overflow-anchor: none; }
             <tr><td>Frühere Review</td><td>keine | Pfad, nur vom Orchestrator gelesen</td><td></td><td class="num">–</td><td class="num">–</td></tr>
           </tbody>
         </table></div>
-        <p>Konsolidierung: Gleiche Ursache ergibt ein Finding. Prüfung nach Schweregrad: jeder Blocker von einem eigenen Investigator bestätigt (&lt;n&gt;); jeder Beförderungskandidat und jeder Widerspruch in den Fakten an einen Investigator, im Stapel oder einzeln (&lt;m&gt;), dessen endgültiges Label gilt. Quellen werden nur hier genannt.</p>
+        <p>Konsolidierung: Gleiche Ursache ergibt ein Finding. Prüfung nach Schweregrad: jedes als blocking oder possibly-blocking vorgeschlagene Finding und jedes, das eine Prüfung auf blocking hob, von einem eigenen Investigator bestätigt (&lt;n&gt;); jeder andere Claim und jeder Widerspruch in den Fakten an einen Investigator, im Stapel oder einzeln (&lt;m&gt;), dessen endgültiger Schweregrad gilt. Quellen werden nur hier genannt.</p>
         <p><b>Widerlegt und gestrichen:</b> …</p>
       </div>
       <!-- /slot:method -->
@@ -566,7 +565,7 @@ html, body { overflow-anchor: none; }
     try { localStorage.setItem(KEY + '-lang', lang); } catch (e) { /* storage unavailable */ }
   }
   /* The language switch and the expand-all button keep the reader's place. The most visible marks are the heads: a finding card's title line with its
-     severity pill, a subsection's or a section's heading. The first head on screen below the sticky bar keeps its
+     kind pill, a subsection's or a section's heading. The first head on screen below the sticky bar keeps its
      distance from the bar. With no head on screen (inside a card taller than the screen), the first field label of the
      card under the line does, as every card has the same fields; else the innermost card, subsection or section the
      reading line is in keeps the line at the same share of its height. Own logic, since browsers differ in
@@ -713,7 +712,7 @@ html, body { overflow-anchor: none; }
   var CATEGORY = {{categories}};
   /* slot:data: assemble.py writes the checked array from data.json here (the writers' JSON, never executed) */
   var findings = [
-    { id: 'F1', sev: 'optional', category: 'design', package: '<package>', file: '<path>:<line>',
+    { id: 'F1', sev: 'non-blocking', kind: 'suggestion', category: 'design', package: '<package>', file: '<path>:<line>',
       t: ['<title: effect first, one technical term at most>', '<Titel: Wirkung zuerst, höchstens ein Fachbegriff>'],
       /* each field: text, the visible explanation (two to four sentences, exact and readable, no file:line, never starting
          with its label), and more, its details (the evidence and depth: fact plus consequence, file:line allowed) or null.
@@ -723,12 +722,12 @@ html, body { overflow-anchor: none; }
         why: { text: ['<why it matters, one concrete example>', '<warum es zählt, ein konkretes Beispiel>'], more: null },
         fix: { text: ['<the way out>', '<der Ausweg>'], more: ['<the concrete change>', '<die konkrete Änderung>'] },
         verify: { text: ['<what the review read or ran>', '<was der Review gelesen oder ausgeführt hat>'], more: ['<how to check it again>', '<wie man es wieder prüft>'] } },
-      followUp: { title: '<ticket title, if not fixed in this MR>', key: null },
-      /* GitLab comments: text is an [en, de] pair without the severity prefix (the renderer adds it).
+      tickets: ['PROJ-1234'],
+      /* tickets: optional, the Jira keys of tickets that exist for the finding (created after the review, then republished).
+         GitLab comments: text is an [en, de] pair without the label prefix (the renderer adds it from kind and sev).
          anchor 'line' = lines in the MR diff, 'file' = a file in the diff, 'mr' = general MR comment.
          path and startLine name the place (optional for 'mr'); endLine, on a line comment only, ends a range.
-         side 'old' only for removed lines. Every finding has a gitlab entry. See gitlab-comments.md.
-         FYI and Optional: followUp { title, key: null | 'PROJ-1234' }; for an FYI the comment cannot be copied until key is set. */
+         side 'old' only for removed lines. Every finding has a gitlab entry. See gitlab-comments.md. */
       gitlab: [{ path: '<path>', startLine: 11, endLine: 13, anchor: 'line', text: ['<Finding. Effect. Suggestion.>', '<Befund. Folge. Vorschlag.>'] }] }
   ];
   /* /slot:data */
@@ -737,7 +736,7 @@ html, body { overflow-anchor: none; }
   var manual = { setup: ['<one shared setup: stack, URL, accounts>', '<DE>'],
     steps: [{ id: 'M1', do: ['<what to do>', '<DE>'], expect: ['<what you should see>', '<DE>'] }] };
   /* /slot:manual */
-  var state = { sev: 'all', category: 'all', status: 'all' };
+  var state = { sev: 'all', kind: 'all', category: 'all', status: 'all' };
   /* "done" marks and the status choice are per viewer: localStorage under the report's key, which survives a republish to the same URL */
   var DONE_KEY = KEY + '-done', STATUS_KEY = KEY + '-status', OLD_HIDE_KEY = KEY + '-hide-done';
   var STATUSES = ['all', 'open', 'done'];
@@ -751,17 +750,22 @@ html, body { overflow-anchor: none; }
   } catch (e) { /* storage unavailable or not a list */ }
   var cards = document.getElementById('cards');
   var empty = document.getElementById('cards-empty');
-  var SEV = { blocker: 'Blocker', optional: 'Optional', nit: 'Nit', fyi: 'FYI' };
-  var SEV_RANK = { blocker: 0, optional: 1, nit: 2, fyi: 3 };
-  /* cards by severity, within a group in list order: a finding re-graded after publish keeps its id but moves to its group */
+  /* report order: severity, then kind (assemble.py SEVERITIES, KINDS) */
+  var SEV_RANK = { 'blocking': 0, 'non-blocking': 1 };
+  var KIND_RANK = { issue: 0, question: 1, chore: 2, suggestion: 3, nitpick: 4, note: 5 };
+  /* cards by severity, then kind, within a group in list order: a finding re-graded after publish keeps its id but moves to its group */
   function byDisplayOrder(list) {
     return list
       .map(function (f, i) { return { f: f, i: i }; })
-      .sort(function (a, b) { return SEV_RANK[a.f.sev] - SEV_RANK[b.f.sev] || a.i - b.i; })
+      .sort(function (a, b) { return SEV_RANK[a.f.sev] - SEV_RANK[b.f.sev] || KIND_RANK[a.f.kind] - KIND_RANK[b.f.kind] || a.i - b.i; })
       .map(function (x) { return x.f; });
   }
-  /* Google/GitLab convention: a required change stays unlabeled, only the rest is labeled */
-  var PREFIX = { blocker: '', optional: '**Optional:** ', nit: '**Nit:** ', fyi: '**FYI:** ' };
+  /* The comment convention, its only place in code (gitlab-comments.md, Labels: a test keeps both the same):
+     Conventional Comments, https://conventionalcomments.org. LABEL maps our kind to the convention's label,
+     DECORATION our severity to its decoration; the prefix is **<label> (<decoration>):** */
+  var LABEL = { issue: 'issue', question: 'question', chore: 'chore', suggestion: 'suggestion', nitpick: 'nitpick', note: 'note' };
+  var DECORATION = { 'blocking': 'blocking', 'non-blocking': 'non-blocking' };
+  function prefix(f) { return '**' + LABEL[f.kind] + ' (' + DECORATION[f.sev] + '):** '; }
   var ANCHOR = {
     line: ['line comment in the diff', 'Zeilenkommentar im Diff'],
     file: ['file comment in the diff', 'Dateikommentar im Diff'],
@@ -811,27 +815,25 @@ html, body { overflow-anchor: none; }
     if (row === 'status') { return v === 'done' ? !!done[f.id] : !done[f.id]; }
     return f[row] === v;
   }
-  function shown(f) { return matches(f, 'sev', state.sev) && matches(f, 'category', state.category) && matches(f, 'status', state.status); }
+  var ROWS = ['sev', 'kind', 'category', 'status'];
+  function shown(f) { return ROWS.every(function (k) { return matches(f, k, state[k]); }); }
   /* a chip counts the cards it would show together with the other rows' current choice */
   function chipCount(row, v) {
     return findings.filter(function (f) {
-      return ['sev', 'category', 'status'].every(function (k) { return matches(f, k, k === row ? v : state[k]); });
+      return ROWS.every(function (k) { return matches(f, k, k === row ? v : state[k]); });
     }).length;
   }
   /* a card the reader opened or closed by hand keeps that until it is ticked or unticked; otherwise open means not done */
   function isOpen(f) { return f.id in opened ? opened[f.id] : false; }
-  function ticketKey(f) { return f.followUp && f.followUp.key ? f.followUp.key : ''; }
-  function ticketMissing(f) { return f.sev === 'fyi' && !ticketKey(f); }
-  /* c.text is an [en, de] pair; each language gets its own box, and Copy copies the one on screen */
+  function tickets(f) { return Array.isArray(f.tickets) ? f.tickets : []; }
+  /* c.text is an [en, de] pair; each language gets its own box, and Copy copies the one on screen; the ticket line comes last */
   function commentText(f, c, i) {
     var t = Array.isArray(c.text) ? c.text[i] : c.text;
-    return PREFIX[f.sev] + t + (f.sev === 'fyi' && ticketKey(f) ? '\n\n' + ['Follow-up ticket: ', 'Folgeticket: '][i] + ticketKey(f) : '');
+    return prefix(f) + t + (tickets(f).length ? '\n\nTicket: ' + tickets(f).join(', ') : '');
   }
   function commentBox(f, c, i) {
     return '<div class="glc-box" data-lang="' + ['en', 'de'][i] + '"><p class="glc-text">' + esc(commentText(f, c, i)) + '</p>' +
-      (ticketMissing(f)
-        ? '<button type="button" class="glc-copy" disabled>' + ['Create the ticket first', 'Erst Ticket anlegen'][i] + '</button></div>'
-        : '<button type="button" class="glc-copy" data-copy="' + esc(commentText(f, c, i)) + '">' + ['Copy', 'Kopieren'][i] + '</button></div>');
+      '<button type="button" class="glc-copy" data-copy="' + esc(commentText(f, c, i)) + '">' + ['Copy', 'Kopieren'][i] + '</button></div>';
   }
   /* the comment's place as text, as in assemble.py's comment_place; '' for a general MR comment without a file */
   function place(c) { return (c.path || '') + (c.startLine ? ':' + c.startLine + (c.endLine ? '–' + c.endLine : '') : ''); }
@@ -860,8 +862,7 @@ html, body { overflow-anchor: none; }
       anchor = '<span class="glc-anchor">' + label + '</span>';
     }
     return '<div class="glc-item"' + (anchorId ? ' id="' + anchorId + '"' : '') + '><div class="glc-at">' + (withId ? '<a href="#' + f.id + '">' + f.id + '</a>' : '') +
-      where + anchor +
-      (ticketMissing(f) ? '<span class="glc-ticket">' + pair(['Ticket missing', 'Ticket fehlt']) + '</span>' : '') + '</div>' +
+      where + anchor + '</div>' +
       commentBox(f, c, 0) + commentBox(f, c, 1) + '</div>';
   }
   /* one more field row under the card's fields */
@@ -931,9 +932,8 @@ html, body { overflow-anchor: none; }
     var html = FIELDS.map(function (k) {
       return src[k[0]] ? '<dt data-field="' + k[0] + '">' + pair(k[1]) + '</dt><dd>' + fieldText(src[k[0]]) + '</dd>' : '';
     }).join('');
-    if ((f.sev === 'fyi' || f.sev === 'optional') && f.followUp) {
-      html += '<dt>' + pair(f.sev === 'fyi' ? ['Follow-up', 'Folgeticket'] : ['Follow-up if not fixed here', 'Folgeticket, falls hier nicht behoben']) + '</dt><dd>' +
-        (ticketKey(f) ? jira(esc(ticketKey(f))) : pair(['Not created yet. Draft: ' + f.followUp.title, 'Noch nicht angelegt. Entwurf: ' + f.followUp.title])) + '</dd>';
+    if (tickets(f).length) {
+      html += '<dt>' + pair('Ticket') + '</dt><dd>' + jira(esc(tickets(f).join(', '))) + '</dd>';
     }
     return '<dl>' + html + '</dl>';
   }
@@ -947,7 +947,7 @@ html, body { overflow-anchor: none; }
       n += 1;
       html += '<details class="card' + (done[f.id] ? ' done' : '') + '" id="' + f.id + '"' + (isOpen(f) || expanded ? ' open' : '') + '>' +
         '<summary class="head"><span class="id">' + f.id + '</span>' +
-        '<span class="pill pill-' + f.sev + '">' + SEV[f.sev] + '</span>' +
+        '<span class="pill pill-' + f.sev + '">' + esc(f.kind) + (f.sev === 'blocking' ? ' · blocking' : '') + '</span>' +
         (CATEGORY[f.category] ? '<span class="category">' + pair(CATEGORY[f.category]) + '</span>' : '') +
         '<h4>' + richInline(f.t) + '</h4>' +
         '<label class="done-box" title="Done / Erledigt"><input type="checkbox" aria-label="Done / Erledigt" data-done="' + f.id + '"' +
