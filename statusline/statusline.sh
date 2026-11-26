@@ -287,7 +287,7 @@ if [[ $dir != "-" ]]; then
     if [[ $repo_url == *github.com* ]]; then branch_url="${repo_url:+$repo_url/tree/$branch}"
     else branch_url="${repo_url:+$repo_url/-/tree/$branch}"; fi
   elif commit=$(command git -C "$dir" rev-parse --short HEAD 2>/dev/null); then
-    branch="detached ${commit}"
+    branch="${commit} (detached HEAD)"   # wording of `git worktree list`
     repo_url=$(web_url "$dir")
     if [[ $repo_url == *github.com* ]]; then branch_url="${repo_url:+$repo_url/commit/$commit}"
     else branch_url="${repo_url:+$repo_url/-/commit/$commit}"; fi
