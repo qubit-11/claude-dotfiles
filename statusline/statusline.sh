@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Claude Code status line, two lines:
 #   📁 folder │ 🌿 branch                              (own line: full width)
-#   ctx 42% │ Opus 5.5 high │ 5h 23% │ 7d 85% │ Example Org
+#   ctx 42% │ Opus 5.5 high │ 5h 23% ↻4h50 │ 7d 85% ↻5d9h │ Example Org
+# ↻ = time left until the limit resets (dimmed; hidden when unknown or past).
 # All values come from the JSON Claude Code sends on stdin, so every
 # profile (claude1, claude2, ...) shows its own account's limits.
 # Colours: green = fine, orange = warning, red = act now.
@@ -89,6 +90,19 @@ show() {
   local label=$1 value=$2 colour=$3 mark=$4
   if [[ $value == "-" ]]; then printf '%s' "${dim}${label} -${reset}"
   else printf '%s' "${label} ${colour}${mark}${value}%${reset}"; fi
+}
+
+# until_reset RESET: dimmed " ↻5d9h" / " ↻4h50" / " ↻12m" (minutes rounded
+# up), or nothing when the reset time is unknown or already past
+until_reset() {
+  [[ $1 == "-" ]] && return
+  local left=$(( $1 - now )) d h m
+  (( left <= 0 )) && return
+  left=$(( (left + 59) / 60 * 60 ))
+  d=$(( left / 86400 )) h=$(( left % 86400 / 3600 )) m=$(( left % 3600 / 60 ))
+  if   (( d > 0 )); then printf ' %s↻%dd%dh%s' "$dim" "$d" "$h" "$reset"
+  elif (( h > 0 )); then printf ' %s↻%dh%02d%s' "$dim" "$h" "$m" "$reset"
+  else                   printf ' %s↻%dm%s' "$dim" "$m" "$reset"; fi
 }
 
 # --- Limits cache -------------------------------------------------------------
@@ -237,8 +251,12 @@ if [[ $dir != "-" ]]; then
   fi
 fi
 
+five_left="" week_left=""
+[[ $five != "-" ]] && five_left=$(until_reset "$five_reset")
+[[ $week != "-" ]] && week_left=$(until_reset "$week_reset")
+
 # Line 2: context, model + effort, limits, account (least important last: cut first if too wide)
-line2="$(show ctx "$ctx_pct" "$ctx_colour")${sep}${model}${sep}$(show 5h "$five" "$five_colour" "$five_mark")${sep}$(show 7d "$week" "$week_colour" "$week_mark")${sep}${account}"
+line2="$(show ctx "$ctx_pct" "$ctx_colour")${sep}${model}${sep}$(show 5h "$five" "$five_colour" "$five_mark")${five_left}${sep}$(show 7d "$week" "$week_colour" "$week_mark")${week_left}${sep}${account}"
 
 [[ -n $line1 ]] && printf '%s\n' "$line1"
 printf '%s\n' "$line2"
