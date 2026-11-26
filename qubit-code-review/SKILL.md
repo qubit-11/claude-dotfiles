@@ -64,10 +64,6 @@ arguments come in any order.
   [re-review.md](re-review.md): steps 1 to 8 and the worktree question do
   not apply. It takes no depth: with one, it stops with the line
   re-review.md gives.
-- `low`, `medium` and `high` are old names. With one, the skill stops before
-  any work with one line: "The depths are `standard` (the default) and
-  `deep`: `/qubit-code-review [standard|deep]`. For a quick check:
-  `/code-review`."
 - A question about one finding ("explain F2", "F2 in detail") is answered in
   chat.
 - The list prints before the report starts, so the user can read it at once.
@@ -491,7 +487,7 @@ The steps, in order:
    returns each kept finding's current `file:line`. New findings
    take the ids after the highest one, withdrawn ones included; manual test
    ids stay, new steps take the next `M<n>`. The report is republished to
-   `meta.artifactUrl` (§7.3), and 4.2 names both runs.
+   `meta.artifactUrl` (§7.2), and 4.2 names both runs.
 2. **Read the outputs.** Each raw output from `# Summary` on (`sed -n
    '/^# Summary/,$p'`; a truncated output without one from its first `## F`
    on; the explorer's from `# Mechanism trace` on), never a tool's log or
@@ -869,9 +865,7 @@ needs. For a branch, MR, PR or patch the run folder is the worktree's
 
 Posting to GitLab or Jira happens only when asked; GitLab comments only
 while the MR's head is still the reviewed sha
-([gitlab-comments.md](gitlab-comments.md), Posting). An old report
-(published by an older version of the skill):
-[report-sections.md](report-sections.md).
+([gitlab-comments.md](gitlab-comments.md), Posting).
 
 ## 7. Publish a finished run
 
@@ -879,24 +873,15 @@ while the MR's head is still the reviewed sha
 for the report or an explanation of the review ("make the report", "explain
 it as a page"). Reviewers, explorer, investigators, foreign runs and tests
 stay done; no id, severity, aspect, package, principle, verdict or
-consolidated text changes, except through a missing check (7.2).
+consolidated text changes.
 
 1. **Find the run:** this session's `findings.json`; otherwise the run
    subfolders in the run folder (for a branch the worktree's `review-runs/`,
    else `~/.claude/review-runs/`). Exactly one: restore it into a fresh
    scratchpad as in [tooling.md](tooling.md), Hygiene. Several: list them and
    ask the user, never guess. None: say so and name `/qubit-code-review
-   <depth>` for a new review; start none. A run whose `meta` lacks
-   `ticketBrowseUrl` gets it from `profile.py get ticketBrowseUrl` in the
-   reviewed repository; without one, ticket keys stay plain text.
-2. **Missing checks.** An older run whose findings lack a check the check
-   table in §4 needs (`assemble.py` names them): before publishing, dispatch
-   the missing investigators as in §4. A finding is `unchecked` only after
-   its investigator failed for good, and the method section
-   ([report-sections.md](report-sections.md), 4.2) names it. The final severity
-   stands, and the verdict follows; ids are renumbered only while no
-   report of the run is published. This checks claims; it reviews nothing.
-3. **Publish:** step 6 from 6.2 on, with the run's `$SP/state/trace.md`. A
+   <depth>` for a new review; start none.
+2. **Publish:** step 6 from 6.2 on, with the run's `$SP/state/trace.md`. A
    run whose report is already published (`meta.published`) is republished
    to `meta.artifactUrl`, never as a second report; the copy into the run
    folder counts as a republish into the run's existing subfolder.
@@ -918,7 +903,7 @@ then:
    joins that finding's `sources`, and its `verify` names the observation.
    Refuted: the investigator's reason goes to the user, nothing changes.
 3. The verdict follows the findings (§4.7); then the list (§5) and, when a
-   report exists, the republish (§7.3).
+   report exists, the republish (§7.2).
 
 The tick on the card itself never reaches `findings.json` or the verdict.
 
@@ -956,7 +941,7 @@ One line each; the rule stands where the pointer says.
 - A run without the architecture reviewer or the requirements reviewer; a lane over the whole subject when there is one area (§2, Roster).
 - A lens chosen by topic, skipped or run only once at `deep` (§2, Roster); a lens that starts from the diff instead of its actor (§2, Lenses).
 - A finding left out because it is outside the depth's focus; a run that does not follow changed existing code to its direct callers and readers (§2, Regions).
-- A check of `standard` skipped or weakened at `deep` (§2, Roster); a run started from an old depth name (`low`, `medium`, `high`) instead of the one-line hint (Commands).
+- A check of `standard` skipped or weakened at `deep` (§2, Roster).
 - A run without codex, or another foreign roster than the depth's runs plus a requested focus; a Claude stand-in for a failed foreign run; a Claude-side check or depth that leans on a foreign tool (§2, Foreign tools).
 - An extra-run order made by reading code or changed by anyone but the user (tooling.md).
 
@@ -1003,7 +988,7 @@ One line each; the rule stands where the pointer says.
 - A manual test id renumbered or reused after publish; manual tests written by the orchestrator instead of copied from the trace (§3, report-sections.md 3.1).
 - A GitLab comment with a forbidden word, several for one cause, an anchor outside the diff (gitlab-comments.md).
 - A first publish without a cold read of the GitLab comments; the cold reader given the report, a finding id or the German before its English notes exist; the orchestrator fixing a comment the cold read flagged instead of sending it to the writer or translator; a third cold read (gitlab-comments.md, Cold read).
-- `publish-report` dispatching reviewers again, changing a finding other than through a missing check, guessing among runs, or creating a second report (§7).
+- `publish-report` dispatching reviewers again, changing a finding, guessing among runs, or creating a second report (§7).
 
 ### Records
 

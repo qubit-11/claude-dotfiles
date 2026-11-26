@@ -26,11 +26,6 @@ that checked array), the aspect chips and the table of contents from the
 content. The placeholder content inside a slot shows the writer the expected
 shape; where it and this file differ, this file wins.
 
-To change a report published by an older version of the skill, edit that report's own HTML: its
-data pairs are `[de, en]`, the current template's are `[en, de]`, so old data
-in the new template swaps every language; reports from before `assemble.py`
-have no slots.
-
 ## Explanation fragments
 
 The explanation writer returns three fragments; the template owns every
@@ -156,8 +151,7 @@ extra run of another tool), `raters` (the blind severity rating, `deep`),
 before the list is printed (step 5), `report.started` when step 6 starts,
 `report.ended` before every `assemble.py` run until the first publish, then
 never again; `publish-report` keeps the review phase of the run. A run
-without `effort` (older than this line) gets no line and a note; an `effort`
-without both phases fails.
+without `effort`, or an `effort` without both phases, fails.
 `headAtPublish` is optional and only for a branch, MR or PR with a remote
 (SKILL.md, step 6.3): a commit sha of 7 to 40 hex characters, compared with
 the first sha in `state` by prefix. A head that differs puts a warning with
@@ -264,11 +258,7 @@ no list. It says:
 
 No finding id, no code name (`<code>`), no count, and nothing the banner and
 the stats row show (no verdict word, no Blocker count). The abstract adds no
-fact the findings lack. `assemble.py` fails each of these for reviews from
-`VERDICT_SHORT_SINCE` (2026-11-06) on; older runs build unchanged and keep
-their Blockers in the verdict text. A lead `<strong>` with a verdict word
-(reports before the banner) is dropped, and one that differs from
-`verdict.word` fails. What the verdict covers and what the depth does not
+fact the findings lack. `assemble.py` fails each of these. What the verdict covers and what the depth does not
 search stands in 4.2.
 
 ## Manual tests (3.1)
@@ -331,8 +321,7 @@ locations or alternatives; the cards carry them.
 At most `SUMMARY_WORDS_MAX` (120) words per language, no details;
 `assemble.py` checks that, no id range and at most `SUMMARY_LINE_IDS_MAX`
 (3) ids in one severity line (a guard against id lists, not a target), and
-no unknown id, and requires the file from
-`VERDICT_SHORT_SINCE` on.
+no unknown id, and requires the file.
 `assemble.py` adds the line "Not fully checked: …" for findings whose
 `check` is `unchecked`, from findings.json.
 
@@ -676,14 +665,13 @@ parsed, never executed, and the report carries exactly the checked array.
 - against `findings.json`: same ids F1..Fn (gaps only for ids in
   `notes.withdrawn` after publish, and a withdrawn id never reused), the order by severity and
   kind, severities, kinds (a `suggestion`, `nitpick` or `note` never blocking), `proposed`,
-  aspects, packages, locations, `tickets` (Jira keys, the same in `data.json`); no
-  `followUp`; no finding with a `reason` field (a Blocker's `verify` states
+  aspects, packages, locations, `tickets` (Jira keys, the same in `data.json`);
+  no finding with a `reason` field (a Blocker's `verify` states
   the proof);
 - the card shape: `t` and `fields` with exactly `what`, `why`, `fix` and
   `verify`, each `{"text": [en, de], "more": [en, de] | null}`; no
-  consolidated `what`, `why`, `fix` or `verify` in `data.json`; a card with
-  `plain` or `tech`, or without `fields`, fails once with a message that a
-  report from an older skill version is changed in its own HTML;
+  consolidated `what`, `why`, `fix` or `verify` in `data.json`; a card
+  without `fields` fails once;
 - the card text: no `file:line` in a `text`; no `text` that starts with its
   label (What, Impact, Fix, Checked; Was, Auswirkung, Lösung, Geprüft); each
   paragraph or list item of a `text` at most `VISIBLE_PARAGRAPH_MAX` words and

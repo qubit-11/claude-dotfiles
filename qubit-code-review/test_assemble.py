@@ -60,7 +60,19 @@ def subsec(sid, en='Title', de='Titel', body=None):
     return '<div id="%s" class="subsec">\n<h3>%s</h3>\n%s</div>\n' % (sid, twin(en, de, 'span'), body or text_body())
 
 
-def verdict(word_en='not mergeable', word_de='nicht mergebar', ids=('F1',)):
+def verdict():
+    return para('The MR lets customers book again. The booking is lost on iOS.',
+                'Der MR lässt Kunden erneut buchen. Die Buchung geht auf iOS verloren.')
+
+
+def effort():
+    return {'review': {'started': '2026-10-19T10:00:00Z', 'ended': '2026-10-19T10:30:00Z',
+                       'runs': {'reviewers': {'Claude': 3}}},
+            'report': {'started': '2026-10-19T10:31:00Z', 'ended': '2026-10-19T11:00:00Z',
+                       'runs': {'writers': {'Claude': 2}}}}
+
+
+def summary(ids=('F1',)):
     named = ', '.join(ids)
     return para('Text %s.' % named, 'Text %s.' % named)
 
@@ -185,7 +197,7 @@ class Report:
             'meta': {'title': 'Review MR !1', 'key': 'review-mr-1', 'subject': 'MR !1', 'subjectLine': 'b → master, MR !1',
                      'state': 'abc123', 'author': 'A', 'reference': 'master', 'depth': 'standard', 'date': '2026-10-19',
                      'sources': 3, 'lines': 10, 'worktree': '/w', 'runDir': '/w/review-runs/', 'resume': 'claude --resume x',
-                     'ticketBrowseUrl': 'https://example.atlassian.net/browse/'},
+                     'ticketBrowseUrl': 'https://example.atlassian.net/browse/', 'effort': effort()},
             'gitlab': True, 'verdict': {'word': 'not mergeable', 'openBlockers': ['F1']},
             'concepts': [], 'notes': {},
             'manual': {'setup': 'Start the stack.', 'steps': [manual_step('M1')]}}
@@ -227,8 +239,10 @@ class Report:
         (self.dir / 'findings.json').write_text(json.dumps(spec, ensure_ascii=False))
         cr = spec['notes'].get('coldRead') if isinstance(spec.get('notes'), dict) else None
         for k, v in self.frags.items():
-            if v is None and k in ('verdict', 'summary'):
-                v = verdict(ids=(self.spec.get('verdict') or {}).get('openBlockers') or ())
+            if v is None and k == 'verdict':
+                v = verdict()
+            if v is None and k == 'summary':
+                v = summary(ids=(self.spec.get('verdict') or {}).get('openBlockers') or ())
             if k == 'method' and self.method_cold_read and isinstance(cr, dict):
                 v += cold_read_paragraph(cr)
             withdrawn = (spec.get('notes') or {}).get('withdrawn') if isinstance(spec.get('notes'), dict) else None
@@ -393,7 +407,7 @@ class AssembleTest(unittest.TestCase):
         self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
         self.p.spec['verdict'] = {'word': 'not yet', 'openBlockers': ['F1']}
-        self.p.frags['verdict'] = verdict('not yet', 'noch nicht', ids=('F1',))
+        self.p.frags['verdict'] = verdict()
         self.ok()
         self.assertNotIn('class="glc-review"', self.p.page)
 
@@ -513,7 +527,7 @@ class AssembleTest(unittest.TestCase):
         self.p.spec['gitlab'] = False
         del self.p.spec['manual']
         self.p.spec['verdict'] = {'word': 'not yet', 'openBlockers': ['F1']}
-        self.p.frags['verdict'] = verdict('not yet', 'noch nicht')
+        self.p.frags['verdict'] = verdict()
         self.ok()
         self.assertIn('run copy name: review-mr-1-2026-10-19-files-abcd1234', self.p.out)
 
@@ -561,7 +575,7 @@ class AssembleTest(unittest.TestCase):
         self.p.spec['gitlab'] = False
         self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
+        self.p.frags['verdict'] = verdict()
         self.ok()
 
     def test_manual_null_allowed_for_runnable_subject(self):
@@ -635,7 +649,7 @@ class AssembleTest(unittest.TestCase):
         self.p.spec['gitlab'] = False
         self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
+        self.p.frags['verdict'] = verdict()
         self.ok()
         self.assertIn('var manual = null;', self.p.page)
         self.assertIn('No manual tests for this subject.', self.p.page)
@@ -682,18 +696,11 @@ class AssembleTest(unittest.TestCase):
         self.p.cards[0]['fields']['fix']['more'] = ['Only English.']
         self.fails('F1: fields.fix.more is neither a complete [en, de] pair nor null')
 
-    def test_old_card_shape_fails(self):
-        # a card with plain and tech, or without fields, comes from an older skill version; its report is edited in its own HTML
-        for change in ['plain', 'tech', 'no fields']:
-            with self.subTest(change=change):
-                self.p.cards = [card(self.p.findings[0], [comment()])]
-                if change == 'no fields':
-                    del self.p.cards[0]['fields']
-                else:
-                    self.p.cards[0][change] = {k: ['X.', 'Y.'] for k in CARD_FIELDS}
-                self.fails('F1: data.json has the card shape of an older skill version (%s)' % change)
-                self.assertIn('changed in its own HTML (report-sections.md)', self.p.out)
-                self.assertIn('FAILED, 1 problem(s)', self.p.out)
+    def test_card_without_fields_fails(self):
+        self.p.cards = [card(self.p.findings[0], [comment()])]
+        del self.p.cards[0]['fields']
+        self.fails('F1: data.json card has no fields')
+        self.assertIn('FAILED, 1 problem(s)', self.p.out)
 
     def test_consolidated_text_in_data_fails(self):
         # the consolidated what stays in findings.json, the record; the card shows the writer's fields
@@ -749,7 +756,7 @@ class AssembleTest(unittest.TestCase):
     def test_non_blocker_needs_no_details(self):
         self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
+        self.p.frags['verdict'] = verdict()
         self.p.cards = [card(self.p.findings[0], [comment_for(self.p.findings[0])])]
         for k in CARD_FIELDS:
             self.p.cards[0]['fields'][k]['more'] = None
@@ -766,7 +773,7 @@ class AssembleTest(unittest.TestCase):
     def test_removes_named_on_both_cards(self):
         self.p.findings = [finding('F1', removes=['F2']), finding('F2')]
         self.p.spec['verdict']['openBlockers'] = ['F1', 'F2']
-        self.p.frags['verdict'] = verdict(ids=('F1', 'F2'))
+        self.p.frags['verdict'] = verdict()
         self.p.cards = [card(f, [comment()]) for f in self.p.findings]
         self.fails('F1: the English fields.fix.text does not name F2, which its fix also removes')
         self.p.cards[0]['fields']['fix']['text'] = ['Drop the timer; this also removes F2.', 'Den Timer entfernen; das behebt auch F2.']
@@ -821,17 +828,6 @@ class AssembleTest(unittest.TestCase):
             with self.subTest(word=word):
                 self.assertEqual(assemble.verdict_line(word), '<span class="verdict-icon" aria-hidden="true">%s</span><strong>'
                                  '<span data-lang="en">%s</span><span data-lang="de">%s</span></strong>' % (icon, en, de))
-
-    def test_old_lead_word_is_dropped(self):
-        self.p.frags['verdict'] = para('<strong>not mergeable</strong>. The approach holds; F1 breaks.',
-                                       '<strong>Urteil: nicht mergebar.</strong> Der Ansatz trägt; F1 bricht.')
-        self.ok()
-        self.assertIn('<p data-lang="en">The approach holds; <a href="#F1">F1</a> breaks.</p>', self.p.page)
-        self.assertIn('<p data-lang="de">Der Ansatz trägt; <a href="#F1">F1</a> bricht.</p>', self.p.page)
-
-    def test_lead_word_against_the_verdict_fails(self):
-        self.p.frags['verdict'] = para('<strong>Verdict: mergeable.</strong> F1 is not mergeable.', '<strong>Urteil: nicht mergebar.</strong> F1.')
-        self.fails("verdict.html: the en lead says 'mergeable', verdict.word gives 'not mergeable'")
 
     def test_short_verdict_passes(self):
         self.p.spec['meta']['date'] = '2026-11-06'
@@ -901,11 +897,8 @@ class AssembleTest(unittest.TestCase):
         self.p.frags['summary'] = twin('<ul><li>Nit: wording (F2, F3, F4, F5).</li></ul>', '<ul><li>Nit: Wortlaut.</li></ul>')
         self.fails('summary.html: a severity line names 4 ids, at most 3')
 
-    def test_summary_is_required_from_its_date(self):
+    def test_summary_is_required(self):
         del self.p.frags['summary']
-        self.ok()   # a run before the summary builds without it
-        self.p.spec['meta']['date'] = '2026-11-06'
-        self.p.frags['verdict'] = para('The MR does not work yet.', 'Der MR funktioniert noch nicht.')
         self.fails('missing fragment summary.html')
 
     def test_long_summary_fails_from_its_date(self):
@@ -933,7 +926,7 @@ class AssembleTest(unittest.TestCase):
 
     def test_fragments_link_ids_and_jira_keys_outside_code(self):
         self.p.spec['meta']['ticket'] = 'PROJ-1'
-        self.p.frags['verdict'] = para('Waits for PROJ-736 (F1); see <code>F1</code> and <code>PROJ-9</code>, branch x/PROJ-2-y.',
+        self.p.frags['summary'] = para('Waits for PROJ-736 (F1); see <code>F1</code> and <code>PROJ-9</code>, branch x/PROJ-2-y.',
                                        'Wartet auf PROJ-736 (F1).')
         self.ok()
         self.assertIn('<p data-lang="en">Waits for <a href="https://example.atlassian.net/browse/PROJ-736" target="_blank" '
@@ -950,11 +943,9 @@ class AssembleTest(unittest.TestCase):
         self.ok()
         self.assertIn('var JIRA = null;', self.p.page)
 
-    def test_long_verdict_fails_from_its_date(self):
-        long_en, long_de = ' '.join(['word'] * 70) + ' F1.', ' '.join(['Wort'] * 70) + ' F1.'
+    def test_long_verdict_fails(self):
+        long_en, long_de = ' '.join(['word'] * 70) + ' end.', ' '.join(['Wort'] * 70) + ' Ende.'
         self.p.frags['verdict'] = para(long_en, long_de)
-        self.ok()   # a review before 2026-11-06 builds unchanged
-        self.p.spec['meta']['date'] = '2026-11-06'
         self.fails('verdict.html: the en text has 71 words, at most 70')
 
     def test_verdict_details_fail_from_its_date(self):
@@ -985,29 +976,19 @@ class AssembleTest(unittest.TestCase):
         self.assertIn('<p class="eyebrow" id="overview">', self.p.page)
         self.assertIn('.toc li.toc-top > a::before { content: none; }', self.p.page)
 
-    def test_bold_key_term_stays(self):
-        self.p.frags['verdict'] = para('<strong>The cache</strong> breaks, F1.', '<strong>Der Cache</strong> bricht, F1.')
-        self.ok()
-        self.assertIn('<p data-lang="en"><strong>The cache</strong> breaks, <a href="#F1">F1</a>.</p>', self.p.page)
-
-    def test_verdict_with_details_passes(self):
-        self.p.frags['verdict'] = verdict() + disclosure('Fix: increment `x` (F1).', 'Lösung: `x` erhöhen (F1).',
-                                                         'The loop ends after one pass.', 'Die Schleife endet nach einem Durchlauf.')
-        self.ok()
-
     def test_open_blockers_must_match_ids(self):
         self.p.spec['verdict']['openBlockers'] = ['F99']
         self.fails('openBlockers')
 
     def test_positive_verdict_with_blocker_fails(self):
         self.p.spec['verdict']['word'] = 'mergeable'
-        self.p.frags['verdict'] = verdict('mergeable', 'mergebar')
+        self.p.frags['verdict'] = verdict()
         self.fails('verdict')
 
     def test_positive_verdict_without_blocker_passes(self):
         self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('mergeable', 'mergebar')
+        self.p.frags['verdict'] = verdict()
         self.ok()
 
     def test_positive_verdict_with_negative_phrase_elsewhere_passes(self):
@@ -1073,10 +1054,6 @@ class AssembleTest(unittest.TestCase):
         self.p.cards = [card(self.p.findings[0], [comment(path='server/guard.ts', startLine=42, anchor='mr')])]
         self.ok()
 
-    def test_old_at_field_fails(self):
-        self.p.cards = [card(self.p.findings[0], [{'at': 'src/a.ts:11', 'anchor': 'line', 'text': comment()['text']}])]
-        self.fails('GitLab comment has "at"')
-
     def test_tool_name_or_id_in_comment_fails(self):
         self.p.cards = [card(self.p.findings[0], [comment(en='`x` resets, as codex found in F1. It loops.\n\nSuggestion: fix `x`.')])]
         self.fails('tool name or finding id')
@@ -1092,8 +1069,7 @@ class AssembleTest(unittest.TestCase):
         self.ok()
 
     # an Architecture or Design finding names the principle it breaks (SKILL.md §4, step 9)
-    def principle_run(self, date='2026-11-04', aspect='architecture', **kw):
-        self.p.spec['meta']['date'] = date
+    def principle_run(self, aspect='architecture', **kw):
         self.p.findings = [finding(aspect=aspect, **kw)]
 
     def test_architecture_finding_without_principle_fails(self):
@@ -1122,29 +1098,12 @@ class AssembleTest(unittest.TestCase):
         self.ok()
 
     def test_other_aspect_with_principle_fails(self):
-        self.principle_run(date='2026-11-05', aspect='tests', principle='Test via public APIs.')
+        self.principle_run(aspect='tests', principle='Test via public APIs.')
         self.fails('F1: only Architecture and Design findings carry a principle')
 
     def test_other_aspect_with_null_principle_passes(self):
-        self.principle_run(date='2026-11-05', aspect='tests', principle=None)
+        self.principle_run(aspect='tests', principle=None)
         self.ok()
-
-    def test_run_before_the_rule_keeps_principle_on_other_aspect(self):
-        # a principle elsewhere was allowed until 2026-11-04; such a run still republishes
-        self.principle_run(date='2026-11-04', aspect='usability', principle='Least astonishment.')
-        self.ok()
-
-    def test_old_run_without_principle_passes(self):
-        # a run dated before the field existed still republishes
-        self.principle_run(date='2026-11-03')
-        self.ok()
-
-    def test_old_run_that_uses_principle_needs_it_everywhere(self):
-        self.principle_run(date='2026-11-03')
-        self.p.findings.append(finding('F2', aspect='functionality', principle='Dependencies point inwards.'))
-        self.p.spec['verdict']['openBlockers'] = ['F1', 'F2']
-        self.p.frags['verdict'] = verdict(ids=('F1', 'F2'))
-        self.fails('F1: aspect architecture needs principle')
 
     def test_severity_and_kind_render_as_keywords(self):
         # keywords in the code font; the aspect chip is a label
@@ -1159,7 +1118,7 @@ class AssembleTest(unittest.TestCase):
         self.p.spec['meta']['subjectType'] = 'files'
         del self.p.spec['gitlab']
         self.p.spec['verdict']['word'] = 'not yet'
-        self.p.frags['verdict'] = verdict('not yet', 'noch nicht')
+        self.p.frags['verdict'] = verdict()
         self.p.cards = [card(self.p.findings[0], [comment()])]
         self.fails("F1: GitLab comment on a 'files' subject")
 
@@ -1167,7 +1126,7 @@ class AssembleTest(unittest.TestCase):
         self.p.spec['meta']['subjectType'] = 'files'
         del self.p.spec['gitlab']
         self.p.spec['verdict']['word'] = 'not yet'
-        self.p.frags['verdict'] = verdict('not yet', 'noch nicht')
+        self.p.frags['verdict'] = verdict()
         self.p.cards = [card(self.p.findings[0])]
         self.ok()
         self.assertIn('No GitLab comments for this subject type.', self.p.page)
@@ -1382,10 +1341,6 @@ class AssembleTest(unittest.TestCase):
         self.p.frags['questions'] = twin('<p>One open question.</p>', '')
         self.fails('empty')
 
-    def test_german_verdict_must_match(self):
-        self.p.frags['verdict'] = para('<strong>Verdict: not mergeable.</strong> F1.', '<strong>Urteil: mergebar.</strong> F1.')
-        self.fails("the de lead says 'mergebar'")
-
     def test_comment_limit_is_the_total_not_per_sentence(self):
         first = ' '.join(['word'] * 40) + '.'
         self.p.cards = [card(self.p.findings[0], [comment(en=first + ' It loops. It blocks.\n\nSuggestion: fix `x`.')])]
@@ -1409,14 +1364,6 @@ class AssembleTest(unittest.TestCase):
         self.ok()
 
     # follow-up is copied, key included
-    def test_follow_up_key_must_match(self):
-        self.p.findings = [finding(), finding('F2', sev='non-blocking', kind='note', followUp={'title': 'T', 'key': 'PROJ-1'})]
-        cards = [card(self.p.findings[0], [comment()]), card(self.p.findings[1], [comment()])]
-        cards[1]['followUp'] = {'title': 'T', 'key': None}
-        self.p.cards = cards
-        self.fails('followUp')
-
-    # script-safe values
     def test_key_must_be_a_slug(self):
         self.p.spec['meta']['key'] = "x';alert(1);//"
         self.fails('key')
@@ -1431,9 +1378,8 @@ class AssembleTest(unittest.TestCase):
         self.p.findings[0]['aspect'] = 'bug'
         self.fails("F1: aspect 'bug' is not one of")
 
-    def test_old_area_finding_fails_without_traceback(self):
+    def test_finding_without_aspect_fails_without_traceback(self):
         del self.p.findings[0]['aspect']
-        self.p.findings[0]['area'] = 'server'
         self.p.cards = [card(dict(self.p.findings[0], aspect='functionality'), [comment()])]
         self.fails('every finding needs an id, a sev, a kind, an aspect and a package')
         self.assertNotIn('Traceback', self.p.out)
@@ -1471,12 +1417,10 @@ class AssembleTest(unittest.TestCase):
                 self.p.cards[0][k] = v
                 self.fails('%s is %r' % (k, v))
 
-    def test_data_json_carries_no_proposed_or_follow_up(self):
-        for k, v in [('proposed', 'blocking'), ('followUp', {'title': 'T', 'key': None})]:
-            with self.subTest(k=k):
-                self.p.cards = [card(self.p.findings[0], [comment()])]
-                self.p.cards[0][k] = v
-                self.fails('F1: data.json carries proposed or followUp')
+    def test_data_json_carries_no_proposed(self):
+        self.p.cards = [card(self.p.findings[0], [comment()])]
+        self.p.cards[0]['proposed'] = 'blocking'
+        self.fails('F1: data.json carries proposed; it stays in findings.json')
 
     def test_ids_or_order_differ_fails(self):
         self.p.findings = [finding('F1'), finding('F2')]
@@ -1488,11 +1432,6 @@ class AssembleTest(unittest.TestCase):
         self.p.cards = [card(self.p.findings[0], [comment()])]
         self.p.cards[0]['sources'] = ['core']
         self.fails('carries sources or check')
-
-    def test_follow_up_is_gone(self):
-        self.p.findings = [finding(), finding('F2', sev='non-blocking', kind='note', followUp={'title': 'T', 'key': None})]
-        self.p.spec['verdict']['openBlockers'] = ['F1']
-        self.fails('F2: findings carry no followUp; a ticket that exists goes into tickets')
 
     def test_tickets_are_jira_keys(self):
         for bad in ([], ['proj-1'], 'PROJ-1', ['PROJ-1', 'PROJ-1'], [None]):
@@ -1519,7 +1458,7 @@ class AssembleTest(unittest.TestCase):
     def test_nit_without_comment_fails(self):
         self.p.findings = [finding(sev='non-blocking', kind='nitpick')]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
+        self.p.frags['verdict'] = verdict()
         self.p.cards = [card(self.p.findings[0], [])]
         self.fails('F1: no GitLab comment')
 
@@ -1538,27 +1477,10 @@ class AssembleTest(unittest.TestCase):
         self.fails('is not a complete [en, de] pair')
 
     # verdict ids
-    def test_verdict_must_name_every_open_blocker(self):
-        self.p.findings = [finding('F1'), finding('F2')]
-        self.p.spec['verdict']['openBlockers'] = ['F1', 'F2']
-        self.p.frags['verdict'] = verdict(ids=('F2',))
-        self.fails('does not name the open Blocker(s) F1')
+    def test_summary_invented_id_fails(self):
+        self.p.frags['summary'] = summary(ids=('F1', 'F99'))
+        self.fails('summary.html: the en text names F99, which is no finding')
 
-    def test_verdict_german_omits_a_blocker_fails(self):
-        self.p.frags['verdict'] = para('F1 breaks.', 'Ein Fehler.')
-        self.fails('verdict.html: the de text does not name the open Blocker(s) F1')
-
-    def test_verdict_invented_id_fails(self):
-        self.p.frags['verdict'] = verdict(ids=('F1', 'F99'))
-        self.fails('names F99, which is no finding')
-
-    def test_verdict_blockers_out_of_order_fail(self):
-        self.p.findings = [finding('F1'), finding('F2')]
-        self.p.spec['verdict']['openBlockers'] = ['F1', 'F2']
-        self.p.frags['verdict'] = verdict(ids=('F2', 'F1'))
-        self.fails('out of id order')
-
-    # fragment shape
     def test_section_in_fragment_fails(self):
         self.p.frags['background'] = '<section id="background">%s</section>' % subsec('today')
         self.fails('contains a <section>')
@@ -1593,7 +1515,7 @@ class AssembleTest(unittest.TestCase):
                 word = {'branch': 'not mergeable', 'mr': 'not mergeable', 'pr': 'not mergeable', 'patch': 'not applicable',
                         'files': 'not yet'}[st]
                 self.p.spec['verdict'] = dict(self.p.spec['verdict'], word=word)
-                self.p.frags['verdict'] = verdict(word, assemble.VERDICTS_DE[word], ids=tuple(self.p.spec['verdict']['openBlockers']))
+                self.p.frags['verdict'] = verdict()
                 self.ok()
                 self.assertIn('<section id="subject">', self.p.page)
                 head = self.p.page.split('<section id="subject">', 1)[1].split('</h2>', 1)[0]
@@ -1660,10 +1582,7 @@ class AssembleTest(unittest.TestCase):
                  ('standard', 'possibly-blocking', 'blocking', 'investigator'),
                  ('standard', 'non-blocking', 'non-blocking', 'batch'),
                  ('standard', 'non-blocking', 'blocking', 'investigator'),  # a batch raised it: its own investigator
-                 ('medium', 'non-blocking', 'non-blocking', 'batch'), ('low', 'non-blocking', 'non-blocking', 'batch'),
-                 ('low', 'possibly-blocking', 'non-blocking', 'investigator'),
-                 ('deep', 'non-blocking', 'non-blocking', 'investigator'),
-                 ('high', 'non-blocking', 'non-blocking', 'investigator')]
+                 ('deep', 'non-blocking', 'non-blocking', 'investigator')]
         strengths = ['batch', 'investigator', 'investigator2']
         for depth, proposed, sev, need in cases:
             for check in strengths + ['unchecked']:
@@ -1675,7 +1594,7 @@ class AssembleTest(unittest.TestCase):
                     self.p.findings = [finding(sev=sev, kind=kind, proposed=proposed, check=check)]
                     if sev != 'blocking':
                         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
-                        self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
+                        self.p.frags['verdict'] = verdict()
                     if check == 'unchecked' or strengths.index(check) >= strengths.index(need):
                         self.ok()
                     else:
@@ -1685,7 +1604,7 @@ class AssembleTest(unittest.TestCase):
     def test_inline_check_is_gone(self):
         self.p.findings = [finding(sev='non-blocking', kind='nitpick', check='inline')]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
+        self.p.frags['verdict'] = verdict()
         self.fails("F1: check is 'inline' in findings.json")
 
     def test_proposed_is_required(self):
@@ -1700,13 +1619,13 @@ class AssembleTest(unittest.TestCase):
         self.p.findings = [finding(kind='praise')]
         self.fails("F1: kind 'praise' is not one of issue, question, chore, suggestion, nitpick, note")
 
-    def test_old_severity_fails(self):
-        for old in ('blocker', 'optional', 'nit', 'fyi'):
-            with self.subTest(sev=old):
+    def test_unknown_severity_fails(self):
+        for bad in ('critical', 'Blocking'):
+            with self.subTest(sev=bad):
                 self.tearDown()
                 self.setUp()
-                self.p.findings = [finding(sev=old)]
-                self.fails("F1: sev %r is not one of blocking, non-blocking" % old)
+                self.p.findings = [finding(sev=bad)]
+                self.fails("F1: sev %r is not one of blocking, non-blocking" % bad)
 
     def test_some_kinds_are_never_blocking(self):
         for kind in ('suggestion', 'nitpick', 'note'):
@@ -1725,7 +1644,7 @@ class AssembleTest(unittest.TestCase):
     def test_every_kind_may_be_non_blocking(self):
         self.p.findings = [finding('F%d' % i, sev='non-blocking', kind=k) for i, k in enumerate(assemble.KINDS, 1)]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
+        self.p.frags['verdict'] = verdict()
         self.ok()
 
     def test_order_is_severity_then_kind(self):
@@ -1741,7 +1660,7 @@ class AssembleTest(unittest.TestCase):
     def test_suggestion_line_only_in_an_issue(self):
         self.p.findings = [finding(sev='non-blocking', kind='suggestion')]
         self.p.spec['verdict'] = {'word': 'mergeable', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('mergeable', 'mergebar', ids=())
+        self.p.frags['verdict'] = verdict()
         self.p.cards = [card(self.p.findings[0], [comment()])]
         self.fails('F1: English GitLab text at src/a.ts:11 has "Suggestion:", which only an issue has')
 
@@ -2103,11 +2022,9 @@ class AssembleTest(unittest.TestCase):
         self.assertIn('Review, 30 min: 8 reviewers (Claude), 1 severity rater (Codex) and 9 investigators (Claude).',
                       self.effort_text())
 
-    def test_run_without_effort_has_no_line_and_a_note(self):
-        self.ok()
-        self.assertNotIn('class="effort"', self.p.page)
-        self.assertNotIn('{{effortLine}}', self.p.page)
-        self.assertIn('meta.effort missing', self.p.out)
+    def test_run_without_effort_fails(self):
+        del self.p.spec['meta']['effort']
+        self.fails('meta.effort must be an object with review and report')
 
     def test_method_names_codex_and_gemini_never_foreign(self):
         for en, de in [('Two foreign runs.', 'Zwei Läufe.'), ('Two runs.', 'Zwei Fremdläufe.')]:
@@ -2150,7 +2067,7 @@ class AssembleTest(unittest.TestCase):
         self.p.spec['meta']['subjectType'] = 'files'
         self.p.spec['gitlab'] = False
         self.p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
-        self.p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
+        self.p.frags['verdict'] = verdict()
         self.ok()
         self.assertIn('what to do in these files', self.p.page)
         self.assertNotIn('what to do in this MR', self.p.page)
@@ -2565,12 +2482,12 @@ class GitlabLinksTest(unittest.TestCase):
         p.tmp.cleanup()
 
     def test_without_a_ticket_url_ticket_keys_stay_plain(self):
-        # an old run or a repository without a profile has no ticketBrowseUrl: no link, no failure
+        # a repository without a profile has no ticketBrowseUrl: no link, no failure
         p = Report()
         del p.spec['meta']['ticketBrowseUrl']
         p.spec['meta'].update(ticket='PROJ-1', reference='PROJ-22')
         p.spec['meta']['lines'] = 0
-        p.frags['verdict'] = para('Waits for PROJ-736 (F1).', 'Wartet auf PROJ-736 (F1).')
+        p.frags['summary'] = para('Waits for PROJ-736 (F1).', 'Wartet auf PROJ-736 (F1).')
         self.assertEqual(p.run(), 0, p.out)
         self.assertIn('<div><dt>Ticket</dt><dd>PROJ-1</dd></div>', p.page)
         self.assertNotIn('atlassian.net', p.page)
@@ -2659,7 +2576,7 @@ class ManualTestsTest(unittest.TestCase):
             p.spec['gitlab'] = False
             p.findings = [finding(sev='non-blocking', kind='nitpick')]
             p.spec['verdict'] = {'word': 'fit for use', 'openBlockers': []}
-            p.frags['verdict'] = verdict('fit for use', 'einsatzbereit', ids=())
+            p.frags['verdict'] = verdict()
         self.assertEqual(p.run(), 0, p.out)
         p.tmp.cleanup()
         return p.page
@@ -2766,8 +2683,6 @@ class DoneMarkTest(unittest.TestCase):
              "chip('status','all').click();res.push(document.querySelectorAll('#cards .card').length);"
              "document.documentElement.setAttribute('data-probe',JSON.stringify(res))})()</script>")
     SEED = "<script>try{localStorage.setItem('review-mr-1-done','[\"F2\"]')}catch(e){}</script>"
-    SEED_HIDE = ("<script>try{localStorage.removeItem('review-mr-1-status');"
-                 "localStorage.setItem('review-mr-1-hide-done','1')}catch(e){}</script>")
     NO_STORAGE = ("<script>Storage.prototype.getItem=function(){throw new Error('blocked')};"
                   "Storage.prototype.setItem=function(){throw new Error('blocked')};</script>")
     READ = ("<script>(function(){" + HELP +
@@ -2846,9 +2761,6 @@ class DoneMarkTest(unittest.TestCase):
     def test_empty_selection_keeps_chips(self):
         self.assertEqual(self.probe(self.build(), self.EMPTY), [True, 3, True, 2])
 
-    def test_old_hide_done_maps_to_open(self):
-        self.assertEqual(self.probe(self.build(), self.READ_STATUS, self.SEED_HIDE), ['open', '2'])
-
     def test_no_storage_renders_all(self):
         self.assertEqual(self.probe(self.build(), self.READ_STATUS, self.NO_STORAGE), ['all', '2'])
 
@@ -2856,7 +2768,7 @@ class DoneMarkTest(unittest.TestCase):
         page = self.build()
         for label in ['>All<', '>Alle<', '>Open<', '>Offen<', '>Done<', '>Erledigt<']:
             self.assertIn(label, page)
-        for label in ['>all<', '>alle<', 'id="hide-done"', 'id="done-count"']:
+        for label in ['>all<', '>alle<']:
             self.assertNotIn(label, page)
 
     def test_filter_handler_only_binds_data_filter_chips(self):

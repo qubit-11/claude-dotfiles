@@ -499,9 +499,7 @@ real tool set.
   responsible for, how they depend on each other and on the existing parts,
   the main decision; the author's intent from the MR description, the ticket
   or the commits, else marked as inferred from the change), from the trace's
-  `# Building blocks` and `$SP/inputs/change.diff`, which it also gets (a
-  trace without that section, from a run before it existed, leaves the
-  building blocks to the diff and the traced files); the main flow through those building
+  `# Building blocks` and `$SP/inputs/change.diff`, which it also gets; the main flow through those building
   blocks; then one subsection per concept the subject introduces. Both
   sections explain architecture and design first and how the code executes
   only where an argument hinges on it. There are no reading levels: the text

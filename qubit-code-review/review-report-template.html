@@ -741,14 +741,12 @@ html, body { overflow-anchor: none; }
   /* /slot:manual */
   var state = { sev: 'all', kind: 'all', aspect: 'all', status: 'all' };
   /* "done" marks and the status choice are per viewer: localStorage under the report's key, which survives a republish to the same URL */
-  var DONE_KEY = KEY + '-done', STATUS_KEY = KEY + '-status', OLD_HIDE_KEY = KEY + '-hide-done';
+  var DONE_KEY = KEY + '-done', STATUS_KEY = KEY + '-status';
   var STATUSES = ['all', 'open', 'done'];
   var done = {}, opened = {};
   try {
     (JSON.parse(localStorage.getItem(DONE_KEY)) || []).forEach(function (id) { done[id] = true; });
     var stored = localStorage.getItem(STATUS_KEY);
-    /* a report published before the status row stored a hide-done switch: on means Open */
-    if (stored === null && localStorage.getItem(OLD_HIDE_KEY) === '1') { stored = 'open'; }
     if (STATUSES.indexOf(stored) >= 0) { state.status = stored; }
   } catch (e) { /* storage unavailable or not a list */ }
   var cards = document.getElementById('cards');

@@ -106,32 +106,20 @@ CHECKS = STRENGTHS + ['unchecked']
 
 def required_check(proposed, sev, depth):
     """The weakest check SKILL.md §4 allows for a finding: the stronger of what its strongest proposal needs and what
-    its final severity needs, so a finding a batch raised to blocking still needs its own investigator. Older runs
-    keep their old depth names (high = deep, medium = standard, low below both)."""
-    if depth in ('deep', 'high') or sev == 'blocking' or proposed in ('blocking', 'possibly-blocking'):
+    its final severity needs, so a finding a batch raised to blocking still needs its own investigator."""
+    if depth == 'deep' or sev == 'blocking' or proposed in ('blocking', 'possibly-blocking'):
         return 'investigator'
     return 'batch'
 
 
 # a finding in these aspects names the design principle it breaks, or null when its check named none
 PRINCIPLE_ASPECTS = ('architecture', 'design')
-# runs from this date on carry the field; an older run (republish, publish-report) assembles without it
-PRINCIPLE_SINCE = '2026-11-04'
-# runs from this date on keep a principle on Architecture and Design findings only; older runs may have it elsewhere
-PRINCIPLE_ONLY_SINCE = '2026-11-05'
-# from this review date on the verdict text is a quick summary: at most VERDICT_WORDS_MAX words per language, no details
-VERDICT_SHORT_SINCE = '2026-11-06'
+# the verdict text is a quick summary: at most VERDICT_WORDS_MAX words per language, no details
 VERDICT_WORDS_MAX = 70
 # the findings summary that opens 3.2: an overview by severity, read in seconds
 SUMMARY_WORDS_MAX = 120
 # a severity line names a finding only when it singles one out: no id ranges, never more ids than this in one line
 SUMMARY_LINE_IDS_MAX = 3
-
-
-def principle_required(spec):
-    """True when the run knows the principle field: dated from PRINCIPLE_SINCE on, or a finding already carries it."""
-    date = str((spec.get('meta') or {}).get('date', ''))
-    return date >= PRINCIPLE_SINCE or any('principle' in f for f in spec.get('findings') or [])
 
 
 ANCHORS = ['line', 'file', 'mr']
@@ -234,12 +222,10 @@ def effort_phase(phase, label, v):
 
 
 def effort_line(meta):
-    """4.2's first two lines, the runs and time of the review and of the report; '' for a run without meta.effort."""
+    """4.2's first two lines, the runs and time of the review and of the report."""
     effort = meta.get('effort')
-    if effort is None:
-        return ''
     if not isinstance(effort, dict):
-        fail('meta.effort must be an object with review and report')
+        fail('meta.effort must be an object with review and report (report-sections.md)')
         return ''
     parts = [effort_phase(phase, label, effort.get(phase)) for phase, label in EFFORT_PHASES]
     if any(p is None for p in parts):
@@ -321,32 +307,23 @@ def check_structure(name, root):
         check_citations(name, root)
 
 
-def check_verdict_ids(root, blockers, known, frag='verdict.html'):
-    """Each language names every open Blocker, in id order, and no id that is not a finding."""
+def check_summary_ids(root, known):
+    """The findings summary names no id that is not a finding."""
     for lang in ['en', 'de']:
         text = ' '.join(text_of(e) for e in walk(root) if e['attrs'].get('data-lang') == lang)
         named = ['F' + m for m in FINDING_ID.findall(text)]
         for fid in sorted(set(named) - set(known)):
-            fail('%s: the %s text names %s, which is no finding' % (frag, lang, fid))
-        missing = [b for b in blockers if b not in named]
-        if missing:
-            fail('%s: the %s text does not name the open Blocker(s) %s' % (frag, lang, ', '.join(missing)))
-        present = [b for b in blockers if b in named]
-        if sorted(present, key=named.index) != present:
-            fail('%s: the %s text names the open Blockers out of id order' % (frag, lang))
+            fail('summary.html: the %s text names %s, which is no finding' % (lang, fid))
 
 
-def check_verdict(root, word, blockers, known=(), ids=True):
-    """The verdict word fits the open Blockers; before the abstract (ids) each language of the verdict text names
-    every open Blocker, since then the findings summary does; the banner itself comes from `verdict_line`."""
+def check_verdict(word, blockers):
+    """The verdict word fits the open Blockers; the banner itself comes from `verdict_line`."""
     if word not in VERDICTS and word not in VERDICTS.values():
         fail('verdict word %r is not one of %s' % (word, ', '.join(list(VERDICTS) + list(VERDICTS.values()))))
         return
     positive = word in VERDICTS
     if positive == bool(blockers):
         fail('verdict %r with %d open Blocker(s)' % (word, len(blockers)))
-    if ids:
-        check_verdict_ids(root, blockers, known)
 
 
 # verdict words whose banner text needs more than the word to stand alone; [en, de]
@@ -572,24 +549,6 @@ def verdict_line(word):
     return '<span class="verdict-icon" aria-hidden="true">%s</span><strong>%s</strong>' % (icon, lang_pair(text))
 
 
-VERDICT_WORDS = set(VERDICTS) | set(VERDICTS.values()) | set(VERDICTS_DE.values())
-LEAD_WORD = re.compile(r'(<p data-lang="(en|de)">)\s*<strong>\s*(?:(?:Verdict|Urteil):\s*)?([^<]*?)\.?\s*</strong>\.?\s*')
-
-
-def strip_lead_word(frag, word):
-    """Drop a verdict word that a writer put in a paragraph's lead <strong> (reports before the verdict line), so the
-    word stands once, in the line above the text; a lead word other than verdict.word fails."""
-    def drop(m):
-        said = m.group(3).strip().lower()
-        if said not in VERDICT_WORDS:
-            return m.group(0)
-        expected = word if m.group(2) == 'en' else VERDICTS_DE.get(word, word)
-        if said != expected:
-            fail('verdict.html: the %s lead says %r, verdict.word gives %r' % (m.group(2), said, expected))
-        return m.group(1)
-    return LEAD_WORD.sub(drop, frag)
-
-
 # the skill's word for Codex and Gemini runs, which a reader does not know
 SKILL_WORD_FOREIGN = re.compile(r'\bforeign\b|\bFremd(lauf|läufe|tool|werkzeug)', re.I)
 
@@ -703,8 +662,6 @@ def check_spec(spec):
             if STRENGTHS.index(check) < STRENGTHS.index(need):
                 fail('%s: a %s finding proposed %s at %s needs check %s or stronger, or unchecked, not %r (dispatch the '
                      'check; unchecked only after it failed for good)' % (f.get('id'), sev, proposed, depth, need, check))
-        if 'followUp' in f:
-            fail('%s: findings carry no followUp; a ticket that exists goes into tickets' % f.get('id'))
         if 'tickets' in f and not tickets_of(f):
             fail('%s: tickets must list Jira keys (["PROJ-123"]); a finding without a ticket has no tickets field'
                  % f.get('id'))
@@ -713,11 +670,10 @@ def check_spec(spec):
         p = f.get('principle')
         if 'principle' in f and p is not None and not (isinstance(p, str) and p.strip()):
             fail('%s: principle must name the principles or be null (SKILL.md §4, step 9)' % f.get('id'))
-        if principle_required(spec) and f.get('aspect') in PRINCIPLE_ASPECTS and 'principle' not in f:
+        if f.get('aspect') in PRINCIPLE_ASPECTS and 'principle' not in f:
             fail('%s: aspect %s needs principle, the one its check named, or null when it named none '
                  '(SKILL.md §4, step 9)' % (f.get('id'), f.get('aspect')))
-        if (str((spec.get('meta') or {}).get('date', '')) >= PRINCIPLE_ONLY_SINCE
-                and f.get('aspect') not in PRINCIPLE_ASPECTS and p is not None):
+        if f.get('aspect') not in PRINCIPLE_ASPECTS and p is not None:
             fail('%s: only Architecture and Design findings carry a principle, not aspect %s '
                  '(SKILL.md §4, step 9)' % (f.get('id'), f.get('aspect')))
         if 'triggers' in f and triggers_of(f) is None:
@@ -743,8 +699,7 @@ def check_spec(spec):
     return blockers
 
 
-OLD_CARD_KEYS = ('plain', 'tech')
-# a comment text that already carries a label prefix (**Nit:**, **issue (blocking):**)
+# a comment text that already carries a label prefix (**issue (blocking):**)
 PREFIX_START = re.compile(r'\s*\*\*[^*\n]{1,40}:\*\*')
 
 
@@ -767,12 +722,9 @@ def check_findings(spec, data):
         g = got.get(fid)
         if not g:
             continue
-        if any(k in g for k in OLD_CARD_KEYS) or 'fields' not in g:
-            # the card shape of an older skill version: its report is changed in its own HTML, never rebuilt here
-            fail('%s: data.json has the card shape of an older skill version (%s): a card holds fields.what, .why, '
-                 '.fix and .verify, each {"text", "more"}; a report published by an older version of the skill is '
-                 'changed in its own HTML (report-sections.md)'
-                 % (fid, ', '.join(k for k in OLD_CARD_KEYS if k in g) or 'no fields'))
+        if 'fields' not in g:
+            fail('%s: data.json card has no fields: a card holds fields.what, .why, .fix and .verify, each '
+                 '{"text", "more"} (report-sections.md)' % fid)
             continue
         if 'sources' in g or 'check' in g:
             fail('%s: data.json carries sources or check; findings name no source' % fid)
@@ -791,8 +743,8 @@ def check_findings(spec, data):
             cards[fid] = g['fields']
             check_trigger_lists(w, g)
             check_principle(w, g)
-        if 'proposed' in g or 'followUp' in g:
-            fail('%s: data.json carries proposed or followUp; proposed stays in findings.json, followUp is gone' % fid)
+        if 'proposed' in g:
+            fail('%s: data.json carries proposed; it stays in findings.json' % fid)
         check_comments(spec, w, g)
     check_removes(spec, cards)
 
@@ -1194,9 +1146,6 @@ def check_comments(spec, w, g):
         fail('%s: %d GitLab comments, two at most' % (fid, len(comments)))
     for c in comments:
         at = comment_place(c)
-        if 'at' in c:
-            fail('%s: GitLab comment has "at"; its place is path, startLine and endLine (gitlab-comments.md)' % fid)
-            continue
         anchor, path, start, end = c.get('anchor'), c.get('path'), c.get('startLine'), c.get('endLine')
         if anchor not in ANCHORS:
             fail('%s: anchor %r at %s is not one of %s' % (fid, anchor, at, ', '.join(ANCHORS)))
@@ -1574,8 +1523,6 @@ def fill_template(spec, data, diff, blockers):
         page = page.replace('{{effortLine}}', effort)
     else:
         page = re.sub(r'[ \t]*<p class="effort">\{\{effortLine\}\}</p>\n', '', page, count=1)
-        if 'effort' not in meta:
-            notes.append('meta.effort missing (a run older than the effort line): 4.2 shows no runs and time')
     # filled once the 3.4 fragment is read (main)
     page = page.replace('{{reviewComment}}', REVIEW_COMMENT_MARK)
     for left in re.findall(r'\{\{\w+\}\}', page):
@@ -1813,31 +1760,23 @@ def main():
 
     known = [f.get('id') for f in spec['findings']]
     points = {}
-    abstract = str((spec.get('meta') or {}).get('date', '')) >= VERDICT_SHORT_SINCE
     word = (spec.get('verdict') or {}).get('word', '')
     for name in SLOTS:
         f = d / (name + '.html')
         if not f.exists():
-            if name == 'summary' and not abstract:
-                tokens[name] = ''  # a run before the findings summary keeps its Blockers in the verdict
-                continue
             fail('missing fragment ' + f.name)
             tokens[name] = ''
             continue
         frag = f.read_text().strip('\n').replace('\x00', '')
-        if name == 'verdict':
-            frag = strip_lead_word(frag, word)
         root = check_fragment(name, frag)
         if name == 'verdict' and root:
-            check_verdict(root, word, blockers, known, ids=not abstract)
-            if abstract:
-                check_verdict_short(root)
-                check_verdict_abstract(root)
-                check_verdict_no_restate(root)
+            check_verdict(word, blockers)
+            check_verdict_short(root)
+            check_verdict_abstract(root)
+            check_verdict_no_restate(root)
         if name == 'summary' and root:
-            check_verdict_ids(root, blockers if not abstract else [], known, 'summary.html')
-            if abstract:
-                check_summary(root)
+            check_summary_ids(root, known)
+            check_summary(root)
             frag += unchecked_line(spec['findings'])
         if name == 'good' and root:
             check_good(root)
