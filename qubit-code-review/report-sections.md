@@ -395,7 +395,7 @@ changes they apply to, then the companion artifacts, then Style.
 
 | Aspect | Label | Covers |
 | --- | --- | --- |
-| `functionality` | Functionality / Funktion | the change does what it intends, completely and without faults; concurrency, error handling |
+| `functionality` | Functionality / Funktionalität | the change does what it intends, completely and without faults; concurrency, error handling |
 | `architecture` | Architecture / Architektur | fit with the system: boundaries, dependency direction, cross-cutting mechanisms, ADRs, a second mechanism; the fix reaches code the change did not write |
 | `design` | Design / Design | the inside of the change: unneeded complexity, over-engineering, dead code, misleading names, invented names; the fix stays inside the change |
 | `security` | Security / Sicherheit | access control, sessions, secrets, personal data, input validation, the attacker lens |

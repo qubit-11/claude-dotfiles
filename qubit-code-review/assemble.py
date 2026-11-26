@@ -92,7 +92,7 @@ NON_BLOCKING_KINDS = ('suggestion', 'nitpick', 'note')
 # a ticket a finding refers to: a Jira key
 TICKET_KEY = re.compile(r'[A-Z][A-Z0-9]+-\d+')
 # the aspect filter: key and [en, de] label, in chip order
-ASPECTS = [('functionality', ['Functionality', 'Funktion']),
+ASPECTS = [('functionality', ['Functionality', 'Funktionalität']),
            ('architecture', ['Architecture', 'Architektur']), ('design', ['Design', 'Design']),
            ('security', ['Security', 'Sicherheit']), ('operations', ['Operations', 'Betrieb']),
            ('performance', ['Performance', 'Performance']), ('usability', ['Usability', 'Usability']),
