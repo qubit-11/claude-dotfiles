@@ -121,8 +121,6 @@ PRINCIPLE_SINCE = '2026-11-04'
 PRINCIPLE_ONLY_SINCE = '2026-11-05'
 # from this review date on the verdict text is a quick summary: at most VERDICT_WORDS_MAX words per language, no details
 VERDICT_SHORT_SINCE = '2026-11-06'
-# from this review date on a finding names its aspect `aspect`; an older run wrote it as `category`
-ASPECT_SINCE = '2026-11-27'
 VERDICT_WORDS_MAX = 70
 # the findings summary that opens 3.2: an overview by severity, read in seconds
 SUMMARY_WORDS_MAX = 120
@@ -1600,20 +1598,8 @@ def load_spec(path):
             not all(isinstance(f, dict) for f in spec['findings']):
         fail('findings.json must be an object with a findings array of objects')
         return None
-    read_old_category(spec, spec['findings'], 'findings.json')
     return spec
 
-
-def read_old_category(spec, rows, name):
-    """A run before ASPECT_SINCE wrote the aspect as `category`: read it as the aspect; a newer run fails on it."""
-    old = str((spec.get('meta') or {}).get('date', '')) < ASPECT_SINCE
-    for f in rows:
-        if 'category' not in f:
-            continue
-        if old and 'aspect' not in f:
-            f['aspect'] = f.pop('category')
-        else:
-            fail('%s: %s names the aspect `aspect`, not `category` (report-sections.md)' % (f.get('id'), name))
 
 
 def node_error(stderr):
@@ -1794,7 +1780,6 @@ def main():
     data = []
     if data_json.exists():
         data = load_data_json(data_json)
-        read_old_category(spec, data, 'data.json')
         check_findings(spec, data)
     else:
         fail('missing data.json')
