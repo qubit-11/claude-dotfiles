@@ -88,3 +88,13 @@ style, independent of the working environment and the repository.
 | [`statusline/statusline.sh`](statusline/statusline.sh) | status line: folder, branch, context, model and effort, 5-hour and 7-day limits, account | linked as `~/.claude/statusline.sh` |
 | [`install.sh`](install.sh) | setup script: links the status line, adds the `statusLine` setting, adds the imports | run by the setup |
 | [`_profiles/`](_profiles/README.md) | the values of a working environment, one folder per environment, and `profile.py`, which reads them for the skills | the skills call `profile.py`; only `example/` is in git |
+
+## Optional tweaks
+
+Fixes for problems seen on some machines, not set up by `install.sh`. Apply one only if
+you see its problem. Settings go in the `env` block of `~/.claude/settings.json`.
+
+| Problem | Fix |
+| --- | --- |
+| Claude's commands fail with `no matches found` or `= not found`: Claude writes bash, but the commands run in zsh | `"CLAUDE_CODE_SHELL": "<path to bash 4 or newer>"` |
+| The mouse wheel scrolls through earlier prompts instead of the conversation | `"CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN": "1"` |
