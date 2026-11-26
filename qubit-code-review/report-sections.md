@@ -401,7 +401,7 @@ changes they apply to, then the companion artifacts, then Style.
 | `security` | Security / Sicherheit | access control, sessions, secrets, personal data, input validation, the attacker lens |
 | `operations` | Operations / Betrieb | deploy and deploy order, config, env, migrations, rollback, dependencies, old clients after a rollout, logging |
 | `performance` | Performance / Performance | unbounded queries, missing indexes, N+1, whole collections loaded, work repeated per request |
-| `usability` | Usability / Usability | visible to the user and not a fault: the design guidance, clear texts and errors, accessibility |
+| `usability` | Usability / Usability | visible to the user and not a fault: the UI guidelines, clear texts and errors, accessibility |
 | `tests` | Tests / Tests | presence, meaningfulness, robustness, fidelity of fakes |
 | `documentation` | Documentation / Dokumentation | comments, JSDoc, README, ADR text |
 | `style` | Style / Stil | the written style rules of the instruction files, and naming by convention |

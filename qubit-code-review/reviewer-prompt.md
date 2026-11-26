@@ -71,8 +71,8 @@ or the structure (model imports through the barrel, dependency placement)
 is judged as reason (a) when it can be triggered, else (c); a style rule
 (semicolons, braces, naming) is non-blocking, a `nitpick`. A rule in a code comment is judged
 like one in an instruction file. Performance and Usability block only through (a).
-A rule from the design guidance counts as a style rule unless the guidance
-marks it mandatory. The
+A rule from the UI guidelines counts as a style rule unless the guidelines
+mark it mandatory. The
 accepted ADRs relevant to the changed paths are in
 <scratchpad path>/inputs/sources/adr/. The glossaries (CONTEXT.md) of the
 same directories are in <scratchpad path>/inputs/sources/glossary/. A
@@ -371,7 +371,7 @@ standard adds (what one sees by following one path through the changed code):
   specificity, custom properties without a fallback, sizes without a
   definite container; in tests, mocks and spies that leak from one test
   to the next.
-- UI changes against the design guidance (frontend subjects only).
+- UI changes against the UI guidelines (frontend subjects only).
 - Docs and comments: updated where behaviour changed; comments explain why,
   not what (non-blocking, never a Blocker).
 - Convention rules and convention naming, as Style; a style rule is non-blocking,
