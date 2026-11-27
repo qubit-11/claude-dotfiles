@@ -3146,8 +3146,9 @@ class PromptSyncTest(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         profiles = Path(self.tmp.name, 'profiles')
-        (profiles / 'test').mkdir(parents=True)
-        (profiles / 'test' / 'config.json').write_text(json.dumps(
+        (profiles / 'test' / 'repos' / 'r').mkdir(parents=True)
+        (profiles / 'test' / 'config.json').write_text(json.dumps({'remotes': ['git.example.com']}))
+        (profiles / 'test' / 'repos' / 'r' / 'config.json').write_text(json.dumps(
             {'remotes': ['git.example.com/g/r'], 'secretFiles': self.SECRETS}))
         (profiles / 'none').mkdir()
         self.repo = Path(self.tmp.name, 'repo')

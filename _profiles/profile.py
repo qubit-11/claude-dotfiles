@@ -19,9 +19,10 @@ of it) names any remote of the repository; the longest matching entry wins, and 
 repository entry beats its company's own `remotes` at equal length. In a folder without
 any git remote, `get`, `doc` and `related` use the only company when exactly one
 exists, never one of its repositories; a repository whose remotes match nothing, a local
-path among them, has no profile. The secret files never fall back: without a matching
-profile they are the broad set below, so a review of an unknown repository leaves out
-more files, never fewer.
+path among them, has no profile. The secret files never fall back to another profile:
+they are the repository entry's `secretFiles`, else the broad set below, plus the
+company's; without a matching profile the broad set alone. A review of an unknown
+repository leaves out more files, never fewer.
 """
 import json
 import os
@@ -139,9 +140,17 @@ def docs(skill):
 
 
 def secret_files():
+    """The repository entry's secret files, else the broad fallback, plus the company's;
+    without a matching profile the fallback alone. Never fewer than the fallback unless a
+    repository entry names its own."""
     company, cfg, _, rcfg = resolve(strict=True)
-    files = merged(cfg, rcfg).get('secretFiles') if company else None
-    return files or FALLBACK_SECRETS
+    if not company:
+        return FALLBACK_SECRETS
+    out = []
+    for pattern in (rcfg.get('secretFiles') or FALLBACK_SECRETS) + (cfg.get('secretFiles') or []):
+        if pattern not in out:
+            out.append(pattern)
+    return out
 
 
 def related():

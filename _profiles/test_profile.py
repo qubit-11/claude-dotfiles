@@ -17,9 +17,11 @@ class ProfileTest(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
         self.profiles = self.root / 'profiles'
-        self.add_profile('acme', {'remotes': ['git.acme.example/shop/web'], 'secretFiles': ['.prod.env'],
-                                  'ticketBrowseUrl': 'https://acme.example/browse/',
-                                  })
+        self.add_profile('acme', {'remotes': ['git.acme.example/shop/web'],
+                                  'ticketBrowseUrl': 'https://acme.example/browse/'})
+        (self.profiles / 'acme' / 'repos' / 'web').mkdir(parents=True)
+        (self.profiles / 'acme' / 'repos' / 'web' / 'config.json').write_text(
+            json.dumps({'remotes': ['git.acme.example/shop/web'], 'secretFiles': ['.prod.env']}))
         (self.profiles / 'acme' / 'merge-request.md').write_text('# acme\n')
         (self.profiles / 'example').mkdir()
         (self.profiles / 'example' / 'config.json').write_text(json.dumps({'remotes': ['git.example.com/g/p']}))
@@ -45,7 +47,7 @@ class ProfileTest(unittest.TestCase):
                     'ssh://git@git.acme.example:2222/shop/web', 'https://user@git.acme.example/Shop/Web/']:
             with self.subTest(url=url):
                 repo = self.repo('r-%d' % abs(hash(url)), 'https://github.com/x/y.git', url)
-                self.assertTrue(self.run_profile(repo).startswith('acme '))
+                self.assertTrue(self.run_profile(repo).startswith('acme/web '))
                 self.assertEqual(self.run_profile(repo, 'secret-files'), '.prod.env')
                 self.assertEqual(self.run_profile(repo, 'get', 'ticketBrowseUrl'), '"https://acme.example/browse/"')
 
@@ -244,6 +246,29 @@ class CompanyAndRepositoryTest(unittest.TestCase):
         subprocess.run(['git', '-C', str(api), '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q',
                         '--allow-empty', '-m', 'x'], check=True)
         self.assertIn('- %s: the API (HEAD ' % api, self.run_profile(web, 'related'))
+
+    def test_a_repository_s_secret_files_add_the_company_s(self):
+        self.write(self.company / 'config.json', {'remotes': ['git.acme.example'], 'secretFiles': ['.company.env']})
+        self.add_repo('web', {'remotes': ['git.acme.example/shop/web'], 'secretFiles': ['.prod.env']})
+        web = self.repo('web', 'git@git.acme.example:shop/web.git')
+        self.assertEqual(self.run_profile(web, 'secret-files').splitlines(), ['.prod.env', '.company.env'])
+
+    def test_an_unknown_repository_of_the_company_gets_the_fallback_and_the_company_s(self):
+        self.write(self.company / 'config.json', {'remotes': ['git.acme.example'], 'secretFiles': ['.company.env']})
+        for url in ['https://git.acme.example/other/x.git', 'https://git.acme.example/shop/api.git']:
+            with self.subTest(url=url):
+                repo = self.repo('s-%d' % abs(hash(url)), url)
+                secrets = self.run_profile(repo, 'secret-files').splitlines()
+                self.assertIn('.env', secrets)
+                self.assertIn('.company.env', secrets)
+
+    def test_a_folder_without_a_remote_gets_the_fallback_only(self):
+        self.write(self.company / 'config.json', {'remotes': ['git.acme.example'], 'secretFiles': ['.company.env']})
+        plain = self.root / 'plain'
+        plain.mkdir()
+        secrets = self.run_profile(plain, 'secret-files').splitlines()
+        self.assertIn('.env', secrets)
+        self.assertNotIn('.company.env', secrets)
 
 
 if __name__ == '__main__':
