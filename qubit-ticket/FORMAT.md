@@ -101,7 +101,7 @@ Ziel in the negative.>
 
 ## Abhängigkeiten
 
-- <what must come first and why, when it is no ticket; a ticket goes in as a Blocks link>
+- <what must come first and why, when it is no ticket; a ticket goes in as a blocks link>
 
 ## Offen
 
@@ -135,7 +135,7 @@ der neuen Buchungsstrecke") is cut, and so is a sentence about the state of the 
 goes stale as soon as the next one is done ("die erledigten Epics stammen aus der Zeit
 vor dem Neuzuschnitt"). An epic or initiative has no Beobachtet, Reproduktion, Befund or Akzeptanzkriterien, makes no
 claim about the code (no *geprüft* line, branch, route or service name: that evidence
-belongs to its stories), and never lists its child tickets: Jira shows them under the
+belongs to its stories), and never lists its child tickets: the tracker shows them under the
 parent, and a copy in the text goes stale.
 
 The skeleton is the minimum, not the limit. When the topic needs something the skeleton
@@ -145,7 +145,7 @@ and the budget apply to it as to every other section.
 
 ## Layout
 
-- **Heading levels.** The Jira summary is the page title, so the description has no `#`.
+- **Heading levels.** The ticket's title is the page title, so the description has no `#`.
   Sections are `##`, groups inside a section are `###`; no level is skipped and none is
   deeper than `###`.
 - **No numbers.** Neither `##` nor `###` headings carry numbers: the heading already
@@ -175,12 +175,12 @@ and the budget apply to it as to every other section.
 | Console or log output | a code block of at most five lines, in Reproduktion or Befund | the first lines of a stack trace |
 | A link | `[text](url)` | [Buchungsseite](https://app.example.com/…) |
 
-Product names stay plain text (the profile's `jira-ticket.md` names them).
+Product names stay plain text (the profile's `ticket.md` names them).
 
 **Ticket keys only in the Out of Scope of a story or bug.** A relation to another
-ticket is a Jira link (`Blocks` for an order, the profile's relates link type otherwise), and the parent is
-the `parent` field; the text names no key for them. A story's or bug's Out of Scope is
-the exception: its line answers where the left-out behaviour is done instead, Jira has
+ticket is a tracker link (blocks for an order, the profile's relates link type otherwise), and the parent is
+the tracker's parent field; the text names no key for them. A story's or bug's Out of Scope is
+the exception: its line answers where the left-out behaviour is done instead, a tracker has
 no link type for that, and a key in the text stays valid and becomes a link. An epic or
 initiative names no key at all.
 
@@ -235,7 +235,7 @@ The rules follow the ticket from top to bottom; the last three hold for all of i
    investigation understands: what happens, for whom, where it shows, and why when
    that is not obvious. No internal words ("Submit", a collection, a job name), no test
    steps, no code. Each has a source: the Ziel, an Entscheidung (in this ticket or in a
-   ticket linked in Jira), behaviour that stays unchanged, or a
+   linked ticket), behaviour that stays unchanged, or a
    requirement the planner set in the session. A criterion with no source becomes a
    Produkt question (SLICING.md, Questions). Bullets, never checkboxes.
 8. **Voraussetzungen** (story) say what a tester needs to see the criteria: settings
@@ -246,10 +246,10 @@ The rules follow the ticket from top to bottom; the last three hold for all of i
    itself: it goes into the Akzeptanzkriterien or Out of Scope, without a name. A
    decision about the implementation goes into the MR, where it holds once the MR is
    merged. Never write an agreement the skill inferred; with none, leave the heading
-   out. A person is a Jira mention of their account (`@Name` in the draft), so Jira
-   links and notifies them; a team or a document stays plain text. The account ID
-   comes from `atlassianUserInfo` for the user, `lookupJiraAccountId` for anyone else;
-   with no unique match, write the name as plain text.
+   out. A person is a mention of their account in the tracker (`@Name` in the draft),
+   so the tracker links and notifies them; a team or a document stays plain text. The
+   tracker's document says how to find the account; with no unique match, write the
+   name as plain text.
 10. **Every claim about the code or a cause carries its status**: *geprüft* with how
     and when, *Vermutung*, or it is a question under Offen. A claim without a status is
     cut. The status line under a heading covers its bullets; a bullet whose status
@@ -325,28 +325,8 @@ Das Widget startet auf Seiten, die globale Browser-Objekte sperren.
 The example has no Problem group: the Zusammenfassung already says what goes wrong and
 what it means, and Beobachtet shows it.
 
-## Jira facts
-
-- Through the API with `contentFormat: "markdown"`, `##` and `###` headings, tables,
-  inline code, code blocks, numbered and bulleted lists, bold and italic arrive as
-  formatting.
-- `- [ ]` does not become a checkbox; it arrives as a bullet with the text "[ ]".
-  Checkboxes exist only in ADF (`taskList`), and the tickets use none: the
-  Akzeptanzkriterien are bullets.
-- Markdown has no mention: `@Name` arrives as plain text, and the tools accept only
-  `markdown` and `adf` (no `html`). A description with a mention goes as ADF, on create
-  and on edit alike: save the draft, run
-  `python3 -I md2adf.py draft.md "@Name=<account ID>"` (this folder) and pass its
-  output with `contentFormat: "adf"`. Never invent an account ID. Read the ticket back
-  once: the mention returns as the account, not as text.
-
-## Paste rules (Markdown output only)
-
-For text the user pastes into Jira: headings `#` and `##` only, with a blank line before
-and after, so each `###` becomes a **bold** line; short lines; no inline backticks (write
-identifiers in **bold** instead), no code blocks, no `<` or `>`, no `|` outside tables,
-no `---`. A pasted `@Name` stays text: write the name plain, and the user types the
-mention in Jira. Direct creation through the API needs none of this.
+The draft is Markdown. How it reaches the tracker (content format, mentions, what a
+pasted text must leave out) is in the tracker's document under [trackers/](trackers/).
 
 ## Checklist (run it on the draft)
 
@@ -372,7 +352,7 @@ mention in Jira. Direct creation through the API needs none of this.
   an `@` mention. None is the planner's own choice or about the implementation.
 - Every claim about code or a cause has a status, or sits under Offen.
 - Ticket keys appear only in the Out of Scope of a story or bug; an epic or initiative
-  has none; other relations are Jira links. Out of Scope repeats nothing the parent
+  has none; other relations are tracker links. Out of Scope repeats nothing the parent
   already leaves out.
 - No file lists, steps or test scripts outside Befund and Reproduktion.
 - Offen holds questions for the implementer; a product question stands there only as a

@@ -12,7 +12,7 @@ change that does one thing; reviewers rarely complain that a change is too small
 
 ## Kinds and levels
 
-Every ticket has one kind; the profile maps the kinds to the issue types of its Jira.
+Every ticket has one kind; the profile maps the kinds to the issue types of its tracker.
 
 | Kind | What it is | Value it must carry |
 |---|---|---|
@@ -104,7 +104,7 @@ The shape of the cut:
 - Prefer the split that shows a slice the planner could defer or drop, and slices of about the
   same size (Lawrence's evaluation step); five slices with nearly all the work in one are no
   cut (Cohn).
-- A `Blocks` link joins two slices only where the later one cannot ship without the earlier.
+- A blocks link joins two slices only where the later one cannot ship without the earlier.
   When two cuts are equally small, take the one with fewer links.
 - A planner's request for one layer ("ein Backend-Ticket, das Frontend mache ich danach") gets
   the vertical alternative in the report: the outcome both tickets serve, as one ticket or a cut

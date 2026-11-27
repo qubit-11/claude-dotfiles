@@ -749,7 +749,7 @@ Full report: being built (step 6)
 - With `skip-report` the last line reads `Full report: /qubit-code-review
   publish-report` instead.
 - The list asks nothing, and the run never offers tickets: the user creates
-  any after reading the report (`qubit-jira-ticket` where wanted). When the
+  any after reading the report (`qubit-ticket` where wanted). When the
   user later names the created tickets, the orchestrator writes the keys
   into the finding's `tickets` in `findings.json`; when a report exists, the
   findings writer copies them into `data.json` and the report is assembled

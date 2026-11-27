@@ -1,6 +1,6 @@
 ---
 name: qubit-ticket-diagnose
-description: "Diagnoses a ticket before work on it starts: sets up its worktree and branch, checks every claim of the ticket against the code, and reports the root cause of a bug or the gap of a feature with evidence and open questions, then hands over to a plan. Use when the user gives a ticket key or link to start work on, or asks whether a ticket is still correct, what causes a reported bug, or what a feature would touch. Not for writing or cutting tickets (`qubit-jira-ticket`), or for carrying out a plan that already exists."
+description: "Diagnoses a ticket before work on it starts: sets up its worktree and branch, checks every claim of the ticket against the code, and reports the root cause of a bug or the gap of a feature with evidence and open questions, then hands over to a plan. Use when the user gives a ticket key or link to start work on, or asks whether a ticket is still correct, what causes a reported bug, or what a feature would touch. Not for writing or cutting tickets (`qubit-ticket`), or for carrying out a plan that already exists."
 ---
 
 # Ticket diagnosis

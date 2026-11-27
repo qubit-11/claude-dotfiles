@@ -1,6 +1,6 @@
 ---
-name: qubit-jira-ticket
-description: "Cuts a request into vertical, ready Jira tickets (initiative, epic, story, bug, chore) that state the problem and the required outcome without prescribing the implementation, and creates them in Jira after approval. Use when the user wants a ticket created or drafted, when an investigation, a found bug or a feature should become one or more tickets, when an epic or initiative should be broken down, when a ticket is too big, a bucket of unrelated fixes, horizontal (one layer only) or not ready to estimate, or when an existing ticket is wrong, too long, out of date with the code, or prescribes the implementation."
+name: qubit-ticket
+description: "Cuts a request into vertical, ready tickets (initiative, epic, story, bug, chore) that state the problem and the required outcome without prescribing the implementation, and creates them in the team's ticket tracker (Jira, GitLab, GitHub, Linear or another) after approval. Use when the user wants a ticket created or drafted, when an investigation, a found bug or a feature should become one or more tickets, when an epic or initiative should be broken down, when a ticket is too big, a bucket of unrelated fixes, horizontal (one layer only) or not ready to estimate, or when an existing ticket is wrong, too long, out of date with the code, or prescribes the implementation."
 ---
 
 # Ticket
@@ -18,17 +18,21 @@ The planner (the user, or the session that calls this skill) owns the problem an
 business decision. This skill owns the cut: it checks that each ticket is ready to be
 built without a refinement about its shape, proposes a vertical cut when it is not, and
 writes the tickets ([SLICING.md](SLICING.md)). The planner approves the cut, the answers
-and the drafts; the skill changes nothing in Jira without that approval.
+and the drafts; the skill changes nothing in the tracker without that approval.
 
 ## Workflow
 
 1. **Gather** from the session: the problem, what was investigated and found, what the
-   user decided, the intended type and place. Read the profile's `jira-ticket.md`
-   (`python3 ~/.claude/skills/_profiles/profile.py doc jira-ticket`,
-   [_profiles/README.md](../_profiles/README.md)): where the Jira facts live (cloud ID,
-   project, types, fields, link types), the team's rules, and the product names. It
-   takes precedence over this skill where they differ. Without a profile, ask the user
-   for the project and the cloud ID before drafting.
+   user decided, the intended type and place. Read the profile's `ticket.md`
+   (`python3 ~/.claude/skills/_profiles/profile.py doc ticket`,
+   [_profiles/README.md](../_profiles/README.md)): the tracker and where its facts live
+   (site, project, types, fields, link types), the team's rules, and the product names.
+   It takes precedence over this skill where they differ. Then read the tracker's
+   document, [trackers/](trackers/)`<tracker>.md`: how to search, read, create, link and
+   edit tickets there, and its content rules. Without a profile, ask the user for the
+   tracker and the project before drafting. Without a document for the tracker, use the
+   tools the session has for it (an MCP server, `glab`, `gh`), ask the user when that is
+   unclear, and write mentions and links in the tracker's own syntax.
 2. **Verify**, quickly, even when the session already did:
    - Bug: reproduce it, or re-check its evidence (the code path, the log, the console).
      If it does not reproduce, stop and report that; no ticket.
@@ -38,11 +42,11 @@ and the drafts; the skill changes nothing in Jira without that approval.
      servers or packages the outcome touches, and the short code look of
      [SLICING.md](SLICING.md), Code. They stay in the report.
    Stop as soon as each claim is confirmed or refuted; this is no investigation.
-3. **Check the structure** in Jira (JQL on the problem's key terms and on the module's
-   open epics):
+3. **Check the structure** in the tracker (a search on the problem's key terms and on
+   the module's open epics):
    - duplicates: a ticket that already covers the problem;
    - a home: an open epic or initiative the ticket belongs under;
-   - neighbours: tickets to link with the relates link type or `Blocks`;
+   - neighbours: tickets to link with the relates link type or a blocks link;
    - collisions: the planner's intended type or parent against what exists.
 4. **Cut** the request by [SLICING.md](SLICING.md), one level down: the kind of each
    ticket, the readiness rows, a proposed cut when a row is not met or a ticket is a
@@ -66,7 +70,7 @@ and the drafts; the skill changes nothing in Jira without that approval.
    refinement must decide.
 6. **Draft** each approved ticket by [FORMAT.md](FORMAT.md), then run its checklist on
    each draft. With five or more tickets, one subagent per ticket drafts in parallel; each
-   gets FORMAT.md, the profile's `jira-ticket.md`, the facts, its slice, the planner's
+   gets FORMAT.md, the profile's `ticket.md`, the tracker's document, the facts, its slice, the planner's
    answers and the titles of the other slices. Then one pass over all drafts: no
    behaviour in two tickets, each Out of Scope names the neighbour that covers it, and the
    links match the cut.
@@ -79,23 +83,22 @@ and the drafts; the skill changes nothing in Jira without that approval.
    with at most four questions: approve the drafts or give changes; the parent (the
    found epic, another, none); story points for a single story, bug or chore (offer 1, 2, 3, 5;
    never propose a number; with several tickets they stay empty and the report says the
-   team sets them); the assignee (default: the user, from `atlassianUserInfo`).
-8. **Create** after the approval: `createJiraIssue` with `contentFormat: "markdown"`, or
-   `"adf"` from `md2adf.py` when the text holds a mention (FORMAT.md, Jira facts); an
-   edit of an existing ticket follows the same rule,
-   one `additional_fields` object (component by its live name, story points), `parent`
-   when approved, the assignee; the issue type is the profile's type for the kind. A
-   parent is created before its children, so they can name it. Then the approved links
-   with `createIssueLink`, including the `Blocks` links between the slices of a cut. Give the user the keys and the links.
-   When the user asked for Markdown only, give the text instead, by FORMAT.md's paste
-   rules.
+   team sets them); the assignee (default: the user, as the tracker document finds them).
+8. **Create** after the approval, as the tracker's document says: the content format,
+   the fields (component, story points), the parent when approved, the assignee; the
+   issue type is the profile's type for the kind. A parent is created before its
+   children, so they can name it. Then the approved links, including the blocks links
+   between the slices of a cut. Give the user the keys and the links.
+   When the user asked for Markdown only, give the text instead, by the paste rules of
+   the tracker's document.
 
 ## Revising an existing ticket
 
 Existing tickets are changed only when the user asks for that change. Then the workflow
 runs on that ticket:
 
-1. **Read** the ticket with its comments and links, and the profile as in step 1.
+1. **Read** the ticket with its comments and links, and the profile and the tracker's
+   document as in step 1.
 2. **Verify** its claims as in step 2: the stated current state, a cause, a code detail
    it names.
 3. **Check** the text against [FORMAT.md](FORMAT.md)'s checklist and the readiness rows
@@ -107,5 +110,6 @@ runs on that ticket:
 5. **Show the findings and the draft, then ask once:** approve or give changes. A
    different type, parent, story points or assignee, or a cut into several tickets, is a
    finding with a suggestion, never part of the rewrite.
-6. **Update** after the approval with `editJiraIssue`, in the content format of step 8.
+6. **Update** after the approval, as the tracker's document says, in the content format
+   of step 8.
    Comments, status and every field the user did not approve stay as they are.

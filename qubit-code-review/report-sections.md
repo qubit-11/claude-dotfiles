@@ -472,7 +472,7 @@ switch, and Copy copies the one on screen, which is what gets posted.
 
 `tickets` lists the Jira keys of tickets that exist for a finding; most
 findings have none. No ticket is part of the review: the user creates any
-after reading the report (`qubit-jira-ticket` where wanted), the orchestrator
+after reading the report (`qubit-ticket` where wanted), the orchestrator
 writes the keys into `findings.json`, the findings writer copies them into
 `data.json`, and the report is assembled and republished. The card shows a
 line "Ticket" with the keys, and the renderer appends `Ticket: <keys>` as the

@@ -26,7 +26,7 @@ A profile matches when one of its `remotes` names a remote of the repository, as
 `<host>/<project path>` or a shorter prefix (`git.example.com/group` matches every
 project of that group; the remote's name does not matter). In a folder without any git
 remote, `get`, `doc` and `neighbours` use the only profile when exactly one exists, so
-a Jira ticket can be drafted there. A repository whose remotes match no profile has
+a ticket can be drafted there. A repository whose remotes match no profile has
 none: another project on the same host never gets this one's rules.
 
 **Secret files never fall back to another profile.** Without a matching profile they
@@ -48,8 +48,8 @@ leaves out more files, never fewer.
 
 `<skill>.md` holds what a skill needs as prose: the worktree route and the e2e
 commands for the review (`code-review.md`), the merge and push rules for merge
-requests (`merge-request.md`), the Jira facts and team rules for tickets
-(`jira-ticket.md`), the review-thread calls and reply language (`code-review-response.md`), the
+requests (`merge-request.md`), the tracker, its facts and the team rules for
+tickets (`ticket.md`), the review-thread calls and reply language (`code-review-response.md`), the
 ticket tracker, worktree route and build commands for a ticket diagnosis
 (`ticket-diagnose.md`). A skill without its document uses its general rules and says what
 it skipped.

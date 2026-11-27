@@ -1,4 +1,4 @@
-"""Convert a ticket draft (FORMAT.md subset) to an ADF document for Jira.
+"""Convert a ticket draft (../FORMAT.md subset) to an ADF document for Jira (jira.md).
 
 Usage: python3 -I md2adf.py draft.md "@Name=<accountId>" ... > draft.adf.json
 Each "@Name" in the draft becomes a Jira mention of that account.
