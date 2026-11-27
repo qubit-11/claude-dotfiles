@@ -25,8 +25,10 @@ question included; only this file does.
   `/qubit-code-review [standard|deep]`."
 
 The platform calls (host, project path, threads, reply, resolve, pipeline and
-merge state) come from the profile's `code-review.md`, section Re-review
-([_profiles/README.md](../_profiles/README.md)). Without that section, use the
+merge state) come from the profile (`profile.py doc code-review`,
+[_profiles/README.md](../_profiles/README.md); every path it prints, in
+order): the company's section Re-review, and the repository's section Review
+threads where it has one. Without that section, use the
 platform's CLI (`glab` for GitLab, `gh` for GitHub) and say so in the list.
 
 ## 1. Find the run

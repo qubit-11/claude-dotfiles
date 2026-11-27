@@ -176,7 +176,8 @@ findings.json).
   exists for the subject (stop, update the existing report, or a new
   independent report); a HEAD that is not an ancestor of the sha; a branch checked out
   elsewhere. Code files need no worktree.
-- **Target.** Branch and target (default `master`). The target is always the
+- **Target.** Branch and target (default: the main branch, `profile.py get
+  mainBranch`, else the remote's `HEAD`). The target is always the
   freshly fetched remote ref `<remote>/<target>`, never the local branch,
   which a fetch does not move. The remote comes from `git config
   branch.<target>.remote`, or is the only remote when none is set; with
@@ -197,7 +198,7 @@ findings.json).
   the lines the inflators hide, the report states the count),
   `--name-status`, the commit list, the prompts.
 - **Secrets** live in named secret files only (`SECRET_FILES` in
-  `scripts/secrets.sh`, from the profile's `secretFiles`, matched by name or
+  `scripts/secrets.sh`, from `profile.py secret-files` (the repository's and the company's `secretFiles`), matched by name or
   glob; without a matching profile a broad fallback set,
   [_profiles/README.md](../_profiles/README.md)). Every other env file
   holds dummies and is reviewed like code. The secret files are

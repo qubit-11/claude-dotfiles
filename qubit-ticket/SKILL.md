@@ -25,9 +25,13 @@ and the drafts; the skill changes nothing in the tracker without that approval.
 1. **Gather** from the session: the problem, what was investigated and found, what the
    user decided, the intended type and place. Read the profile's `ticket.md`
    (`python3 ~/.claude/skills/_profiles/profile.py doc ticket`,
-   [_profiles/README.md](../_profiles/README.md)): the tracker and where its facts live
-   (site, project, types, fields, link types), the team's rules, and the product names.
-   It takes precedence over this skill where they differ. Then read the tracker's
+   [_profiles/README.md](../_profiles/README.md); read every path it prints, in order; a
+   later section replaces an earlier one of the same name): the tracker and where its
+   facts live (site, types, fields, link types), the team's rules, and the product names.
+   It takes precedence over this skill where they differ. The project is one of
+   `profile.py get ticketProjects`: the one whose name and description in the tracker
+   fit what the ticket is about, read from the tracker; ask when two fit. The repository
+   the session is in is no hint: tickets and repositories are many-to-many. Then read the tracker's
    document, [trackers/](trackers/)`<tracker>.md`: how to search, read, create, link and
    edit tickets there, and its content rules. Without a profile, ask the user for the
    tracker and the project before drafting. Without a document for the tracker, use the

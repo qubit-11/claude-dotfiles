@@ -26,9 +26,11 @@ file), so a later round, or the same round after a context compaction, picks up 
 1. **Find the subject.**
    - Profile: in the repository, run
      `python3 ~/.claude/skills/_profiles/profile.py doc code-review-response`
-     ([_profiles/README.md](../_profiles/README.md)). When it prints a path, read that
-     file and follow it on top of this workflow. When it prints `none`, use the
-     repository's own conventions and its CLI (`glab` for GitLab, `gh` for GitHub).
+     ([_profiles/README.md](../_profiles/README.md)). Read every path it prints, in
+     order; a later section replaces an earlier one of the same name. From `repo.md`,
+     use the sections `Commits` and `Review threads`. Follow them on top of this
+     workflow. When it prints `none`, use the repository's own conventions and its CLI
+     (`glab` for GitLab, `gh` for GitHub).
    - Merge request: the number or URL handed over, else the open merge request of the
      current branch. With several open, ask which one.
    - Worktree: the checkout that has the merge request's source branch

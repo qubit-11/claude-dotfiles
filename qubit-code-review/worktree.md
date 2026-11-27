@@ -67,10 +67,11 @@ checkout, without the user having to ask.
   `REVIEW-<ticket>-<name>-<short sha>`, created with `git worktree add
   --detach <dir> <sha>` where the repository's worktree procedure puts
   manually created worktrees, never by a hook or command that branches off
-  the default branch (the profile's `code-review.md`, section
-  Worktree, names the route). An existing directory of that name stops the review (ask the
+  the default branch (the profile's `Worktree` section names the route, and
+  `Review worktree` what a review worktree does differently; `profile.py doc
+  code-review`, every path it prints, in order). An existing directory of that name stops the review (ask the
   user). Then the repository's env provisioning runs on it (the profile's
-  section Worktree names it), since tests need its env files, and `EnterWorktree path:` enters it.
+  sections Worktree and Review worktree name it), since tests need its env files, and `EnterWorktree path:` enters it.
 - A worktree reaches the subject sha the same way whether it was reused or
   just created: when its HEAD is an ancestor of the sha (`git merge-base
   --is-ancestor HEAD <sha>`), `git merge --ff-only <sha>`, or for a detached
@@ -80,8 +81,8 @@ checkout, without the user having to ask.
   (as option 3), or stop. For an existing worktree this state is part of
   the question above.
 - When no review worktree exists for the subject, create it by the
-  repository's worktree procedure if it has one (the profile's section
-  Worktree names it), else
+  repository's worktree procedure if it has one (the profile's sections
+  Worktree and Review worktree name it), else
   `git worktree add <dir> <existing branch>`; a local branch from an earlier
   review may sit at an older tip, so bring it to the sha as above. Then
   `EnterWorktree path:`, never `EnterWorktree name:` (it may branch off the
@@ -95,8 +96,8 @@ checkout, without the user having to ask.
   - a detached review worktree at the subject sha (`git worktree add
     --detach <dir> <sha>`). Later commits are not followed. When the local
     and remote tips differ, name both and say which one the sha is. Then run
-    the repository's env provisioning on it (the profile's section Worktree
-    names it), since tests need its env files, and
+    the repository's env provisioning on it (the profile's sections Worktree
+    and Review worktree name it), since tests need its env files, and
     `EnterWorktree path:` on it;
   - or stop.
 

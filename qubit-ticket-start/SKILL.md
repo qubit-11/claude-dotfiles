@@ -23,18 +23,27 @@ lines yourself.
 ## Profile and defaults
 
 In the repository, run `python3 ~/.claude/skills/_profiles/profile.py doc ticket-start`
-([_profiles/README.md](../_profiles/README.md)). When it prints a path, read that file.
-Each of its sections replaces the default of the same name below. For every section the
-profile lacks (all of them when it prints `none`), use the default and tell the user
-which defaults you used.
+([_profiles/README.md](../_profiles/README.md)). Read every path it prints, in order; a
+later section replaces an earlier one of the same name. From `repo.md`, use the sections
+`Worktree`, `Branch name`, `Hotfix`, `Build and tests`, `e2e` and `Ignored folders`. Each
+section replaces the default of the same name below. For every section the profile lacks
+(all of them when it prints `none`), use the default and tell the user which defaults
+you used.
+
+The branches are values, not text: the main branch is `profile.py get mainBranch`, else
+`git symbolic-ref refs/remotes/<remote>/HEAD`; the base of a hotfix is one of
+`profile.py get productionBranches`: the one entry, or the entry whose name carries the
+country or variant the ticket names (its name or its usual code), else ask which. Without that key, ask for the branch; never guess it
+from branch names.
 
 | Section | Default |
 |---|---|
 | `Ticket tracker` | Ask the user how to read the ticket. |
-| `Worktree` | Remote: the one the main branch tracks, else `origin`. Main branch: `git symbolic-ref refs/remotes/<remote>/HEAD`. Folder: ask the user once. Install: the package manager whose lockfile is in the root. |
+| `Worktree` | Remote: the one the main branch tracks, else `origin`. Folder: ask the user once. Install: the package manager whose lockfile is in the root. |
 | `Branch name` | `<KEY>-<short-title>` |
-| `Hotfix` | Ask when the ticket names production, a release, a released version or a hotfix; ask for the release branch. |
+| `Hotfix` | Ask when the ticket names production, a release, a released version or a hotfix. |
 | `Build and tests` | From the touched package's manifest and README. Merge request CLI: `glab` for a GitLab remote, `gh` for GitHub. |
+| `e2e` | The e2e specs and their commands from the touched package's manifest and README. |
 | `Ignored folders` | Ask; confirm the folder with `git check-ignore` before writing to it. |
 
 ## Workflow
@@ -63,7 +72,7 @@ which defaults you used.
    - **Reuse:** enter the existing worktree; for an existing branch without a worktree,
      `git worktree add <dir> <branch>`, then provision and enter it as below.
    - **New:** type `DEV` based on `<remote>/<main branch>`; when `Hotfix` applies, ask,
-     and on a yes use type `HOTFIX` based on the release branch. Name the directory by
+     and on a yes use type `HOTFIX` based on `<remote>/<production branch>`. Name the directory by
      the worktree-naming rule in your CLAUDE.md (`<TYPE>-<ticket>-<name>`) and the branch by `Branch name`. Create it by the `Worktree` route.
    - **None** (the user chose the diagnosis only): stay in the main checkout and skip
      the install, the build and the test runs of step 4.
@@ -83,7 +92,7 @@ which defaults you used.
    - **Tests:** find the unit and e2e specs that cover the code. Wait for the install to
      finish, then build what the touched packages' tests need, in the background
      (`Build and tests`). Run the relevant unit specs as a baseline. For a bug, write a
-     test that reproduces it when that is cheap. List the e2e specs with their commands;
+     test that reproduces it when that is cheap. List the e2e specs with their commands (`e2e`);
      do not run them.
    Done when every claim has a finding and you can state the cause or the gap.
 

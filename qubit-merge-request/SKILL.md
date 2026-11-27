@@ -17,9 +17,11 @@ before opening a file.
 
 1. **Pick the profile.** In the repository, run
    `python3 ~/.claude/skills/_profiles/profile.py doc merge-request`
-   ([_profiles/README.md](../_profiles/README.md)). When it prints a path, read that file
-   and follow it on top of the format. When it prints `none`, use the format alone, with
-   the repository's own conventions and its CLI (`glab` for GitLab, `gh` for GitHub).
+   ([_profiles/README.md](../_profiles/README.md)). Read every path it prints, in order;
+   a later section replaces an earlier one of the same name. From `repo.md`, use the
+   sections `Commits`, `Merge requests` and `e2e`. Follow them on top of the format. When
+   it prints `none`, use the format alone, with the repository's own conventions and its
+   CLI (`glab` for GitLab, `gh` for GitHub).
 2. **Rebase onto the target branch.** The target is the existing MR's target branch;
    for a new MR, the branch the work was cut from (usually the default branch, a
    backport e.g. `stable`). Ask the user when that is not certain. Fetch the target and

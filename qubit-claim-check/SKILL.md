@@ -31,15 +31,23 @@ give, the run goes into a spike worktree of its own.
    behaviour, a stated cause, a "since when", a scope ("always", "for everyone"), and the
    assumption inside a question ("install.sh deletes everything, doesn't it?" claims that
    it does). The user's own hypothesis is a claim like any other.
-3. **Settle the version** each claim is about: production or a release is the release
-   branch, "since version X" is its tag, anything else the main branch; ask when the
-   source leaves it open. The names come from the profile's `ticket-start` document
-   (sections `Worktree` and `Hotfix`, see Spike worktree below); without one, the main
-   branch is `git symbolic-ref refs/remotes/<remote>/HEAD`, a tag is what `git tag -l`
-   lists for that version, and the release branch is asked, never guessed from a branch
-   name. Fetch the remote, then work from `<remote>/<ref>`, never from a
-   local branch that may be behind. Read that version straight from git, with no
-   checkout: `git show <remote>/<ref>:<path>`, `git grep <pattern> <remote>/<ref>`,
+3. **Settle the version** each claim is about, from the profile's branch keys
+   (`python3 ~/.claude/skills/_profiles/profile.py get <key>`,
+   [_profiles/README.md](../_profiles/README.md)):
+   - production, customers, a hotfix: `get productionBranches`; one entry is the one;
+     with several, the entry whose name carries the country or variant the source
+     names (its name or its usual code). Picking among the profile's entries is reading
+     the profile, not guessing; when no entry fits, or the source names none, ask which;
+   - the next release, a release candidate: `get candidateBranches`, the same way;
+   - "since version X": the tags `get versionTags` yields for X (`{version}` replaced by
+     X), else what `git tag -l` lists for X;
+   - anything else: the main branch, `get mainBranch`, else
+     `git symbolic-ref refs/remotes/<remote>/HEAD`.
+
+   Without `productionBranches` or `candidateBranches` (`null`), ask for the branch;
+   never guess it from branch names. Fetch the remote, then work from `<remote>/<ref>`,
+   never from a local branch that may be behind. Read that version straight from git,
+   with no checkout: `git show <remote>/<ref>:<path>`, `git grep <pattern> <remote>/<ref>`,
    `git log`, `git diff`, `git branch -r --contains <commit>`.
 4. **Check each claim** against the strongest source within reach, in this order: a run
    (a test, a reproduction), the code at that version, logs and data, the tracker and
@@ -90,14 +98,16 @@ git worktree add --detach <folder>/SPIKE-<ticket or noticket>-<name> <remote>/<r
 
 - **Name:** the worktree-naming rule in your CLAUDE.md; the ticket of the source, or
   `noticket`.
-- **Folder, environment and install:** the `Worktree` section of the profile's
-  `ticket-start` document (`python3 ~/.claude/skills/_profiles/profile.py doc ticket-start`,
-  [_profiles/README.md](../_profiles/README.md)), with `--detach <remote>/<ref>` in place
-  of a new branch. Without a profile: the folder the repository's other worktrees share
+- **Folder, environment and install:** the `Worktree` section of the profile
+  (`python3 ~/.claude/skills/_profiles/profile.py doc claim-check`,
+  [_profiles/README.md](../_profiles/README.md); read every path it prints, in order; a
+  later section replaces an earlier one of the same name. From `repo.md`, use the
+  sections `Worktree`, `Build and tests` and `e2e`), with `--detach <remote>/<ref>` in
+  place of a new branch. Without a profile: the folder the repository's other worktrees share
   (`git worktree list`), else `<repository>-worktrees/` beside the main checkout; the
   install of the package manager whose lockfile is in the root.
-- **Builds and tests:** the profile's `Build and tests` section, else the touched
-  package's manifest and README.
+- **Builds and tests:** the profile's `Build and tests` section, and for e2e its `e2e`
+  section; else the touched package's manifest and README.
 - **Commands run in it by its path** (`cd <path> && …` in one command); the session
   stays where it is.
 

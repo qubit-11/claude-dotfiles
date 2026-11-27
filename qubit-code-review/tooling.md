@@ -772,10 +772,11 @@ worktree procedure. Keep the output in `$SP/checks/`.
 
 ### e2e suites and the full stack
 
-The repository's commands for both come from the profile's
-`code-review.md` (`profile.py doc code-review`,
-[_profiles/README.md](../_profiles/README.md)), sections "e2e suites without
-a full stack" and "Full stack". Without a profile or without the section,
+The repository's commands for both come from its profile
+(`profile.py doc code-review`, [_profiles/README.md](../_profiles/README.md);
+read every path it prints, in order; a later section replaces an earlier one
+of the same name): the `repo.md` sections `e2e` (suites without a full stack)
+and `Full stack`. Without a profile or without the section,
 that kind of run does not happen, and 4.1 says so.
 
 **Every depth: e2e suites without a full stack.** For each touched package
