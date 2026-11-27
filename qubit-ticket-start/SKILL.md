@@ -39,7 +39,7 @@ from branch names.
 | Section | Default |
 |---|---|
 | `Ticket tracker` | Ask the user how to read the ticket. |
-| `Worktree` | Remote: the one the main branch tracks, else `origin`. Folder: ask the user once. Install: the package manager whose lockfile is in the root. |
+| `Worktree` | Remote: the one the main branch tracks, else `origin`. Folder: `.claude/worktrees/` in the main checkout, ignored by git (check with `git check-ignore`). Install: the package manager whose lockfile is in the root. |
 | `Branch name` | `<KEY>-<short-title>` |
 | `Hotfix` | Ask when the ticket names production, a release, a released version or a hotfix. |
 | `Build and tests` | From the touched package's manifest and README. Merge request CLI: `glab` for a GitLab remote, `gh` for GitHub. |

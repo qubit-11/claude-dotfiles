@@ -113,9 +113,9 @@ git worktree add --detach <folder>/SPIKE-<ticket or noticket>-<name> <remote>/<r
   [_profiles/README.md](../_profiles/README.md); read every path it prints, in order; a
   later section replaces an earlier one of the same name. From `repo.md`, use the
   sections `Worktree`, `Build and tests` and `e2e`), with `--detach <remote>/<ref>` in
-  place of a new branch. Without a profile: the folder the repository's other worktrees share
-  (`git worktree list`), else `<repository>-worktrees/` beside the main checkout; the
-  install of the package manager whose lockfile is in the root.
+  place of a new branch. Without a profile: `.claude/worktrees/` in the main checkout,
+  ignored by git (check with `git check-ignore`); the install of the package manager
+  whose lockfile is in the root.
 - **Builds and tests:** the profile's `Build and tests` section, and for e2e its `e2e`
   section; else the touched package's manifest and README.
 - **Commands run in it by its path** (`cd <path> && …` in one command); the session

@@ -27,3 +27,11 @@ purpose in a directory listing.
 
 This applies to the worktree directory only. Branch names follow the
 repository's own convention.
+
+## Git worktree location
+
+Put a worktree in `.claude/worktrees/` inside the main checkout of its
+repository: the folder Claude Code uses for the worktrees it creates. Check
+with `git check-ignore` that git ignores the folder. A repository that
+documents another folder keeps its own rule. Never create a
+`<repository>-worktrees/` folder beside the main checkout.

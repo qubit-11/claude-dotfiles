@@ -7,3 +7,6 @@ _profiles/*/
 !_profiles/example/
 # Claude Code moves replaced synced skills here before swapping in a new version
 .trash/
+# Claude Code's local files: worktrees and personal settings
+.claude/worktrees/
+.claude/settings.local.json
