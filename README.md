@@ -91,7 +91,7 @@ style, independent of the working environment and the repository.
 | [`global/worktree-naming.md`](global/worktree-naming.md) | rule for naming git worktree folders: `<TYPE>-<ticket>-<name>` | imported in `~/.claude/CLAUDE.md` |
 | [`statusline/statusline.sh`](statusline/statusline.sh) | status line: folder, branch, context, model and effort, 5-hour and 7-day limits, account | linked as `~/.claude/statusline.sh` |
 | [`install.sh`](install.sh) | setup script: links the skills, `_profiles/` and the status line, adds the `statusLine` setting, adds the imports | run by the setup |
-| [`_profiles/`](_profiles/README.md) | the values of a working environment, one folder per environment, and `profile.py`, which reads them for the skills | the skills call `profile.py`; only `example/` is in git |
+| [`_profiles/`](_profiles/README.md) | the values of a working environment, one folder per environment, and `profile.py`, which reads them for the skills | linked as `~/.claude/skills/_profiles`, where the skills call `profile.py`; only `example/` is in git |
 
 ## Plugins
 
