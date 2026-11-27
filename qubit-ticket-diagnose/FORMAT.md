@@ -6,7 +6,7 @@ code says: why the bug happens, or what a feature is really missing and where it
 lands. So the head states that first, and everything below it is the evidence.
 
 The diagnosis is written in the language of the conversation with the user. It goes
-into the chat and, unchanged, into the diagnosis file (SKILL.md, step 6).
+into the chat and, unchanged, into the diagnosis file (SKILL.md, step 5).
 
 ## Head
 
@@ -49,12 +49,13 @@ Judgement:        simple | questions needed
 Checked against:  <branch> @ <short sha>
 ```
 
-`Judgement` is `questions needed` as soon as one open question below is numbered;
-otherwise `simple`.
+`Judgement` is `questions needed` as soon as there is a numbered open question, a ❓ row
+or a `Cause candidates:` list; otherwise `simple`. Each ❓ row and each cause candidate
+that the user can settle has its numbered question below.
 
 ## Claims
 
-A table with one row per claim of the ticket, in the order of step 2 of SKILL.md:
+A table with one row per claim of the ticket, in the order of step 1 of SKILL.md:
 
 ```md
 | # | Claim in the ticket | Finding | Evidence |
@@ -70,7 +71,9 @@ A table with one row per claim of the ticket, in the order of step 2 of SKILL.md
   behaviour, and any cause the ticket names.
 - For a feature, the claims are the current state the ticket describes and each
   acceptance criterion. A criterion is ✅ when it can be written as a test and the
-  code has a place for it; ❓ when it is vague or depends on a decision.
+  code has a place for it; ❓ when it is vague or depends on a decision. A feature
+  ticket without acceptance criteria gets the row `Acceptance criteria: none stated`,
+  marked ❓, with a question that proposes criteria.
 
 ## Below the table
 
@@ -95,4 +98,5 @@ Before the diagnosis is shown, every line is true:
   `Cause candidates:`.
 - Every ✅ and ❌ row has evidence you read yourself.
 - `Checked against` names a branch and a sha.
-- `Judgement` matches the open questions.
+- `Judgement` is `questions needed` when there is any open question, ❓ row or cause
+  candidate.

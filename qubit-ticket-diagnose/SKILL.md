@@ -20,42 +20,59 @@ The user's session drives the ticket from start to plan. Explore agents may sear
 but they only read, and their findings are evidence only after you have read the cited
 lines yourself.
 
+## Profile and defaults
+
+In the repository, run `python3 ~/.claude/skills/_profiles/profile.py doc ticket-diagnose`
+([_profiles/README.md](../_profiles/README.md)). When it prints a path, read that file.
+Each of its sections replaces the default of the same name below. For every section the
+profile lacks (all of them when it prints `none`), use the default and tell the user
+which defaults you used.
+
+| Section | Default |
+|---|---|
+| `Ticket tracker` | Ask the user how to read the ticket. |
+| `Worktree` | Remote: the one the main branch tracks, else `origin`. Main branch: `git symbolic-ref refs/remotes/<remote>/HEAD`. Folder: ask the user once. Install: the package manager whose lockfile is in the root. |
+| `Branch name` | `<KEY>-<short-title>` |
+| `Hotfix` | Ask when the ticket names production, a release, a released version or a hotfix; ask for the release branch. |
+| `Build and tests` | From the touched package's manifest and README. Merge request CLI: `glab` for a GitLab remote, `gh` for GitHub. |
+| `Ignored folders` | Ask; confirm the folder with `git check-ignore` before writing to it. |
+
 ## Workflow
 
-1. **Pick the profile.** In the repository, run
-   `python3 ~/.claude/skills/_profiles/profile.py doc ticket-diagnose`
-   ([_profiles/README.md](../_profiles/README.md)). When it prints a path, read that file:
-   its sections `Ticket tracker`, `Worktree`, `Branch name`, `Hotfix`, `Build and tests`
-   and `Ignored folders` take precedence over the defaults below. When it prints `none`,
-   use the defaults and tell the user which of these sections you had to skip or guess.
-   Done when you know, for each section, the profile's rule or the default.
+1. **Read the ticket.** Take the key from the argument: a key in any case, or a link
+   with the key anywhere in it (path or query). Use the tracker's case for the ticket
+   and the branch, lower case for the worktree directory. Read the ticket, its comments,
+   its linked tickets and its attachments. Decide bug or feature by the issue type; ask
+   when the type does not tell. Split the ticket into numbered claims
+   ([FORMAT.md](FORMAT.md), Claims). Done when you have the claims and the kind.
 
-2. **Read the ticket.** Take the key from the argument: a key in any case, or a link
-   with the key in its path. Write it in the tracker's case from here on. Read the
-   ticket, its comments, its linked tickets and its attachments through the tracker the
-   profile names (default: ask the user how to reach it). Decide bug or feature by the
-   issue type; ask when the type does not tell. Then split the ticket into numbered
-   claims (see [FORMAT.md](FORMAT.md), Claims). Done when you have the claims and the kind.
+2. **Pre-check, before you create anything.** Fetch the remote first. Then look for
+   work that exists, matching the key case-insensitively and not followed by a digit
+   (`PROJ-12` must not match `PROJ-123`):
+   - `git worktree list` and `git branch -a`;
+   - `git log --all --oneline -i -E --grep='<KEY>([^0-9]|$)'`;
+   - open and merged merge requests that name the key (CLI from `Build and tests`).
+   Show the user every match with its path, branch, commit or merge request, and ask:
+   - **a worktree or branch exists:** reuse it, create a new one under another name, or
+     stop;
+   - **the change already landed:** is a worktree still needed, or is the diagnosis
+     enough?
+   Done when nothing matched or the user has decided.
 
-3. **Pre-check, before you create anything.** Look for work that already exists:
-   - `git worktree list` and `git branch -a`, matched case-insensitively against the key;
-   - `git log --all --oneline -i --grep=<KEY>`;
-   - open and merged merge requests that name the key (the CLI from the profile).
-   When anything matches, show the user every match with its path, branch, commit or
-   merge request, and ask: reuse it, create a new one under another name, or stop. A
-   change that already landed is also a finding for the diagnosis. Done when nothing
-   matched or the user has decided.
+3. **Set up the worktree.**
+   - **Reuse:** enter the existing worktree; for an existing branch without a worktree,
+     `git worktree add <dir> <branch>`, then provision and enter it as below.
+   - **New:** type `DEV` based on `<remote>/<main branch>`; when `Hotfix` applies, ask,
+     and on a yes use type `HOTFIX` based on the release branch. Name the directory by
+     the [worktree-naming rule](../global/worktree-naming.md) (`<TYPE>-<ticket>-<name>`)
+     and the branch by `Branch name`. Create it by the `Worktree` route.
+   - **None** (the user chose the diagnosis only): stay in the main checkout and skip
+     the install, the build and the test runs of step 4.
+   Then enter the worktree, and only then start the install in the background, from
+   inside it. When a directory or a branch is in the way, stop and tell the user; never
+   delete, force, rename or retry. Done when the session is in the worktree.
 
-4. **Create the worktree.** Type `DEV`, based on the main branch, unless the profile's
-   `Hotfix` section says the ticket points at the release branch; then ask, and on a yes
-   use type `HOTFIX` based on the release branch. Name the worktree directory by the
-   global worktree-naming rule (`<TYPE>-<ticket>-<name>`) and the branch by the profile's
-   `Branch name`. Create the worktree by the profile's `Worktree` route, start the
-   dependency install in the background, and enter the worktree. When a directory or a
-   branch already exists, stop and tell the user; never delete, force, rename or retry.
-   Done when the session is in the worktree on the new branch.
-
-5. **Investigate.** Check every claim against the code, with no depth limit: follow the
+4. **Investigate.** Check every claim against the code, with no depth limit: follow the
    calls, the data and the configuration as far as the claim needs.
    - **Bug:** find the root cause. It is often not what the ticket names. Read the
      history of the lines involved (`git log -L`, `git blame`) when it explains the cause.
@@ -64,32 +81,34 @@ lines yourself.
      may exist, behind a flag or in another module). Find the gap, the touch points
      (packages, files, interfaces, data model, migrations), the patterns and decisions
      the change must follow, and whether each acceptance criterion can be tested.
-   - **Tests:** find the unit and e2e specs that cover the code. Once you know the
-     touched packages, build what their tests need, in the background (profile
-     `Build and tests`). Run the relevant unit specs as a baseline. For a bug, write a
+   - **Tests:** find the unit and e2e specs that cover the code. Wait for the install to
+     finish, then build what the touched packages' tests need, in the background
+     (`Build and tests`). Run the relevant unit specs as a baseline. For a bug, write a
      test that reproduces it when that is cheap. List the e2e specs with their commands;
      do not run them.
    Done when every claim has a finding and you can state the cause or the gap.
 
-6. **Report.** Write the diagnosis by [FORMAT.md](FORMAT.md) and run its checklist. Show
+5. **Report.** Write the diagnosis by [FORMAT.md](FORMAT.md) and run its checklist. Show
    it in the chat and save it as `<ignored folder>/tickets/<KEY>-diagnose.md` in the
-   worktree; the ignored folder comes from the profile (default: ask, and check the
-   folder with `git check-ignore` before you write). Done when both exist and match.
+   worktree, or in the main checkout when there is none. Done when both exist and match.
 
-7. **Stop** and wait for the user's answers to the open questions. When a question is
-   for the ticket author, draft it in the chat; post it to the tracker only after the
-   user's explicit OK. Done when every open question is answered or the user moves on.
+6. **Stop** and wait for the user's answers to the open questions. When a question is
+   for the ticket author, draft it in the chat; post it as a ticket comment only after
+   the user's explicit OK. Done when every open question is answered or the user moves on.
 
-8. **Plan.** Invoke `superpowers:writing-plans` with the diagnosis file as its spec and
+7. **Plan.** Invoke `superpowers:writing-plans` with the diagnosis file as its spec and
    `<ignored folder>/plans/` as the place for the plan, so a new session in the worktree
    can carry it out. When the change is a few lines in one file, propose to skip the
-   plan; the user decides. Done when the plan is saved, or the user chose to skip it.
-   Do not start implementing.
+   plan; the user decides. Stop once the plan is saved: skip the execution handoff of
+   writing-plans, and do not start implementing. Done when the plan is saved, or the
+   user chose to skip it.
 
 ## Never
 
 - Commit, push, or open a merge request.
-- Change the ticket: no status, assignee or comment without the user's explicit OK.
+- Write to the ticket, except the drafted question of step 6 after the user's explicit
+  OK. No status, assignee, field or link changes, even when a repository rule asks for
+  them.
 - Delete, force, rename or retry when a worktree or branch is in the way.
 - Run e2e suites during the diagnosis.
 - Hand the ticket to a subagent that implements it.
