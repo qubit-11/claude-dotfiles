@@ -97,15 +97,16 @@ def repos(company):
 def matching_entries():
     """Every company and repository entry one of whose `remotes` names a remote of the
     current repository, as (rank, company, company config, repo, repo config); the rank
-    is (length of the matching entry, is a repository entry)."""
+    is (length of the matching entry, is a repository entry), the last item that entry."""
     names, _ = remote_names()
     out = []
     for company, cfg in companies().items():
         candidates = [(None, {}, cfg)] + [(repo, rcfg, rcfg) for repo, rcfg in repos(company).items()]
         for repo, rcfg, owner in candidates:
-            lengths = [len(e.strip('/')) for e in owner.get('remotes', []) if any(matches(e, n) for n in names)]
-            if lengths:
-                out.append(((max(lengths), repo is not None), company, cfg, repo, rcfg))
+            hits = sorted((e.lower().strip('/') for e in owner.get('remotes', []) if any(matches(e, n) for n in names)),
+                          key=len)
+            if hits:
+                out.append(((len(hits[-1]), repo is not None), company, cfg, repo, rcfg, hits[-1]))
     return out
 
 
@@ -115,14 +116,15 @@ def resolve(strict):
     two companies or two repository entries, that is reported on stderr."""
     found = matching_entries()
     if found:
-        companies_found = sorted({c for _, c, _, _, _ in found})
-        repos_found = sorted({'%s/%s' % (c, r) for _, c, _, r, _ in found if r})
         best = max(found, key=lambda m: m[0])  # the first of equal ranks, in name order
-        if len(companies_found) > 1 or len(repos_found) > 1:
+        # an entry that is a prefix of the winning one (a host, a group) is nested, not competing
+        competing = [m for m in found if m is not best and (
+            not matches(m[5], best[5]) or (m[5] == best[5] and (m[1] != best[1] or m[3])))]
+        if competing:
+            label = lambda m: m[1] + ('/' + m[3] if m[3] else '')
             sys.stderr.write('profile.py: the remotes match %s; using %s\n' % (
-                ', '.join(repos_found + [c for c in companies_found if not any(r.startswith(c + '/') for r in repos_found)]),
-                best[1] + ('/' + best[3] if best[3] else '')))
-        return best[1:]
+                ', '.join(label(m) for m in [best] + competing), label(best)))
+        return best[1:5]
     _, has_remote = remote_names()
     found = companies()
     if not strict and not has_remote and len(found) == 1:
@@ -161,7 +163,7 @@ def secret_files():
     all of them together. Without a matching profile the fallback alone. Never fewer than
     the fallback unless every matching repository entry names its own."""
     by_company = {}
-    for _, company, cfg, repo, rcfg in matching_entries():
+    for _, company, cfg, repo, rcfg, _ in matching_entries():
         entry = by_company.setdefault(company, {'cfg': cfg, 'repos': []})
         if repo:
             entry['repos'].append(rcfg)

@@ -319,7 +319,7 @@ Das Widget startet auf Seiten, die globale Browser-Objekte sperren.
 
 ## Offen
 
-- Prod liefert das Widget von `stable` aus: braucht es auch dort einen Fix?
+- Prod liefert das Widget vom Produktions-Branch aus: braucht es auch dort einen Fix?
 ```
 
 The example has no Problem group: the Zusammenfassung already says what goes wrong and

@@ -66,6 +66,7 @@ not run in this work.
 - Screenshot upload: <the API call; which field of its response goes into the table>.
 - Create: <the CLI call with the project's flags, e.g. squash, remove source branch>.
 - Update: <the CLI call>.
+- Suites CI does not run: <unit test packages CI skips; e2e suites say so in `e2e`>.
 - Last steps: <what to ask the user after the MR exists, e.g. moving the ticket to review>.
 
 ## Review threads

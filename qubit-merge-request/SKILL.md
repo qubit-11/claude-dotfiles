@@ -23,8 +23,10 @@ before opening a file.
    it prints `none`, use the format alone, with the repository's own conventions and its
    CLI (`glab` for GitLab, `gh` for GitHub).
 2. **Rebase onto the target branch.** The target is the existing MR's target branch;
-   for a new MR, the branch the work was cut from (usually the default branch, a
-   backport e.g. `stable`). Ask the user when that is not certain. Fetch the target and
+   for a new MR, the branch the work was cut from: usually the main branch
+   (`profile.py get mainBranch`, else the remote's `HEAD`), for a hotfix or a backport
+   the production branch it was based on (one of `profile.py get productionBranches`).
+   Ask the user when that is not certain. Fetch the target and
    run `git merge-base --is-ancestor <remote>/<target> HEAD`. When it fails, run
    `git rebase <remote>/<target>`, never a merge. Show the user every conflict, and
    resolve it only with their OK. Then rerun the tests of the files the conflicts touched.

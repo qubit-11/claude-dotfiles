@@ -172,7 +172,9 @@ class CompanyAndRepositoryTest(unittest.TestCase):
     def test_the_longest_matching_remote_wins(self):
         self.add_repo('shop', {'remotes': ['git.acme.example/shop'], 'productionBranches': ['main']})
         web = self.repo('web', 'git@git.acme.example:shop/web.git')
-        self.assertEqual(json.loads(self.run_profile(web, 'get', 'productionBranches')), ['production'])
+        run = self.run_full(web, 'get', 'productionBranches')
+        self.assertEqual(json.loads(run.stdout), ['production'])
+        self.assertEqual(run.stderr, '')  # a group prefix and an exact path nest: no competing match
         cart = self.repo('cart', 'git@git.acme.example:shop/cart.git')
         self.assertEqual(json.loads(self.run_profile(cart, 'get', 'productionBranches')), ['main'])
 
@@ -189,7 +191,9 @@ class CompanyAndRepositoryTest(unittest.TestCase):
     def test_at_equal_length_the_repository_entry_beats_a_company(self):
         self.write(self.profiles / 'beta' / 'config.json', {'remotes': ['git.acme.example/shop/web']})
         web = self.repo('web', 'git@git.acme.example:shop/web.git')
-        self.assertTrue(self.run_profile(web).startswith('acme/web '))
+        run = self.run_full(web)
+        self.assertTrue(run.stdout.startswith('acme/web '))
+        self.assertIn('beta', run.stderr)  # the same path claimed by another company competes
 
     def test_an_entry_without_remotes_is_never_the_current_repository(self):
         docs = self.repo('docs', 'https://git.acme.example/docs.git')
