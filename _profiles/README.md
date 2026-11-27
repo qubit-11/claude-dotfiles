@@ -75,8 +75,8 @@ repository then leaves out more files, never fewer. Read them with `secret-files
 | Key | Used by | Meaning |
 | --- | --- | --- |
 | `remotes` | all | `<host>` or `<host>/<group>` prefixes: every repository there belongs to the company |
-| `ticketBrowseUrl` | code-review | the tracker's browse URL; a ticket key is appended to it. Without it, keys in reports stay plain text |
-| `ticketProjects` | ticket | the keys of the tracker projects the team works in. Tickets and repositories are many-to-many, so no repository holds a key; to pick a project, `qubit-ticket` reads each key's name and description from the tracker |
+| `ticketBrowseUrl` | code-review, status line | the tracker's address of a ticket, without the key: the key is appended to it (`https://example.atlassian.net/browse/`, any tracker that opens a ticket at `<URL><KEY>-<number>`). Without it, keys stay plain text |
+| `ticketProjects` | ticket, status line | the keys of the tracker projects the team works in. Tickets and repositories are many-to-many, so no repository holds a key; to pick a project, `qubit-ticket` reads each key's name and description from the tracker |
 | `secretFiles` | code-review, explanation-page | secret files every repository of the company may have; added to each repository's |
 | `reposRoot` | code-review (`deep`) | the folder that holds the checkouts named by `dir`; default: the folder beside the main checkout |
 
@@ -87,8 +87,8 @@ repository then leaves out more files, never fewer. Read them with `secret-files
 | `remotes` | all | `<host>/<project path>` of this repository; without it the entry is only a target of `related` |
 | `dir` | code-review (`deep`) | the folder name of its checkout under `reposRoot`; it may differ from the remote path |
 | `role` | code-review (`deep`) | one line: what this repository is to the others |
-| `mainBranch` | ticket-start, claim-check | the branch development happens on; default: the remote's `HEAD` |
-| `productionBranches` | ticket-start, claim-check | what customers run now, and the base of a hotfix; several for several countries or variants |
+| `mainBranch` | ticket-start, claim-check, code-review, merge-request | the branch development happens on; default: the remote's `HEAD` |
+| `productionBranches` | ticket-start, claim-check, merge-request | what customers run now, and the base of a hotfix; several for several countries or variants |
 | `candidateBranches` | claim-check | the next version under test, when there is such a branch |
 | `versionTags` | claim-check | `git tag -l` patterns for a version, with `{version}` for the number (`v{version}.*`) |
 | `secretFiles` | code-review, explanation-page | names or globs of the files that hold real secrets, in any folder. Every other env file is treated as code |
@@ -127,3 +127,15 @@ The `e2e` table marks each suite that needs the full stack; only the others run 
 own, the rest only by the steps of `Full stack`. A skill reads every path `doc <skill>`
 prints, in order. Without a document or a section
 it uses its general rules and says what it skipped.
+
+## From one folder per repository
+
+Profiles made before the two levels held one repository's values in the company folder.
+To move one: keep the company's values (`remotes` as the host or group, `ticketBrowseUrl`,
+`ticketProjects`) in its `config.json`; move the repository's (`secretFiles`,
+`userRoles`, its exact `remotes`) to `repos/<repo>/config.json`; turn `neighbourRepos`
+into one entry per repository with `dir` and `role`, named in `related`; and sort the
+sections of the old `<skill>.md` files by the table above, the repository's into
+`repo.md`. Old keys (`neighbourRepos`) and old section names are not read. Then run
+`profile.py doc <skill>` for every skill in the repository: no warning on stderr means no
+section sits on two levels.

@@ -59,11 +59,11 @@ Claude sets up the following and asks for what it cannot find in the repository:
 
 - a profile `~/.claude/skills/_profiles/<name>/`, named after the environment, copied from
   `_profiles/example/` and filled in as [_profiles/README.md](_profiles/README.md) describes:
-  the company's values, and one entry under `repos/` for each of its repositories;
-- the tracker URL and ticket key pattern in `~/.claude/statusline.local.env`, in the format
-  the header of [statusline/statusline.sh](statusline/statusline.sh) shows;
-- the values the rules in `global/` ask for (ticket keys, branch names), beside their
-  imports in `~/.claude/CLAUDE.md`;
+  the company's values, and one entry under `repos/` for each of its repositories (the
+  status line takes its ticket links from there too);
+- for the rules in `global/` that ask for environment values (ticket keys, branch names),
+  a pointer to the profile keys that hold them, beside their imports in
+  `~/.claude/CLAUDE.md`;
 - the command-line tool of its git host: `glab` for GitLab, `gh` for GitHub.
   Claude installs it; logging in is yours (`! glab auth login` or `! gh auth login` in the
   session). The merge request and review skills read and post through it.
