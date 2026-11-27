@@ -77,6 +77,7 @@ style, independent of the working environment and the repository.
 
 | Skill | What it does |
 | --- | --- |
+| [`qubit-claim-check`](qubit-claim-check/SKILL.md) | checks whether a report, a statement or a hypothesis holds: one verdict per claim with evidence from the code, a run or the web; changes nothing and offers what follows (context, a ticket, a drafted reply) |
 | [`qubit-ticket`](qubit-ticket/SKILL.md) | cuts a request into vertical, ready tickets and writes each: what is wrong and what must be true afterwards, never the implementation; creates them in Jira or another tracker |
 | [`qubit-ticket-start`](qubit-ticket-start/SKILL.md) | starts work on a ticket: sets up the worktree, checks every claim against the code, reports the root cause or the gap with evidence, then hands over to a plan |
 | [`qubit-merge-request`](qubit-merge-request/SKILL.md) | writes a layered merge request description: change, design, where to look, how to try it |

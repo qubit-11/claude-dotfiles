@@ -1,6 +1,6 @@
 ---
 name: qubit-ticket-start
-description: "Starts work on a ticket: sets up its worktree and branch, checks every claim of the ticket against the code, and reports the root cause of a bug or the gap of a feature with evidence and open questions, then hands over to a plan. Use when the user gives a ticket key or link to start work on, or asks whether a ticket is still correct, what causes the bug it describes, or what its feature would touch. Not for writing or cutting tickets (`qubit-ticket`), or for carrying out a plan that already exists."
+description: "Starts work on a ticket: sets up its worktree and branch, checks every claim of the ticket against the code, and reports the root cause of a bug or the gap of a feature with evidence and open questions, then hands over to a plan. Use when the user gives a ticket key or link to start work on, or asks whether a ticket is still correct, what causes the bug it describes, or what its feature would touch. Not for checking a report or a claim that has no ticket (`qubit-claim-check`), writing or cutting tickets (`qubit-ticket`), or carrying out a plan that already exists."
 ---
 
 # Ticket start
