@@ -46,6 +46,13 @@ STATUS_MARGIN=4
 input=$(cat)
 export LC_ALL=en_US.UTF-8   # count characters, not bytes, when measuring names
 
+# Every value comes from jq. Without it the fields stay empty, show as a green 0%
+# and overwrite the limits cache, so say what is missing instead.
+if ! command -v jq >/dev/null; then
+  printf 'statusline: jq is missing; install it to see context and limits\n'
+  exit 0
+fi
+
 # Tab-separated; empty values become "-" so read keeps the field positions.
 # Reset times become epoch seconds (number, ms number or ISO string accepted).
 IFS=$'\t' read -r model effort dir ctx_pct ctx_tokens five five_reset week week_reset < <(jq -r '
