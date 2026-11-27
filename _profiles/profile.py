@@ -6,7 +6,8 @@ entry per repository below it (`<company>/repos/<repo>/config.json` and `repo.md
 Run it from inside the repository or one of its worktrees, by its literal path:
 
   profile.py                   `<company>/<repo> <folder>`, `<company> <folder>`, or "none"
-  profile.py get <key>         a value as JSON, the repository's over the company's; "null" when unset
+  profile.py get <key>...      each value as JSON, one per line, the repository's over the
+                               company's; "null" when unset
   profile.py doc <skill>       the company's <skill>.md, then the repository's repo.md, one path
                                per line, or "none"; a section in both is reported on stderr
   profile.py secret-files      the secret file patterns, one per line
@@ -69,9 +70,16 @@ def matches(entry, name):
     return name == entry or name.startswith(entry + '/')
 
 
+class BrokenConfig(Exception):
+    pass
+
+
 def load(path):
-    with open(path, encoding='utf-8') as f:
-        return json.load(f)
+    try:
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+    except ValueError as e:
+        raise BrokenConfig('%s is not valid JSON: %s' % (path, e))
 
 
 def companies():
@@ -215,9 +223,11 @@ def main(argv):
             print('%s/%s %s' % (company, repo, os.path.join(HERE, company, 'repos', repo)))
         else:
             print('%s %s' % (company, os.path.join(HERE, company)) if company else 'none')
-    elif cmd == 'get' and len(argv) == 3:
+    elif cmd == 'get' and len(argv) >= 3:
         _, cfg, _, rcfg = resolve(strict=False)
-        print(json.dumps(merged(cfg, rcfg).get(argv[2])))
+        values = merged(cfg, rcfg)
+        for key in argv[2:]:
+            print(json.dumps(values.get(key)))
     elif cmd == 'doc' and len(argv) == 3:
         paths = docs(argv[2])
         print('\n'.join(paths) if paths else 'none')
@@ -246,4 +256,8 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    try:
+        sys.exit(main(sys.argv))
+    except BrokenConfig as e:
+        sys.stderr.write('profile.py: %s\n' % e)
+        sys.exit(1)

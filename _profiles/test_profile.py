@@ -293,6 +293,21 @@ class CompanyAndRepositoryTest(unittest.TestCase):
         web = self.repo('web', 'git@git.acme.example:shop/web.git')
         self.assertEqual(self.run_full(web, 'get', 'productionBranches').stderr, '')
 
+    def test_get_prints_one_line_per_key(self):
+        web = self.repo('web', 'git@git.acme.example:shop/web.git')
+        lines = self.run_profile(web, 'get', 'ticketBrowseUrl', 'ticketProjects', 'nothing').splitlines()
+        self.assertEqual(lines, ['"https://acme.example/browse/"', '["WEB", "OPS"]', 'null'])
+
+    def test_a_broken_config_names_its_file(self):
+        (self.company / 'repos' / 'api' / 'config.json').write_text('{"remotes": [')
+        web = self.repo('web', 'git@git.acme.example:shop/web.git')
+        env = dict(os.environ, QUBIT_PROFILES_DIR=str(self.profiles))
+        run = subprocess.run([sys.executable, str(PROFILE_PY), 'get', 'ticketBrowseUrl'], cwd=web,
+                             capture_output=True, text=True, env=env)
+        self.assertNotEqual(run.returncode, 0)
+        self.assertIn('acme/repos/api/config.json', run.stderr)
+        self.assertNotIn('Traceback', run.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()

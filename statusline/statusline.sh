@@ -27,16 +27,11 @@ LIMIT_5H_ORANGE=40;  LIMIT_5H_RED=70
 LIMIT_7D_ORANGE=88;  LIMIT_7D_RED=94
 
 # Ticket keys in the folder and branch name become clickable links to the
-# tracker. Any case matches (folders use abc-123, branches ABC-123); links use
-# upper case. The values belong to one environment, so they live in a local,
-# untracked file beside the settings, e.g.:
-#   JIRA_BROWSE_URL="https://example.atlassian.net/browse"
-#   JIRA_KEY_REGEX='([Aa][Bb][Cc]-[0-9]+)'   # one capture group: the key
-# Without it the names stay plain text.
-JIRA_BROWSE_URL="" JIRA_KEY_REGEX=""
-STATUSLINE_LOCAL_ENV="$HOME/.claude/statusline.local.env"
-# shellcheck source=/dev/null
-[[ -r $STATUSLINE_LOCAL_ENV ]] && source "$STATUSLINE_LOCAL_ENV"
+# tracker. Tracker URL and keys come from the profile of the session's folder
+# (`ticketBrowseUrl`, `ticketProjects`; ../_profiles/README.md), so each
+# repository links its company's keys, in any tracker that opens a ticket at
+# <URL><KEY>-<number>. Any case matches (folders use abc-123, branches
+# ABC-123); links use upper case. Without a profile the names stay plain text.
 
 # Columns Claude Code takes from the terminal width for the status bar:
 # 2 indent left + 2 right (measured: 78-column terminal showed 74 columns).
@@ -214,7 +209,7 @@ osc_link() {  # osc_link URL TEXT  (plain TEXT when URL or TEXT is empty)
 # folder in the file manager, or the repo, branch or commit page; empty URL =
 # plain text). TEXT may be several lines; icons and indent stay unlinked.
 link_name() {
-  local text=$1 url=$2 out="" line prefix p body key n=0
+  local text=$1 url=$2 out="" line prefix p body match lead key n=0
   while IFS= read -r line || [[ -n $line ]]; do
     (( n++ )) && out+=$'\n'
     prefix=""
@@ -223,10 +218,10 @@ link_name() {
     done
     while [[ -z ${prefix//⠀/} && ${line:${#prefix}:1} == "⠀" ]]; do prefix+="⠀"; done
     body=${line#"$prefix"}; out+=$prefix
-    while [[ -n $JIRA_KEY_REGEX && -n $JIRA_BROWSE_URL && $body =~ $JIRA_KEY_REGEX ]]; do
-      key=${BASH_REMATCH[1]}
-      out+=$(osc_link "$url" "${body%%"$key"*}")$(osc_link "${JIRA_BROWSE_URL}/$(printf '%s' "$key" | tr '[:lower:]' '[:upper:]')" "$key")
-      body=${body#*"$key"}
+    while [[ -n $ticket_key_regex && -n $ticket_url && $body =~ $ticket_key_regex ]]; do
+      match=${BASH_REMATCH[0]} lead=${BASH_REMATCH[1]} key=${BASH_REMATCH[2]}
+      out+=$(osc_link "$url" "${body%%"$match"*}$lead")$(osc_link "${ticket_url}$(printf '%s' "$key" | tr '[:lower:]' '[:upper:]')" "$key")
+      body=${body#*"$match"}
     done
     out+=$(osc_link "$url" "$body")
   done <<<"$text"
@@ -283,9 +278,30 @@ folder_url() {
 # terminal is split over several lines. Folder and repository always show
 # separately, even when named alike (main checkout): one fixed pattern reads
 # faster, and the doubled name itself shows "not in a worktree".
+# ticket_links DIR: sets ticket_url and ticket_key_regex from the folder's profile.
+# The regex matches a key at the start or after a character that is no letter or
+# digit (so TOM-1 is no key inside XTOM-1); group 1 is that character, group 2
+# the key, in any case.
+ticket_url="" ticket_key_regex=""
+ticket_links() {
+  local self profile_py url_json keys_json keys
+  self=$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null) || return
+  profile_py="${self%/*}/../_profiles/profile.py"
+  [[ -r $profile_py ]] && command -v python3 >/dev/null || return
+  { IFS= read -r url_json; IFS= read -r keys_json; } \
+    < <(cd "$1" 2>/dev/null && python3 "$profile_py" get ticketBrowseUrl ticketProjects 2>/dev/null)
+  ticket_url=$(jq -r 'if type == "string" then . else empty end' <<<"$url_json" 2>/dev/null)
+  keys=$(jq -r 'if type == "array" then . else [] end
+    | map(select(type == "string" and test("^[A-Za-z][A-Za-z0-9]*$"))
+          | split("") | map(if test("[A-Za-z]") then "[" + ascii_upcase + ascii_downcase + "]" else . end) | join(""))
+    | join("|")' <<<"$keys_json" 2>/dev/null)
+  [[ -n $keys ]] && ticket_key_regex="(^|[^A-Za-z0-9])((${keys})-[0-9]+)"
+}
+
 line1=""
 if [[ $dir != "-" ]]; then
   folder=${dir##*/}
+  ticket_links "$dir"
   # Branch; detached HEAD shows the commit; not a git repo shows nothing
   branch=$(command git -C "$dir" branch --show-current 2>/dev/null)
   repo_url="" branch_url=""

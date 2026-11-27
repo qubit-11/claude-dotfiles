@@ -50,12 +50,46 @@ class StatuslineTest(unittest.TestCase):
                     (bin_dir / name).symlink_to(target)
         return str(bin_dir)
 
-    def run_statusline(self, path=None):
+    def run_statusline(self, path=None, workspace=None, profiles=None):
         env = {'HOME': str(self.root), 'CLAUDE_CONFIG_DIR': str(self.config),
-               'PATH': path or os.environ['PATH'], 'COLUMNS': '200'}
+               'PATH': path or os.environ['PATH'], 'COLUMNS': '200',
+               'QUBIT_PROFILES_DIR': str(profiles or self.root / 'no-profiles')}
+        data = dict(INPUT, workspace={'current_dir': str(workspace or STATUSLINE.parent)})
         bash = shutil.which('bash')
-        return subprocess.run([bash, str(STATUSLINE)], input=json.dumps(INPUT), env=env,
+        return subprocess.run([bash, str(STATUSLINE)], input=json.dumps(data), env=env,
                               capture_output=True, text=True, timeout=30)
+
+    def ticket_repo(self, folder, branch):
+        """A repository of company acme (tracker keys WEB and OPS) in `folder`, on `branch`."""
+        profiles = self.root / 'profiles'
+        (profiles / 'acme').mkdir(parents=True, exist_ok=True)
+        (profiles / 'acme' / 'config.json').write_text(json.dumps(
+            {'remotes': ['git.acme.example'], 'ticketBrowseUrl': 'https://tracker.example/issue/',
+             'ticketProjects': ['WEB', 'OPS']}))
+        repo = self.root / folder
+        subprocess.run(['git', 'init', '-q', '-b', branch, str(repo)], check=True)
+        subprocess.run(['git', '-C', str(repo), 'remote', 'add', 'origin', 'https://git.acme.example/shop/web.git'],
+                       check=True)
+        subprocess.run(['git', '-C', str(repo), '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q',
+                        '--allow-empty', '-m', 'x'], check=True)
+        return repo, profiles
+
+    def test_ticket_keys_of_the_profile_link_to_its_tracker(self):
+        repo, profiles = self.ticket_repo('DEV-web-12-login', 'AbCd/WEB-12-login')
+        out = self.run_statusline(workspace=repo, profiles=profiles).stdout
+        link = '\x1b]8;;https://tracker.example/issue/WEB-12\x1b\\'
+        self.assertIn(link + 'web-12', out)
+        self.assertIn(link + 'WEB-12', out)
+
+    def test_a_key_inside_a_longer_key_is_no_link(self):
+        repo, profiles = self.ticket_repo('DEV-xweb-3-other', 'XWEB-3-other')
+        out = self.run_statusline(workspace=repo, profiles=profiles).stdout
+        self.assertNotIn('tracker.example', out)
+
+    def test_without_a_profile_names_stay_plain(self):
+        repo, _ = self.ticket_repo('DEV-web-12-login', 'WEB-12-login')
+        out = self.run_statusline(workspace=repo).stdout
+        self.assertNotIn('tracker.example', out)
 
     def test_with_jq_it_shows_the_model_and_the_values(self):
         out = strip_colours(self.run_statusline().stdout)
