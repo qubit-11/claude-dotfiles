@@ -1,37 +1,12 @@
-# Profile <name>: code review
+# Profile <company>: code review
 
-Applies on top of `qubit-code-review` in <repository>. Leave out a section the
-repository does not have; the review then skips that step and says so.
-
-## Worktree
-
-- <How a review worktree is created: a documented procedure, or plain
-  `git worktree add`. Name any hook that must not be used because it branches off the
-  default branch.>
-- <Env provisioning the tests need, and which provisioned file is a secret file that must
-  be deleted right after creation.>
-
-## e2e suites without a full stack
-
-| Package | Command |
-| --- | --- |
-| `<path>` | `<command>` |
-
-<Builds that must run first, so a stale build output does not fail unrelated specs.>
-
-## Full stack
-
-1. <How to check that no other local stack runs, without printing any process's
-   environment.>
-2. <How to dump the local databases the stack writes, into `$SP/checks/db-before/`.>
-3. <Builds, the start command (in the background) and the wait command.>
-4. <The command that runs named e2e spec files.>
-5. <How to stop the stack's processes by name and restore the databases from step 2.>
+Applies on top of `qubit-code-review` at <company>. The worktree, e2e and full-stack steps
+are per repository, in its `repo.md`.
 
 ## Re-review
 
 - <Platform host and how the CLI reaches it, e.g. an env variable for every call.>
-- <Project path for API calls.>
+- Project path for API calls: from the repository's remote (`<group>/<project>`, URL-encoded).
 - <Read every thread of an MR, with pagination.>
 - <Reply inside a thread; resolve and reopen a thread.>
 - <Pipeline and merge state of an MR.>

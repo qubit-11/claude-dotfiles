@@ -1,0 +1,26 @@
+{
+  "remotes": [
+    "git.example.com/group/app"
+  ],
+  "dir": "example-app",
+  "role": "the web app customers use",
+  "mainBranch": "main",
+  "productionBranches": [
+    "stable"
+  ],
+  "versionTags": [
+    "v{version}"
+  ],
+  "secretFiles": [
+    ".production.env",
+    ".staging.env"
+  ],
+  "userRoles": [
+    "customer",
+    "customer staff"
+  ],
+  "related": [
+    "example-backend",
+    "example-deploy"
+  ]
+}

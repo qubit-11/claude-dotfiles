@@ -47,8 +47,8 @@ Restart Claude Code afterwards.
 ### 2. Add a working environment
 
 A working environment is where the skills are used: a company, an organization or a team.
-Its values (tracker URL, ticket keys, secret files, repository commands) stay out of this
-repository. To add them, start Claude Code in one of its repositories and give it this
+Its values (tracker URL, ticket projects, branch names, secret files, repository commands)
+stay out of this repository. To add them, start Claude Code in one of its repositories and give it this
 prompt:
 
 ```text
@@ -58,7 +58,8 @@ Set up the working environment this repository belongs to, following "Add a work
 Claude sets up the following and asks for what it cannot find in the repository:
 
 - a profile `~/.claude/skills/_profiles/<name>/`, named after the environment, copied from
-  `_profiles/example/` and filled in as [_profiles/README.md](_profiles/README.md) describes;
+  `_profiles/example/` and filled in as [_profiles/README.md](_profiles/README.md) describes:
+  the company's values, and one entry under `repos/` for each of its repositories;
 - the tracker URL and ticket key pattern in `~/.claude/statusline.local.env`, in the format
   the header of [statusline/statusline.sh](statusline/statusline.sh) shows;
 - the values the rules in `global/` ask for (ticket keys, branch names), beside their
@@ -92,7 +93,7 @@ style, independent of the working environment and the repository.
 | [`global/worktree-naming.md`](global/worktree-naming.md) | rule for naming git worktree folders: `<TYPE>-<ticket>-<name>` | imported in `~/.claude/CLAUDE.md` |
 | [`statusline/statusline.sh`](statusline/statusline.sh) | status line: folder, branch, context, model and effort, 5-hour and 7-day limits, account | linked as `~/.claude/statusline.sh` |
 | [`install.sh`](install.sh) | setup script: links the skills, `_profiles/` and the status line, adds the `statusLine` setting, adds the imports | run by the setup |
-| [`_profiles/`](_profiles/README.md) | the values of a working environment, one folder per environment, and `profile.py`, which reads them for the skills | linked as `~/.claude/skills/_profiles`, where the skills call `profile.py`; only `example/` is in git |
+| [`_profiles/`](_profiles/README.md) | the values of a working environment: one folder per company with one entry per repository below it, and `profile.py`, which reads them for the skills | linked as `~/.claude/skills/_profiles`, where the skills call `profile.py`; only `example/` is in git |
 
 ## Plugins
 

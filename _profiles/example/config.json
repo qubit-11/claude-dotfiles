@@ -1,25 +1,13 @@
 {
   "remotes": [
-    "git.example.com/group/project"
+    "git.example.com/group"
   ],
   "ticketBrowseUrl": "https://example.atlassian.net/browse/",
+  "ticketProjects": [
+    "PROJ",
+    "OPS"
+  ],
   "secretFiles": [
-    ".production.env",
-    ".staging.env",
     ".envrc"
-  ],
-  "neighbourRepos": [
-    {
-      "dir": "example-backend",
-      "role": "the backend whose API this repository calls"
-    },
-    {
-      "dir": "example-deploy",
-      "role": "the deploy configuration: env templates and compose files per host"
-    }
-  ],
-  "userRoles": [
-    "customer",
-    "customer staff"
   ]
 }

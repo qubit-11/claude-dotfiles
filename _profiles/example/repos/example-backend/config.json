@@ -1,0 +1,19 @@
+{
+  "remotes": [
+    "git.example.com/group/backend"
+  ],
+  "dir": "example-backend",
+  "role": "the backend whose API the app calls",
+  "mainBranch": "main",
+  "productionBranches": [
+    "hotfix/de",
+    "hotfix/at"
+  ],
+  "candidateBranches": [
+    "releasecandidate/de",
+    "releasecandidate/at"
+  ],
+  "versionTags": [
+    "backend_v{version}-*"
+  ]
+}

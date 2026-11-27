@@ -1,0 +1,4 @@
+{
+  "dir": "example-deploy",
+  "role": "the deploy configuration: env templates and compose files per host"
+}
