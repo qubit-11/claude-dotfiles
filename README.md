@@ -72,16 +72,6 @@ The [skills](https://code.claude.com/docs/en/skills) cover the craft of software
 writing a ticket, a merge request description, a review and an explanation in one personal
 style, independent of the working environment and the repository.
 
-A skill here runs with nothing from outside this repository: it may call the other
-skills here, built-in tools, MCP servers and the built-in agents (`general-purpose`,
-`Explore`). When a plugin from the table below is installed, a skill uses it; without
-it, the skill does the same work its own way.
-
-| Plugin | Source | Used by | For | Without it |
-| --- | --- | --- | --- | --- |
-| `feature-dev` | Anthropic (`anthropics/claude-plugins-official`) | `qubit-code-review`, `qubit-explanation-page` | `feature-dev:code-explorer`, an explorer agent without shell or edit tools | `Explore`, told to only read |
-| `superpowers` | `obra/superpowers`, in the same marketplace | `qubit-ticket-diagnose` | `superpowers:writing-plans` for the plan after a diagnosis | the skill writes the plan in its own shape |
-
 | Skill | What it does |
 | --- | --- |
 | [`qubit-ticket`](qubit-ticket/SKILL.md) | cuts a request into vertical, ready tickets and writes each: what is wrong and what must be true afterwards, never the implementation; creates them in Jira or another tracker |
@@ -99,6 +89,20 @@ it, the skill does the same work its own way.
 | [`statusline/statusline.sh`](statusline/statusline.sh) | status line: folder, branch, context, model and effort, 5-hour and 7-day limits, account | linked as `~/.claude/statusline.sh` |
 | [`install.sh`](install.sh) | setup script: links the status line, adds the `statusLine` setting, adds the imports | run by the setup |
 | [`_profiles/`](_profiles/README.md) | the values of a working environment, one folder per environment, and `profile.py`, which reads them for the skills | the skills call `profile.py`; only `example/` is in git |
+
+## Plugins
+
+The skills need no plugin. When a plugin below is installed, the skills that list it use
+it; without it, they do the same work their own way.
+
+| Plugin | Source | Used by | For | Without it |
+| --- | --- | --- | --- | --- |
+| `feature-dev` | Anthropic (`anthropics/claude-plugins-official`) | `qubit-code-review`, `qubit-explanation-page` | `feature-dev:code-explorer`, an explorer agent without shell or edit tools | `Explore`, told to only read |
+| `superpowers` | `obra/superpowers`, in the same marketplace | `qubit-ticket-diagnose` | `superpowers:writing-plans` for the plan after a diagnosis | the skill writes the plan in its own shape |
+
+A new skill keeps to this: it calls only the skills of this repository, built-in tools,
+MCP servers and the built-in agents (`general-purpose`, `Explore`). It uses a plugin only
+with a fallback, and the plugin gets a row here.
 
 ## Optional tweaks
 
