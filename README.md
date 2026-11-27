@@ -78,10 +78,10 @@ style, independent of the working environment and the repository.
 | Skill | What it does |
 | --- | --- |
 | [`qubit-ticket`](qubit-ticket/SKILL.md) | cuts a request into vertical, ready tickets and writes each: what is wrong and what must be true afterwards, never the implementation; creates them in Jira or another tracker |
+| [`qubit-ticket-diagnose`](qubit-ticket-diagnose/SKILL.md) | diagnoses a ticket before work starts: sets up the worktree, checks every claim against the code, reports the root cause or the gap with evidence, then hands over to a plan |
 | [`qubit-merge-request`](qubit-merge-request/SKILL.md) | writes a layered merge request description: change, design, where to look, how to try it |
 | [`qubit-code-review`](qubit-code-review/SKILL.md) | reviews code changes with several independent AI reviewers, checks every claim, publishes a bilingual report; re-reviews the posted comments once the author answered |
 | [`qubit-code-review-response`](qubit-code-review-response/SKILL.md) | answers a review of one's own change: checks every reviewer claim, fixes what the user picks, replies in every thread |
-| [`qubit-ticket-diagnose`](qubit-ticket-diagnose/SKILL.md) | diagnoses a ticket before work starts: sets up the worktree, checks every claim against the code, reports the root cause or the gap with evidence, then hands over to a plan |
 | [`qubit-explanation-page`](qubit-explanation-page/SKILL.md) | explains a topic or a change as a page with diagrams and details per paragraph |
 
 ### Other files
