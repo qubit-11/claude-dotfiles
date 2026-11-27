@@ -1,6 +1,6 @@
-# Profile <name>: ticket diagnosis
+# Profile <name>: ticket start
 
-Applies on top of `qubit-ticket-diagnose` in <repository>. Point to the repository's own
+Applies on top of `qubit-ticket-start` in <repository>. Point to the repository's own
 documents where they hold a rule, instead of copying it here. Leave out a section the
 repository does not need; the skill then uses its default and says so.
 

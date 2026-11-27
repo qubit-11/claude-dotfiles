@@ -1,15 +1,15 @@
 ---
-name: qubit-ticket-diagnose
-description: "Diagnoses a ticket before work on it starts: sets up its worktree and branch, checks every claim of the ticket against the code, and reports the root cause of a bug or the gap of a feature with evidence and open questions, then hands over to a plan. Use when the user gives a ticket key or link to start work on, or asks whether a ticket is still correct, what causes a reported bug, or what a feature would touch. Not for writing or cutting tickets (`qubit-ticket`), or for carrying out a plan that already exists."
+name: qubit-ticket-start
+description: "Starts work on a ticket: sets up its worktree and branch, checks every claim of the ticket against the code, and reports the root cause of a bug or the gap of a feature with evidence and open questions, then hands over to a plan. Use when the user gives a ticket key or link to start work on, or asks whether a ticket is still correct, what causes the bug it describes, or what its feature would touch. Not for writing or cutting tickets (`qubit-ticket`), or for carrying out a plan that already exists."
 ---
 
-# Ticket diagnosis
+# Ticket start
 
 ## Overview
 
 Work on a ticket starts the same way every time: read the ticket, set up a worktree,
 compare the ticket with the code, find what is open. This skill does all of it from one
-call, `/qubit-ticket-diagnose <KEY or link>`, and ends with a diagnosis and then a plan.
+call, `/qubit-ticket-start <KEY or link>`, and ends with a diagnosis and then a plan.
 
 A ticket usually describes a symptom or a wish. The diagnosis adds what only the code
 can say: why the bug happens, or what a feature is really missing and where it lands.
@@ -22,7 +22,7 @@ lines yourself.
 
 ## Profile and defaults
 
-In the repository, run `python3 ~/.claude/skills/_profiles/profile.py doc ticket-diagnose`
+In the repository, run `python3 ~/.claude/skills/_profiles/profile.py doc ticket-start`
 ([_profiles/README.md](../_profiles/README.md)). When it prints a path, read that file.
 Each of its sections replaces the default of the same name below. For every section the
 profile lacks (all of them when it prints `none`), use the default and tell the user

@@ -78,7 +78,7 @@ style, independent of the working environment and the repository.
 | Skill | What it does |
 | --- | --- |
 | [`qubit-ticket`](qubit-ticket/SKILL.md) | cuts a request into vertical, ready tickets and writes each: what is wrong and what must be true afterwards, never the implementation; creates them in Jira or another tracker |
-| [`qubit-ticket-diagnose`](qubit-ticket-diagnose/SKILL.md) | diagnoses a ticket before work starts: sets up the worktree, checks every claim against the code, reports the root cause or the gap with evidence, then hands over to a plan |
+| [`qubit-ticket-start`](qubit-ticket-start/SKILL.md) | starts work on a ticket: sets up the worktree, checks every claim against the code, reports the root cause or the gap with evidence, then hands over to a plan |
 | [`qubit-merge-request`](qubit-merge-request/SKILL.md) | writes a layered merge request description: change, design, where to look, how to try it |
 | [`qubit-code-review`](qubit-code-review/SKILL.md) | reviews code changes with several independent AI reviewers, checks every claim, publishes a bilingual report; re-reviews the posted comments once the author answered |
 | [`qubit-code-review-response`](qubit-code-review-response/SKILL.md) | answers a review of one's own change: checks every reviewer claim, fixes what the user picks, replies in every thread |
@@ -101,7 +101,7 @@ it; without it, they do the same work their own way.
 | Plugin | Source | Used by | For | Without it |
 | --- | --- | --- | --- | --- |
 | `feature-dev` | Anthropic (`anthropics/claude-plugins-official`) | `qubit-code-review`, `qubit-explanation-page` | `feature-dev:code-explorer`, an explorer agent without shell or edit tools | `Explore`, told to only read |
-| `superpowers` | `obra/superpowers`, in the same marketplace | `qubit-ticket-diagnose` | `superpowers:writing-plans` for the plan after a diagnosis | the skill writes the plan in its own shape |
+| `superpowers` | `obra/superpowers`, in the same marketplace | `qubit-ticket-start` | `superpowers:writing-plans` for the plan after a diagnosis | the skill writes the plan in its own shape |
 
 A new skill keeps to this: it calls only the skills of this repository, built-in tools,
 MCP servers and the built-in agents (`general-purpose`, `Explore`). It uses a plugin only
