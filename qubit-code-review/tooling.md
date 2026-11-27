@@ -465,7 +465,8 @@ real tool set.
   turn. Never `fork`: it inherits the orchestrator's conversation, hypotheses
   included.
 - Explorer: `feature-dev:code-explorer` with the explorer variant and the
-  no-shell note, dispatched in the same turn as the reviewers.
+  no-shell note; without the feature-dev plugin, `Explore` with the explorer
+  variant and no note. Dispatched in the same turn as the reviewers.
 - Explorer runs at every depth, with or without a report.
 - Requirements reviewer (`standard`, `deep`): `general-purpose`, the shared
   prompt with the requirements scope line from reviewer-prompt.md.

@@ -160,7 +160,8 @@ or the table of contents.
 1. **Pin topic and sources.** A code change: when the caller already has a
    mechanism trace with `file:line`, write from it. Otherwise, standalone only, dispatch one
    explorer subagent (`feature-dev:code-explorer`, read-only, no shell: give it
-   the paths or a pre-computed diff in the scratchpad) that returns a trace with
+   the paths or a pre-computed diff in the scratchpad; without the feature-dev
+   plugin, `Explore`, told to only read) that returns a trace with
    `file:line` for every statement and the building blocks: the parts the
    subject adds or changes, what each is responsible for, their dependencies
    and their direction, and the author's stated intent, quoted, or "not

@@ -72,6 +72,16 @@ The [skills](https://code.claude.com/docs/en/skills) cover the craft of software
 writing a ticket, a merge request description, a review and an explanation in one personal
 style, independent of the working environment and the repository.
 
+A skill here runs with nothing from outside this repository: it may call the other
+skills here, built-in tools, MCP servers and the built-in agents (`general-purpose`,
+`Explore`). When a plugin from the table below is installed, a skill uses it; without
+it, the skill does the same work its own way.
+
+| Plugin | Source | Used by | For | Without it |
+| --- | --- | --- | --- | --- |
+| `feature-dev` | Anthropic (`anthropics/claude-plugins-official`) | `qubit-code-review`, `qubit-explanation-page` | `feature-dev:code-explorer`, an explorer agent without shell or edit tools | `Explore`, told to only read |
+| `superpowers` | `obra/superpowers`, in the same marketplace | `qubit-ticket-diagnose` | `superpowers:writing-plans` for the plan after a diagnosis | the skill writes the plan in its own shape |
+
 | Skill | What it does |
 | --- | --- |
 | [`qubit-ticket`](qubit-ticket/SKILL.md) | cuts a request into vertical, ready tickets and writes each: what is wrong and what must be true afterwards, never the implementation; creates them in Jira or another tracker |

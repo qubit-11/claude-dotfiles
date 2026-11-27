@@ -74,9 +74,9 @@ which defaults you used.
 
 4. **Investigate.** Check every claim against the code, with no depth limit: follow the
    calls, the data and the configuration as far as the claim needs.
-   - **Bug:** find the root cause. It is often not what the ticket names. Read the
-     history of the lines involved (`git log -L`, `git blame`) when it explains the cause.
-     When two causes remain possible, keep both as candidates and name what decides.
+   - **Bug:** the ticket describes the symptom; finding the root cause is the diagnosis.
+     A cause the ticket does name is one more claim to check. When two causes remain
+     possible, keep both as candidates and name what decides.
    - **Feature:** check that the current state the ticket describes is true (part of it
      may exist, behind a flag or in another module). Find the gap, the touch points
      (packages, files, interfaces, data model, migrations), the patterns and decisions
@@ -96,12 +96,17 @@ which defaults you used.
    for the ticket author, draft it in the chat; post it as a ticket comment only after
    the user's explicit OK. Done when every open question is answered or the user moves on.
 
-7. **Plan.** Invoke `superpowers:writing-plans` with the diagnosis file as its spec and
-   `<ignored folder>/plans/` as the place for the plan, so a new session in the worktree
-   can carry it out. When the change is a few lines in one file, propose to skip the
-   plan; the user decides. Stop once the plan is saved: skip the execution handoff of
-   writing-plans, and do not start implementing. Done when the plan is saved, or the
-   user chose to skip it.
+7. **Plan.** Write the plan as `<ignored folder>/plans/<KEY>-plan.md` in the worktree,
+   so a new session there can carry it out without this conversation. When the skill
+   `superpowers:writing-plans` is available, write it with that skill, the diagnosis
+   file as its spec, and skip its execution handoff. Either way the plan holds:
+   - a link to the diagnosis file and the answers to its open questions;
+   - the tasks in order, each with the files it changes, the test that proves it (a
+     failing test first for a bug), and the command whose output shows it is done;
+   - the e2e specs to run at the end, with their commands.
+   When the change is a few lines in one file, propose to skip the plan; the user
+   decides. Stop once the plan is saved; do not start implementing. Done when the plan
+   is saved, or the user chose to skip it.
 
 ## Never
 
