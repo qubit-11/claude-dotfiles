@@ -65,6 +65,11 @@ give, the run goes into a spike worktree of its own.
      after the user's OK, only in a spike worktree, on their own ports and data, never
      against a shared system they would write to. Until then the claim is ❓ with the
      run named as what would check it.
+   - **Another repository** the check leads into is read as this one: fetch its
+     remote, settle its version by step 3 with `profile.py` run inside it, and read
+     `<remote>/<ref>` from git; its checkout as it lies is no evidence. When the cause
+     lies there, the report says so with that evidence; work on it starts in a session
+     there, never in this repository.
    - **A web source** is named with its date or the version it describes, else the
      date you read it. Official documentation outranks blogs and forum answers; when
      sources disagree, say so.

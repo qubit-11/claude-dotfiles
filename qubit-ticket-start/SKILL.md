@@ -89,6 +89,11 @@ from branch names.
      may exist, behind a flag or in another module). Find the gap, the touch points
      (packages, files, interfaces, data model, migrations), the patterns and decisions
      the change must follow, and whether each acceptance criterion can be tested.
+   - **Another repository:** when the calls lead into one, read it as you read this
+     one: fetch its remote, take its branches from `profile.py` run inside it, and read
+     `<remote>/<ref>` from git; its checkout as it lies is no evidence. When the cause
+     lies there, the report says so with that evidence, and this repository gets no fix
+     for it (step 7).
    - **Tests:** find the unit and e2e specs that cover the code. Wait for the install to
      finish, then build what the touched packages' tests need, in the background
      (`Build and tests`). Run the relevant unit specs as a baseline. For a bug, write a
@@ -113,7 +118,9 @@ from branch names.
      failing test first for a bug), and the command whose output shows it is done;
    - the e2e specs to run at the end, with their commands.
    When the change is a few lines in one file, propose to skip the plan; the user
-   decides. Stop once the plan is saved; do not start implementing. Done when the plan
+   decides. A change in another repository is planned in a session there, never here:
+   when the cause lies elsewhere, the plan holds only what this repository needs (often
+   nothing), and the diagnosis is what goes on. Stop once the plan is saved; do not start implementing. Done when the plan
    is saved, or the user chose to skip it.
 
 ## Never
