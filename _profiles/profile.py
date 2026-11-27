@@ -15,14 +15,15 @@ Run it from inside the repository or one of its worktrees, by its literal path:
                                `related`, with their checkouts beside it (or under `reposRoot`)
 
 An entry matches when one of its `remotes` (`<host>/<project path>`, or a shorter prefix
-of it) names any remote of the repository; the longest matching entry wins, and a
-repository entry beats its company's own `remotes` at equal length. In a folder without
+of it) names any remote of the repository; the longest matching entry wins, a
+repository entry beats a company at equal length, and remotes that match entries of two
+companies or two repository entries are reported on stderr. In a folder without
 any git remote, `get`, `doc` and `related` use the only company when exactly one
 exists, never one of its repositories; a repository whose remotes match nothing, a local
 path among them, has no profile. The secret files never fall back to another profile:
 they are the repository entry's `secretFiles`, else the broad set below, plus the
-company's; without a matching profile the broad set alone. A review of an unknown
-repository leaves out more files, never fewer.
+company's, for every entry the remotes match; without a matching profile the broad set
+alone. A review of an unknown repository leaves out more files, never fewer.
 """
 import json
 import os
@@ -93,22 +94,37 @@ def repos(company):
     return out
 
 
-def resolve(strict):
-    """(company, company config, repo, repo config) of the current folder; None and {} for
-    what is not found."""
-    found = companies()
-    names, has_remote = remote_names()
-    best, best_rank = (None, {}, None, {}), None
-    for company, cfg in found.items():
+def matching_entries():
+    """Every company and repository entry one of whose `remotes` names a remote of the
+    current repository, as (rank, company, company config, repo, repo config); the rank
+    is (length of the matching entry, is a repository entry)."""
+    names, _ = remote_names()
+    out = []
+    for company, cfg in companies().items():
         candidates = [(None, {}, cfg)] + [(repo, rcfg, rcfg) for repo, rcfg in repos(company).items()]
         for repo, rcfg, owner in candidates:
-            for entry in owner.get('remotes', []):
-                if any(matches(entry, n) for n in names):
-                    rank = (len(entry.strip('/')), repo is not None)
-                    if best_rank is None or rank > best_rank:
-                        best, best_rank = (company, cfg, repo, rcfg), rank
-    if best_rank is not None:
-        return best
+            lengths = [len(e.strip('/')) for e in owner.get('remotes', []) if any(matches(e, n) for n in names)]
+            if lengths:
+                out.append(((max(lengths), repo is not None), company, cfg, repo, rcfg))
+    return out
+
+
+def resolve(strict):
+    """(company, company config, repo, repo config) of the current folder; None and {} for
+    what is not found. The longest matching entry wins; when the remotes match entries of
+    two companies or two repository entries, that is reported on stderr."""
+    found = matching_entries()
+    if found:
+        companies_found = sorted({c for _, c, _, _, _ in found})
+        repos_found = sorted({'%s/%s' % (c, r) for _, c, _, r, _ in found if r})
+        best = max(found, key=lambda m: m[0])  # the first of equal ranks, in name order
+        if len(companies_found) > 1 or len(repos_found) > 1:
+            sys.stderr.write('profile.py: the remotes match %s; using %s\n' % (
+                ', '.join(repos_found + [c for c in companies_found if not any(r.startswith(c + '/') for r in repos_found)]),
+                best[1] + ('/' + best[3] if best[3] else '')))
+        return best[1:]
+    _, has_remote = remote_names()
+    found = companies()
     if not strict and not has_remote and len(found) == 1:
         company, cfg = next(iter(found.items()))
         return company, cfg, None, {}
@@ -140,16 +156,23 @@ def docs(skill):
 
 
 def secret_files():
-    """The repository entry's secret files, else the broad fallback, plus the company's;
-    without a matching profile the fallback alone. Never fewer than the fallback unless a
-    repository entry names its own."""
-    company, cfg, _, rcfg = resolve(strict=True)
-    if not company:
+    """For every matching company: its matching repository entries' secret files (the
+    broad fallback for an entry without its own, or when none matched), plus the company's;
+    all of them together. Without a matching profile the fallback alone. Never fewer than
+    the fallback unless every matching repository entry names its own."""
+    by_company = {}
+    for _, company, cfg, repo, rcfg in matching_entries():
+        entry = by_company.setdefault(company, {'cfg': cfg, 'repos': []})
+        if repo:
+            entry['repos'].append(rcfg)
+    if not by_company:
         return FALLBACK_SECRETS
     out = []
-    for pattern in (rcfg.get('secretFiles') or FALLBACK_SECRETS) + (cfg.get('secretFiles') or []):
-        if pattern not in out:
-            out.append(pattern)
+    for entry in by_company.values():
+        lists = [r.get('secretFiles') or FALLBACK_SECRETS for r in entry['repos']] or [FALLBACK_SECRETS]
+        for pattern in [p for l in lists for p in l] + (entry['cfg'].get('secretFiles') or []):
+            if pattern not in out:
+                out.append(pattern)
     return out
 
 

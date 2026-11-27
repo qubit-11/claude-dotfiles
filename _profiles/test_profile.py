@@ -103,9 +103,9 @@ class CompanyAndRepositoryTest(unittest.TestCase):
                                                   'ticketBrowseUrl': 'https://acme.example/browse/',
                                                   'ticketProjects': ['WEB', 'OPS']})
         (self.company / 'ticket.md').write_text('# acme: ticket\n\n## Tracker\n')
-        self.add_repo('web', {'remotes': ['git.acme.example/shop/web'], 'productionBranches': ['stable']})
+        self.add_repo('web', {'remotes': ['git.acme.example/shop/web'], 'productionBranches': ['production']})
         (self.company / 'repos' / 'web' / 'repo.md').write_text('# web\n\n## Worktree\n')
-        self.add_repo('api', {'remotes': ['git.acme.example/shop/api'], 'productionBranches': ['hotfix/de', 'hotfix/at']})
+        self.add_repo('api', {'remotes': ['git.acme.example/shop/api'], 'productionBranches': ['prod/de', 'prod/at']})
         self.add_repo('docs', {'role': 'the documentation'})
 
     def write(self, path, config):
@@ -133,13 +133,13 @@ class CompanyAndRepositoryTest(unittest.TestCase):
     def test_a_repository_gets_its_own_values_and_the_company_values(self):
         web = self.repo('web', 'git@git.acme.example:shop/web.git')
         self.assertTrue(self.run_profile(web).startswith('acme/web '))
-        self.assertEqual(json.loads(self.run_profile(web, 'get', 'productionBranches')), ['stable'])
+        self.assertEqual(json.loads(self.run_profile(web, 'get', 'productionBranches')), ['production'])
         self.assertEqual(json.loads(self.run_profile(web, 'get', 'ticketProjects')), ['WEB', 'OPS'])
         self.assertEqual(self.run_profile(web, 'get', 'ticketBrowseUrl'), '"https://acme.example/browse/"')
 
     def test_two_repositories_of_one_company_keep_their_own_values(self):
         api = self.repo('api', 'https://git.acme.example/shop/api.git')
-        self.assertEqual(json.loads(self.run_profile(api, 'get', 'productionBranches')), ['hotfix/de', 'hotfix/at'])
+        self.assertEqual(json.loads(self.run_profile(api, 'get', 'productionBranches')), ['prod/de', 'prod/at'])
 
     def test_a_company_repository_without_an_entry_gets_company_values_only(self):
         other = self.repo('other', 'https://git.acme.example/other/x.git')
@@ -172,7 +172,7 @@ class CompanyAndRepositoryTest(unittest.TestCase):
     def test_the_longest_matching_remote_wins(self):
         self.add_repo('shop', {'remotes': ['git.acme.example/shop'], 'productionBranches': ['main']})
         web = self.repo('web', 'git@git.acme.example:shop/web.git')
-        self.assertEqual(json.loads(self.run_profile(web, 'get', 'productionBranches')), ['stable'])
+        self.assertEqual(json.loads(self.run_profile(web, 'get', 'productionBranches')), ['production'])
         cart = self.repo('cart', 'git@git.acme.example:shop/cart.git')
         self.assertEqual(json.loads(self.run_profile(cart, 'get', 'productionBranches')), ['main'])
 
@@ -202,7 +202,7 @@ class CompanyAndRepositoryTest(unittest.TestCase):
                         '--allow-empty', '-m', 'x'], check=True)
         wt = self.root / 'web-wt'
         subprocess.run(['git', '-C', str(web), 'worktree', 'add', '-q', '--detach', str(wt)], check=True)
-        self.assertEqual(json.loads(self.run_profile(wt, 'get', 'productionBranches')), ['stable'])
+        self.assertEqual(json.loads(self.run_profile(wt, 'get', 'productionBranches')), ['production'])
 
     def test_a_local_path_remote_gets_no_profile(self):
         for url in ['/tmp/x/origin.git', 'file:///tmp/x/origin.git', '../origin']:
@@ -269,6 +269,25 @@ class CompanyAndRepositoryTest(unittest.TestCase):
         secrets = self.run_profile(plain, 'secret-files').splitlines()
         self.assertIn('.env', secrets)
         self.assertNotIn('.company.env', secrets)
+
+    def test_secret_files_of_every_matching_entry_are_kept(self):
+        self.add_repo('a', {'remotes': ['h.example/g/a'], 'secretFiles': ['.a.env']})
+        self.add_repo('b', {'remotes': ['h.example/g/b'], 'secretFiles': ['.b.env']})
+        self.write(self.profiles / 'beta' / 'config.json', {'remotes': ['h.example'], 'secretFiles': ['.beta.env']})
+        repo = self.repo('ab', 'git@h.example:g/b.git', 'git@h.example:g/a.git')
+        secrets = self.run_profile(repo, 'secret-files').splitlines()
+        for pattern in ['.a.env', '.b.env', '.beta.env']:
+            self.assertIn(pattern, secrets)
+
+    def test_remotes_matching_two_entries_are_reported(self):
+        self.add_repo('a', {'remotes': ['h.example/g/a'], 'productionBranches': ['prod-a']})
+        self.add_repo('b', {'remotes': ['h.example/g/b'], 'productionBranches': ['prod-b']})
+        repo = self.repo('ab', 'git@h.example:g/b.git', 'git@h.example:g/a.git')
+        run = self.run_full(repo, 'get', 'productionBranches')
+        self.assertIn('acme/a', run.stderr)
+        self.assertIn('acme/b', run.stderr)
+        web = self.repo('web', 'git@git.acme.example:shop/web.git')
+        self.assertEqual(self.run_full(web, 'get', 'productionBranches').stderr, '')
 
 
 if __name__ == '__main__':

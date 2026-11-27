@@ -780,8 +780,9 @@ and `Full stack`. Without a profile or without the section,
 that kind of run does not happen, and 4.1 says so.
 
 **Every depth: e2e suites without a full stack.** For each touched package
-whose e2e suite needs no local server stack (the profile lists them, with
-the builds they need first), run it after the unit suites. A suite that is red
+whose e2e suite needs no local server stack (the profile's `e2e` rows
+marked as not needing the full stack, with the builds they need first; a
+row without that mark is treated as needing it), run it after the unit suites. A suite that is red
 runs once more on the target branch, in a second detached worktree at the
 merge base (`git worktree add --detach <worktree>-base <merge base>`, the
 same builds, removed afterwards): a spec red on both is a known failure,

@@ -42,7 +42,9 @@ An entry matches when one of its `remotes` names a remote of the repository, as
 `<host>/<project path>` or a shorter prefix (`git.example.com/group` matches every
 project of that group; the remote's name does not matter). The longest matching entry
 wins, so a repository entry beats its company's host; at equal length the repository
-entry wins. A repository of the company's host without an entry of its own gets the
+entry wins. When the remotes (a fork, a mirror, a second remote) match two repository
+entries or two companies, `profile.py` names them on stderr and uses the longest; the
+secret files then come from all of them. A repository of the company's host without an entry of its own gets the
 company's values only. In a folder without any git remote, `get`, `doc` and `related` use
 the only company when exactly one exists, so a ticket can be drafted there; they never
 pick a repository there. A repository whose remotes match nothing (another host, a local
@@ -121,5 +123,7 @@ skills find them; each skill names the ones it reads:
 | `Merge requests` | merge-request |
 | `Review threads` | code-review, code-review-response |
 
-A skill reads every path `doc <skill>` prints, in order. Without a document or a section
+The `e2e` table marks each suite that needs the full stack; only the others run on their
+own, the rest only by the steps of `Full stack`. A skill reads every path `doc <skill>`
+prints, in order. Without a document or a section
 it uses its general rules and says what it skipped.

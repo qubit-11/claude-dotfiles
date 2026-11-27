@@ -6,14 +6,14 @@
   "role": "the backend whose API the app calls",
   "mainBranch": "main",
   "productionBranches": [
-    "hotfix/de",
-    "hotfix/at"
+    "prod/de",
+    "prod/at"
   ],
   "candidateBranches": [
-    "releasecandidate/de",
-    "releasecandidate/at"
+    "next/de",
+    "next/at"
   ],
   "versionTags": [
-    "backend_v{version}-*"
+    "backend-{version}-*"
   ]
 }

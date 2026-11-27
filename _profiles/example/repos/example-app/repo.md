@@ -35,13 +35,14 @@ the CLI to search merge requests by ticket key.>
 
 ## e2e
 
-| Package | Command | Run by CI |
-| --- | --- | --- |
-| `<path>` | `<command>` | <yes / no> |
+| Package | Command | Needs the full stack | Run by CI |
+| --- | --- | --- | --- |
+| `<path>` | `<command>` | <no / yes> | <yes / no> |
 
-<Builds that must run first, so a stale build output does not fail unrelated specs. The
-suites CI does not run are named in a merge request's "Not tested" line when they did not
-run in this work.>
+<Builds that must run first, so a stale build output does not fail unrelated specs.> A
+suite that needs the full stack runs only by the steps of `Full stack`, never on its own.
+The suites CI does not run are named in a merge request's "Not tested" line when they did
+not run in this work.
 
 ## Full stack
 
