@@ -64,8 +64,7 @@ which defaults you used.
      `git worktree add <dir> <branch>`, then provision and enter it as below.
    - **New:** type `DEV` based on `<remote>/<main branch>`; when `Hotfix` applies, ask,
      and on a yes use type `HOTFIX` based on the release branch. Name the directory by
-     the [worktree-naming rule](../global/worktree-naming.md) (`<TYPE>-<ticket>-<name>`)
-     and the branch by `Branch name`. Create it by the `Worktree` route.
+     the worktree-naming rule in your CLAUDE.md (`<TYPE>-<ticket>-<name>`) and the branch by `Branch name`. Create it by the `Worktree` route.
    - **None** (the user chose the diagnosis only): stay in the main checkout and skip
      the install, the build and the test runs of step 4.
    Then enter the worktree, and only then start the install in the background, from

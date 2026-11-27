@@ -20,24 +20,27 @@ what they skipped, until step 2 adds the values of a working environment.
 <summary><b>Manual setup</b>: the steps behind the prompt, to set up without Claude</summary>
 
 Needs `git`, `python3` (for `install.sh` and `profile.py`) and `jq` (for the status line);
-install what is missing first, on macOS with Homebrew. Then run, from any folder:
+install what is missing first, on macOS with Homebrew. Then clone the repository to a
+folder of your choice and run its `install.sh`, for example:
 
 ```sh
-git clone https://github.com/qubit-11/claude-dotfiles.git ~/.claude/skills
-~/.claude/skills/install.sh
+git clone https://github.com/qubit-11/claude-dotfiles.git ~/claude-dotfiles
+~/claude-dotfiles/install.sh
 ```
 
 Restart Claude Code afterwards.
 
-- The repository lands in `~/.claude/skills` because Claude Code loads personal skills
-  only from there.
-- If that folder exists and is not empty (Claude Code creates `synced/` in it for skills
-  from the claude.ai account), `git clone` refuses it: initialize the repository in the
-  folder and pull `main` into it instead. If it already holds this repository, run
-  `git pull` and `install.sh` instead.
-- [`install.sh`](install.sh) links the status line, adds the `statusLine` setting and adds
-  an import line to `~/.claude/CLAUDE.md` for each rule in `global/`. It asks nothing,
-  leaves other settings alone and can be run again after a `git pull`.
+- The repository stays out of `~/.claude/skills`: that folder belongs to Claude Code, which
+  keeps the skills of the claude.ai account (`synced/`) and replaced versions (`.trash/`)
+  there. [`install.sh`](install.sh) links each skill folder and `_profiles/` into it
+  instead; the skills read their profile as `~/.claude/skills/_profiles/`.
+- `install.sh` also links the status line, adds the `statusLine` setting and adds an
+  import line to `~/.claude/CLAUDE.md` for each rule in `global/`. It asks nothing, leaves
+  other settings alone and can be run again: run it after a `git pull` that adds or
+  renames a skill, and once per config folder when you use several (`CLAUDE_CONFIG_DIR`).
+- **Move from the old layout:** if the repository was cloned into `~/.claude/skills`
+  itself, move every entry of that folder except `synced/` and `.trash/` to the new
+  folder, then run `install.sh` there. It replaces the old status line link and imports.
 
 </details>
 
@@ -49,7 +52,7 @@ repository. To add them, start Claude Code in one of its repositories and give i
 prompt:
 
 ```text
-Set up the working environment this repository belongs to, following "Add a working environment" in ~/.claude/skills/README.md.
+Set up the working environment this repository belongs to, following "Add a working environment" in the README of the claude-dotfiles repository (the folder above the one ~/.claude/skills/_profiles links to).
 ```
 
 Claude sets up the following and asks for what it cannot find in the repository:
@@ -87,7 +90,7 @@ style, independent of the working environment and the repository.
 | --- | --- | --- |
 | [`global/worktree-naming.md`](global/worktree-naming.md) | rule for naming git worktree folders: `<TYPE>-<ticket>-<name>` | imported in `~/.claude/CLAUDE.md` |
 | [`statusline/statusline.sh`](statusline/statusline.sh) | status line: folder, branch, context, model and effort, 5-hour and 7-day limits, account | linked as `~/.claude/statusline.sh` |
-| [`install.sh`](install.sh) | setup script: links the status line, adds the `statusLine` setting, adds the imports | run by the setup |
+| [`install.sh`](install.sh) | setup script: links the skills, `_profiles/` and the status line, adds the `statusLine` setting, adds the imports | run by the setup |
 | [`_profiles/`](_profiles/README.md) | the values of a working environment, one folder per environment, and `profile.py`, which reads them for the skills | the skills call `profile.py`; only `example/` is in git |
 
 ## Plugins
