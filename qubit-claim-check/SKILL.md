@@ -33,7 +33,11 @@ give, the run goes into a spike worktree of its own.
    it does). The user's own hypothesis is a claim like any other.
 3. **Settle the version** each claim is about: production or a release is the release
    branch, "since version X" is its tag, anything else the main branch; ask when the
-   source leaves it open. Fetch the remote, then work from `<remote>/<ref>`, never from a
+   source leaves it open. The names come from the profile's `ticket-start` document
+   (sections `Worktree` and `Hotfix`, see Spike worktree below); without one, the main
+   branch is `git symbolic-ref refs/remotes/<remote>/HEAD`, a tag is what `git tag -l`
+   lists for that version, and the release branch is asked, never guessed from a branch
+   name. Fetch the remote, then work from `<remote>/<ref>`, never from a
    local branch that may be behind. Read that version straight from git, with no
    checkout: `git show <remote>/<ref>:<path>`, `git grep <pattern> <remote>/<ref>`,
    `git log`, `git diff`, `git branch -r --contains <commit>`.
