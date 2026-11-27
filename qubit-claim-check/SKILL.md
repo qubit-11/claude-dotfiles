@@ -1,6 +1,6 @@
 ---
 name: qubit-claim-check
-description: "Checks whether what someone says is true: splits a report, a statement or a hypothesis into claims, checks each against the code, a run, logs, the tracker or the web with evidence, gives a verdict per claim, and offers what follows (context only, a ticket, a drafted reply). Leaves the user's checkout as it was; a run that needs another version or a changed file goes into a detached spike worktree. Use when the user passes on a Slack message or thread, a bug report, a colleague's or a document's statement, or their own hypothesis, and asks whether it holds, what is really going on, or whether it needs a ticket; also during an implementation or a spike, to check an assumption before building on it. Not for open questions about how something works (answer them, or `qubit-explanation-page`), starting work on a ticket (`qubit-ticket-start`), or writing one (`qubit-ticket`)."
+description: "Checks whether what someone says is true: splits a report, a statement or a hypothesis into claims, checks each against the code, a run, logs, the tracker or the web with evidence, gives a verdict per claim, and offers what follows (context only, a ticket, a drafted reply). Leaves the user's checkout as it was; a run that needs another version or a changed file goes into a detached spike worktree. Use when the user passes on a Slack message or thread, a bug report, a colleague's or a document's statement, or their own hypothesis, and asks whether it holds or whether it needs a ticket; also during an implementation or a spike, to check an assumption before building on it. Not for open questions about how something works (answer them, or `qubit-explanation-page`), finding the root cause of a problem (the diagnosis of `qubit-ticket-start`), starting work on a ticket (`qubit-ticket-start`), or writing one (`qubit-ticket`)."
 ---
 
 # Claim check
@@ -12,6 +12,11 @@ documentation, or the user's own hunch in the middle of an implementation. Befor
 builds on it, writes a ticket for it or answers it, it is checked. This skill splits the
 statement into claims, checks each one against the strongest source within reach, and
 gives a verdict per claim with evidence. What follows is the user's decision.
+
+It checks what is said, not why something happens. A cause is checked when the source
+states one, like any other claim; a claim proven false needs no cause found in its
+place. Searching for the root cause is the diagnosis of `qubit-ticket-start`, from a
+ticket.
 
 The reader wants the verdict, not the investigation. So the answer starts with what holds
 and what does not, the evidence follows, and whatever turned up beyond the claims gets
@@ -65,11 +70,11 @@ give, the run goes into a spike worktree of its own.
      after the user's OK, only in a spike worktree, on their own ports and data, never
      against a shared system they would write to. Until then the claim is ❓ with the
      run named as what would check it.
-   - **Another repository** the check leads into is read as this one: fetch its
+   - **Another repository** that a claim leads into is read as this one: fetch its
      remote, settle its version by step 3 with `profile.py` run inside it, and read
-     `<remote>/<ref>` from git; its checkout as it lies is no evidence. When the cause
-     lies there, the report says so with that evidence; work on it starts in a session
-     there, never in this repository.
+     `<remote>/<ref>` from git; its checkout as it lies is no evidence. When what a
+     claim states lies there, the report names that repository with the evidence; work
+     on it starts in a session there, never in this repository.
    - **A web source** is named with its date or the version it describes, else the
      date you read it. Official documentation outranks blogs and forum answers; when
      sources disagree, say so.
@@ -123,7 +128,7 @@ In the language of the conversation. The head is a fenced `text` block:
 ```text
 Claim check · <the source in a few words: Slack thread of a colleague, own hypothesis, documentation>
 
-Verdict:          <one or two sentences: what holds, what does not, what is really going on>
+Verdict:          <one or two sentences: what holds, what does not, and what is true instead>
 Checked against:  <remote>/<ref> @ <short sha> in <the session's checkout | SPIKE-… | the scratchpad> | <pages with their dates>
 ```
 
