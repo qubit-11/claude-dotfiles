@@ -19,7 +19,7 @@ class ProfileTest(unittest.TestCase):
         self.profiles = self.root / 'profiles'
         self.add_profile('acme', {'remotes': ['git.acme.example/shop/web'], 'secretFiles': ['.prod.env'],
                                   'ticketBrowseUrl': 'https://acme.example/browse/',
-                                  'neighbourRepos': [{'dir': 'api', 'role': 'the API'}]})
+                                  })
         (self.profiles / 'acme' / 'merge-request.md').write_text('# acme\n')
         (self.profiles / 'example').mkdir()
         (self.profiles / 'example' / 'config.json').write_text(json.dumps({'remotes': ['git.example.com/g/p']}))
@@ -86,15 +86,6 @@ class ProfileTest(unittest.TestCase):
     def test_secret_excludes_are_pathspecs_of_the_secret_files(self):
         repo = self.repo('x', 'https://git.acme.example/shop/web.git')
         self.assertEqual(self.run_profile(repo, 'secret-excludes'), "-- ':(exclude,glob)**/.prod.env'")
-
-    def test_neighbours_lists_checked_out_and_missing_repositories(self):
-        repo = self.repo('web', 'https://git.acme.example/shop/web.git')
-        out = self.run_profile(repo, 'neighbours')
-        self.assertIn('- api: the API (not checked out: not searched)', out)
-        self.repo('api')
-        subprocess.run(['git', '-C', str(self.root / 'api'), '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit',
-                        '-q', '--allow-empty', '-m', 'x'], check=True)
-        self.assertIn('%s: the API (HEAD ' % (self.root / 'api').resolve(), self.run_profile(repo, 'neighbours'))
 
 
 class CompanyAndRepositoryTest(unittest.TestCase):
@@ -224,6 +215,35 @@ class CompanyAndRepositoryTest(unittest.TestCase):
         self.assertTrue(self.run_profile(plain).startswith('acme '))
         self.assertEqual(self.run_profile(plain, 'get', 'productionBranches'), 'null')
         self.assertTrue(self.run_profile(plain, 'doc', 'ticket').endswith('acme/ticket.md'))
+
+    def test_related_lists_the_related_entries_with_their_role(self):
+        self.add_repo('web', {'remotes': ['git.acme.example/shop/web'], 'related': ['api', 'missing']})
+        self.add_repo('api', {'remotes': ['git.acme.example/shop/api'], 'dir': 'api-checkout', 'role': 'the API'})
+        web = self.repo('web', 'git@git.acme.example:shop/web.git')
+        out = self.run_profile(web, 'related')
+        self.assertTrue(out.startswith('# Related repositories (read-only, at their checked-out HEAD)'))
+        self.assertIn('- api-checkout: the API (not checked out: not searched)', out)
+        self.assertIn('- missing: no entry under repos/', out)
+        api = self.repo('api-checkout')
+        subprocess.run(['git', '-C', str(api), '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q',
+                        '--allow-empty', '-m', 'x'], check=True)
+        self.assertIn('- %s: the API (HEAD ' % api.resolve(), self.run_profile(web, 'related'))
+
+    def test_related_writes_to_a_file_and_says_when_there_is_none(self):
+        api = self.repo('api', 'https://git.acme.example/shop/api.git')
+        out_file = self.root / 'related.md'
+        self.run_profile(api, 'related', str(out_file))
+        self.assertIn('- none: the profile lists no related repository', out_file.read_text())
+
+    def test_related_uses_the_company_repos_root(self):
+        self.write(self.company / 'config.json', {'remotes': ['git.acme.example'], 'reposRoot': str(self.root / 'elsewhere')})
+        self.add_repo('web', {'remotes': ['git.acme.example/shop/web'], 'related': ['api']})
+        self.add_repo('api', {'dir': 'api', 'role': 'the API'})
+        web = self.repo('web', 'git@git.acme.example:shop/web.git')
+        api = self.repo('elsewhere/api')
+        subprocess.run(['git', '-C', str(api), '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q',
+                        '--allow-empty', '-m', 'x'], check=True)
+        self.assertIn('- %s: the API (HEAD ' % api, self.run_profile(web, 'related'))
 
 
 if __name__ == '__main__':

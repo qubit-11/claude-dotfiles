@@ -11,12 +11,13 @@ Run it from inside the repository or one of its worktrees, by its literal path:
                                per line, or "none"; a section in both is reported on stderr
   profile.py secret-files      the secret file patterns, one per line
   profile.py secret-excludes   the same as git pathspec excludes, one line, starting with "--"
-  profile.py neighbours [out]  a Markdown list of the neighbour repositories checked out locally
+  profile.py related [out]     a Markdown list of the repositories the current one names in
+                               `related`, with their checkouts beside it (or under `reposRoot`)
 
 An entry matches when one of its `remotes` (`<host>/<project path>`, or a shorter prefix
 of it) names any remote of the repository; the longest matching entry wins, and a
 repository entry beats its company's own `remotes` at equal length. In a folder without
-any git remote, `get`, `doc` and `neighbours` use the only company when exactly one
+any git remote, `get`, `doc` and `related` use the only company when exactly one
 exists, never one of its repositories; a repository whose remotes match nothing, a local
 path among them, has no profile. The secret files never fall back: without a matching
 profile they are the broad set below, so a review of an unknown repository leaves out
@@ -143,27 +144,32 @@ def secret_files():
     return files or FALLBACK_SECRETS
 
 
-def neighbours():
-    _, cfg, _, rcfg = resolve(strict=False)
-    cfg = merged(cfg, rcfg)
-    repos = cfg.get('neighbourRepos') or []
+def related():
+    """A Markdown list of the repositories the current one names in `related`."""
+    company, cfg, _, rcfg = resolve(strict=False)
+    entries = repos(company) if company else {}
     root = cfg.get('reposRoot')
     if root:
         root = os.path.expanduser(root)
     else:
         common = git('rev-parse', '--path-format=absolute', '--git-common-dir')
         root = os.path.dirname(os.path.dirname(common)) if common else ''
-    lines = ['# Neighbour repositories (read-only, at their checked-out HEAD)']
-    for repo in repos:
-        d = os.path.join(root, repo['dir'])
+    lines = ['# Related repositories (read-only, at their checked-out HEAD)']
+    for name in rcfg.get('related') or []:
+        entry = entries.get(name)
+        if entry is None:
+            lines.append('- %s: no entry under repos/' % name)
+            continue
+        folder, role = entry.get('dir') or name, entry.get('role') or 'no role given'
+        d = os.path.join(root, folder)
         if root and os.path.isdir(os.path.join(d, '.git')):
             lines.append('- %s: %s (HEAD %s, branch %s)' % (
-                d, repo['role'], git('rev-parse', '--short', 'HEAD', cwd=d),
+                d, role, git('rev-parse', '--short', 'HEAD', cwd=d),
                 git('rev-parse', '--abbrev-ref', 'HEAD', cwd=d)))
         else:
-            lines.append('- %s: %s (not checked out: not searched)' % (repo['dir'], repo['role']))
+            lines.append('- %s: %s (not checked out: not searched)' % (folder, role))
     if len(lines) == 1:
-        lines.append('- none: the profile lists no neighbour repository')
+        lines.append('- none: the profile lists no related repository')
     return '\n'.join(lines) + '\n'
 
 
@@ -192,8 +198,8 @@ def main(argv):
         print('\n'.join(secret_files()))
     elif cmd == 'secret-excludes':
         print('-- ' + ' '.join(shlex.quote(':(exclude,glob)**/' + s) for s in secret_files()))
-    elif cmd == 'neighbours' and len(argv) in (2, 3):
-        text = neighbours()
+    elif cmd == 'related' and len(argv) in (2, 3):
+        text = related()
         if len(argv) == 3:
             with open(argv[2], 'w', encoding='utf-8') as f:
                 f.write(text)

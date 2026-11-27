@@ -42,7 +42,7 @@ other search (`grep -r`, `rg`, `find`, a search tool) excludes the same names
 (`--exclude=<name>` or `-g '!<name>'` for each). Every other env file
 (`.example.env` and the `.env` links to it, `.empty.env`, `jest.test.env`, …) holds dummies and is part of the
 subject. Name a variable, never a value from a secret file.
-When inputs/neighbours.md exists, the repositories it lists are readable
+When inputs/related.md exists, the repositories it lists are readable
 too, read-only like the subject and under the same secret-file rules; in
 them, also never open anything under `host_vars/` or `group_vars/`, or a
 file whose first line is `$ANSIBLE_VAULT`.
@@ -124,8 +124,8 @@ change, and try to break it.
   model, schema, component or export. Second, across deploy boundaries,
   search by name: route paths, collection and field names, Redis keys, event
   and message types, env keys, used by the system's other servers, frontend bundles,
-  replicas, partners and pages that embed its scripts. Search the neighbour
-  repositories listed in inputs/neighbours.md the same way: each entry
+  replicas, partners and pages that embed its scripts. Search the related
+  repositories listed in inputs/related.md the same way: each entry
   says how it calls or is called by this repository. For each, does it
   still work with the new behaviour and shape? Name the consumer and what it
   gets wrong."
@@ -133,8 +133,8 @@ change, and try to break it.
   system, and find the order, the old state or the failure under which the
   change breaks: deploy order across servers, a migration, a rollback,
   documents written before the change, config and env values as deployed
-  (the deploy configuration in the neighbour repositories listed in
-  inputs/neighbours.md: env templates, compose files, proxy config),
+  (the deploy configuration in the related repositories listed in
+  inputs/related.md: env templates, compose files, proxy config),
   proxies, a dependency that is down or slow, a retry or a duplicate
   delivery, the same job or request running on several instances at once.
   Name the sequence and the wrong result.">
@@ -622,7 +622,7 @@ verdict and evidence>". Do not judge this Blocker again, and do not review
 anything else. Answer two questions by reading the code:
 1. Where else does the same pattern sit: the same misuse of a field, key,
    value or mechanism, the same missing case, in this repository and in
-   the neighbour repositories listed in inputs/neighbours.md (when that
+   the related repositories listed in inputs/related.md (when that
    file exists)? Search by name and by shape, not only near the diff.
 2. Which other consequences does the same cause have: other consumers of
    the same value, other user paths through the same code, other stored

@@ -240,20 +240,20 @@ true   # a missing file in the last directory is no failure
 
 For code files: the same with the subject's paths.
 
-### Neighbour repositories (`deep`, before dispatch)
+### Related repositories (`deep`, before dispatch)
 
 At `deep` the consumers and production lenses, their codex runs and the
 follow-up agents also read the repositories the change talks to or is
 deployed by, from their local checkouts beside this one. The profile names
-them (`neighbourRepos`, [_profiles/README.md](../_profiles/README.md)); the
+them (`related` in its repository entry, [_profiles/README.md](../_profiles/README.md)); the
 orchestrator lists them, mechanically, never by reading code, from the
 review worktree:
 
 ```bash
-python3 ~/.claude/skills/_profiles/profile.py neighbours <absolute scratchpad path>/inputs/neighbours.md
+python3 ~/.claude/skills/_profiles/profile.py related <absolute scratchpad path>/inputs/related.md
 ```
 
-Without a profile, or with none listed, the file says so and no neighbour
+Without a profile, or with none listed, the file says so and no related
 repository is read.
 
 The orchestrator never fetches, pulls or checks out in them: a reviewer

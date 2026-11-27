@@ -165,7 +165,7 @@ Step 4 copies it into `meta.effort.review.started` (report-sections.md,
 findings.json).
 
 - **Profile.** The values and commands of the reviewed repository's
-  environment (ticket links, secret files, neighbour repositories, user
+  environment (ticket links, secret files, related repositories, user
   roles, the worktree route, e2e commands) come from its profile, never from
   this skill: [_profiles/README.md](../_profiles/README.md). Without a
   matching profile the review runs with the fallbacks the README names, and
@@ -231,8 +231,8 @@ findings.json).
   directory above a changed path into `inputs/sources/rules/`, their
   glossaries (`CONTEXT.md`) into `inputs/sources/glossary/`
   ([tooling.md](tooling.md), Relevant ADRs and Repo rules); at `deep` also
-  the list of neighbour repositories into `inputs/neighbours.md`
-  ([tooling.md](tooling.md), Neighbour repositories).
+  the list of related repositories into `inputs/related.md`
+  ([tooling.md](tooling.md), Related repositories).
 - An earlier review in the repo is read only after dispatch, by the
   orchestrator only, and only when the user chose to update it
   ([worktree.md](worktree.md), option 2; §4.1). A new independent report
@@ -305,7 +305,7 @@ The list (§5), the verdict box and the method section (§6) state "covers" and
 | Depth | Searches | The verdict covers | Not searched |
 | --- | --- | --- | --- |
 | standard | the change itself, for what is wrong in any context, even an experiment (the floor); every path through the changed code, the new code's callers and readers included; the direct callers and readers of the existing code it changes, unchanged ones outside the change included, since that is where a change harms what exists (for a changed route, URL, endpoint, event or key: every place in this repository that produces or sends it, found by name, other servers' code included); its fit with the architecture, for which the architecture reviewer reads beyond the diff | the change does what it promises and harms nothing it reaches directly (its paths, its direct callers and readers, inside and outside the change) | stored data across versions (migrations, old documents, rollback), other servers or replicas reading the same stored data, attacker paths through unchanged routes, partners and old clients outside this repository, transitive callers |
-| deep | + the system around it: transitive callers, stored data, attacker paths, partners, rollout; the neighbour repositories the change reaches (the ones the profile lists; [tooling.md](tooling.md), Neighbour repositories); the running system (the full local stack, its e2e suites and the manual tests; [tooling.md](tooling.md), Tests and lint) | what `standard` covers, and the change harms nothing beyond its direct reach: transitive callers, stored data, attacker paths, partners and old clients, rollout, the neighbour repositories it reaches | code in repositories that are not checked out locally, and behaviour that neither a suite nor a manual test exercises |
+| deep | + the system around it: transitive callers, stored data, attacker paths, partners, rollout; the related repositories the change reaches (the ones the profile lists; [tooling.md](tooling.md), Related repositories); the running system (the full local stack, its e2e suites and the manual tests; [tooling.md](tooling.md), Tests and lint) | what `standard` covers, and the change harms nothing beyond its direct reach: transitive callers, stored data, attacker paths, partners and old clients, rollout, the related repositories it reaches | code in repositories that are not checked out locally, and behaviour that neither a suite nor a manual test exercises |
 
 The floor and the focus lists per depth are in
 [reviewer-prompt.md](reviewer-prompt.md). Focus is not a filter: every
@@ -620,7 +620,7 @@ The steps, in order:
    fresh follow-up agent (the follow-up variant in
    [reviewer-prompt.md](reviewer-prompt.md)), given the confirmed claim and
    its investigator's verdict. It asks two questions and judges nothing
-   else: where else, in this repository and in the neighbour repositories,
+   else: where else, in this repository and in the related repositories,
    the same pattern sits (the same misuse of a field, key, value or
    mechanism); and which other consequences the same cause has (other
    consumers, other user paths, other stored data). Each place or
