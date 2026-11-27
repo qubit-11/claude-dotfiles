@@ -51,5 +51,6 @@ commands for the review (`code-review.md`), the merge and push rules for merge
 requests (`merge-request.md`), the tracker, its facts and the team rules for
 tickets (`ticket.md`), the review-thread calls and reply language (`code-review-response.md`), the
 ticket tracker, worktree route and build commands for starting work on a ticket
-(`ticket-start.md`). A skill without its document uses its general rules and says what
+(`ticket-start.md`; `qubit-claim-check` reads its `Worktree` and `Build and tests`
+sections too, for a spike worktree). A skill without its document uses its general rules and says what
 it skipped.
